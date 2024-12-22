@@ -1,16 +1,14 @@
 CROSS := i686-elf
 AS    := $(CROSS)-as
-CC    := $(CROSS)-gcc
 CXX   := $(CROSS)-g++
 
-CCFLAGS  := -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-CXXFLAGS := -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti
+CXXFLAGS := -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -Ikernel/include
 LDFLAGS  := -T arch/linker.ld -ffreestanding -O2 -nostdlib
 
 CRTI	 := build/crti.o
 CRTN	 := build/crtn.o
-CRTBEGIN := $(shell $(CC) -print-file-name=crtbegin.o)
-CRTEND	 := $(shell $(CC) -print-file-name=crtend.o)
+CRTBEGIN := $(shell $(CXX) -print-file-name=crtbegin.o)
+CRTEND	 := $(shell $(CXX) -print-file-name=crtend.o)
 
 GRUBFILE := grub-file
 GRUBISO  := grub-mkrescue
@@ -25,7 +23,7 @@ ISO := myos.iso
 all: iso
 
 $(BIN): $(CRTI) $(CRTBEGIN) $(KERNEL_OBJS) build/boot.o $(CRTEND) $(CRTN)
-	$(CC) $(LDFLAGS) $^ -o $@ -lgcc
+	$(CXX) $(LDFLAGS) $^ -o $@ -lgcc
 
 build/%.o: %.cpp
 	mkdir -p $(dir $@)

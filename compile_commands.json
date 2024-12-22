@@ -1,0 +1,21 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "-ffreestanding",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-Ikernel/include",
+      "-c",
+      "-o",
+      "build/kernel/kernel.o",
+      "kernel/kernel.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os",
+    "file": "/home/xiaomin/dev/os/kernel/kernel.cpp",
+    "output": "/home/xiaomin/dev/os/build/kernel/kernel.o"
+  }
+]

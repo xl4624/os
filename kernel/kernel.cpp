@@ -111,6 +111,5 @@ class Terminal {
 extern "C" void kernel_main(void) {
     Terminal terminal;
 
-    terminal.writeString("Hello, kernel world!\n");
-    terminal.writeString("Hi!");
+    terminal.writeString("Hello world!\n");
 }

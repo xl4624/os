@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# OS
+*.bin
+*.iso
+isodir/
+textbook.pdf

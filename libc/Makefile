@@ -23,7 +23,17 @@ TARGET_C  := libc.a
 
 .PHONY: all clean install install-headers install-libs
 
-all: $(TARGET_K) $(TARGET_C)
+all: $(TARGET_K) $(TARGET_C) install
+
+install: install-headers install-libs
+
+install-headers:
+	mkdir -p $(SYSROOT)$(INCLUDEDIR)
+	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/.
+
+install-libs: $(TARGET_K) $(TARGET_C)
+	mkdir -p $(SYSROOT)$(LIBDIR)
+	cp $(TARGET_K) $(TARGET_C) $(SYSROOT)$(LIBDIR)
 
 %.libk.o: %.c
 	$(CC) $(CFLAGS_K) $(INCLUDES) -c $< -o $@
@@ -38,14 +48,5 @@ $(TARGET_C): $(COBJS)
 	$(AR) rcs $@ $^
 
 clean:
+	rm -rf $(SYSROOT)
 	rm -f $(KOBJS) $(COBJS) $(TARGET_K) $(TARGET_C)
-
-install: install-headers install-libs
-
-install-headers:
-	mkdir -p $(SYSROOT)$(INCLUDEDIR)
-	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/.
-
-install-libs: $(TARGET_K) $(TARGET_C)
-	mkdir -p $(SYSROOT)$(LIBDIR)
-	cp $(TARGET_K) $(TARGET_C) $(SYSROOT)$(LIBDIR)

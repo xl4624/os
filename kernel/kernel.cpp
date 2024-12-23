@@ -6,7 +6,7 @@
 #endif
 
 extern "C" void kernel_main(void) {
-    Terminal terminal;
+    Terminal &terminal = Terminal::getInstance();
 
     terminal.writeString("Hello world!\n");
     char *test1 = "testing";

@@ -1,14 +1,19 @@
 #include "tty.hpp"
 
-#include "vga.hpp"
-
 #include <string.h>
 
-Terminal::Terminal() {
-    row_ = 0;
-    column_ = 0;
-    color_ = VGA::entryColor(VGA::Color::LIGHT_GREY, VGA::Color::BLACK);
-    buffer_ = (uint16_t *)VGA::MEMORY_START;
+#include "vga.hpp"
+
+Terminal &Terminal::getInstance() {
+    static Terminal instance;
+    return instance;
+}
+
+Terminal::Terminal()
+    : row_(0),
+      column_(0),
+      color_(VGA::entryColor(VGA::Color::LIGHT_GREY, VGA::Color::BLACK)),
+      buffer_(VGA::MEMORY) {
     for (size_t y = 0; y < VGA::HEIGHT; y++) {
         for (size_t x = 0; x < VGA::WIDTH; x++) {
             putEntryAt(' ', color_, x, y);
@@ -63,4 +68,12 @@ void Terminal::write(const char *data, size_t size) {
 
 void Terminal::writeString(const char *data) {
     write(data, strlen(data));
+}
+
+// ===============================
+//           C Interface
+// ===============================
+
+extern "C" void terminal_putchar(char c) {
+    Terminal::getInstance().write(&c, 1);
 }

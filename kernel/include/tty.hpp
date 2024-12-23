@@ -5,12 +5,16 @@
 
 class Terminal {
    public:
-    Terminal();
+    static Terminal &getInstance();
     void putChar(char c);
     void write(const char *data, size_t size);
     void writeString(const char *data);
 
    private:
+    Terminal();
+
+    Terminal(const Terminal &) = delete;
+    Terminal &operator=(const Terminal &) = delete;
     void setColor(uint8_t color);
     void putEntryAt(char c, uint8_t color, size_t x, size_t y);
     void scroll();

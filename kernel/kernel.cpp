@@ -14,6 +14,7 @@ extern "C" void kernel_main(void) {
     terminal.writeString("Hello world!\n");
     char *test1 = "testing";
     char *test2 = "testimg";
+    char c = 'a';
 
     int r = memcmp((void *)test1, (void *)test2, 7);
     if (r < 0) {
@@ -23,5 +24,6 @@ extern "C" void kernel_main(void) {
     } else {
         terminal.writeString("equal\n");
     }
-    printf("testing: %s", test2);
+    printf("testing: %s\n", test2);
+    printf("testing: %c\n", c);
 }

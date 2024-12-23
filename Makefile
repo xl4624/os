@@ -54,7 +54,7 @@ check: $(BIN)
 	fi
 
 $(BIN): build $(OBJS) $(KERNEL_LIB) arch/linker.ld
-	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) -Lkernel -lkernel -Llibc -lk  -lgcc
+	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)
 
 $(ISO): $(BIN)
 	mkdir -p $(ISODIR)/boot/grub

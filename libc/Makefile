@@ -10,7 +10,7 @@ INCLUDEDIR  := $(PREFIX)/include
 LIBDIR      ?= $(PREFIX)/lib
 
 # ==== Build Settings ====
-CFLAGS   := --sysroot=$(SYSROOT) -O2 -g -ffreestanding -Wall -Wextra -Iinclude
+CFLAGS   := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include -O2 -g -ffreestanding -Wall -Wextra -Iinclude
 CFLAGS_K := $(CFLAGS) -D__is_libk
 CFLAGS_C := $(CFLAGS) -D__is_libc
 

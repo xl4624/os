@@ -2,20 +2,139 @@
   {
     "arguments": [
       "/usr/bin/i686-elf-g++",
-      "-ffreestanding",
+      "--sysroot=/home/xiaomin/dev/os/kernel/../sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/kernel/../sysroot/usr/include",
       "-O2",
+      "-g",
+      "-ffreestanding",
       "-Wall",
       "-Wextra",
       "-fno-exceptions",
       "-fno-rtti",
-      "-Ikernel/include",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
       "-c",
       "-o",
-      "build/kernel/kernel.o",
-      "kernel/kernel.cpp"
+      "kernel.o",
+      "kernel.cpp"
     ],
-    "directory": "/home/xiaomin/dev/os",
+    "directory": "/home/xiaomin/dev/os/kernel",
     "file": "/home/xiaomin/dev/os/kernel/kernel.cpp",
-    "output": "/home/xiaomin/dev/os/build/kernel/kernel.o"
+    "output": "/home/xiaomin/dev/os/kernel/kernel.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/kernel/../sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/kernel/../sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "tty.o",
+      "tty.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/tty.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/tty.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-gcc",
+      "--sysroot=/home/xiaomin/dev/os/libc/../sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/libc/../sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "-D__is_libk",
+      "-c",
+      "-o",
+      "stdio.libk.o",
+      "stdio.c"
+    ],
+    "directory": "/home/xiaomin/dev/os/libc",
+    "file": "/home/xiaomin/dev/os/libc/stdio.c",
+    "output": "/home/xiaomin/dev/os/libc/stdio.libk.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-gcc",
+      "--sysroot=/home/xiaomin/dev/os/libc/../sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/libc/../sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "-D__is_libk",
+      "-c",
+      "-o",
+      "string.libk.o",
+      "string.c"
+    ],
+    "directory": "/home/xiaomin/dev/os/libc",
+    "file": "/home/xiaomin/dev/os/libc/string.c",
+    "output": "/home/xiaomin/dev/os/libc/string.libk.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-gcc",
+      "--sysroot=/home/xiaomin/dev/os/libc/../sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/libc/../sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "-D__is_libc",
+      "-c",
+      "-o",
+      "stdio.libc.o",
+      "stdio.c"
+    ],
+    "directory": "/home/xiaomin/dev/os/libc",
+    "file": "/home/xiaomin/dev/os/libc/stdio.c",
+    "output": "/home/xiaomin/dev/os/libc/stdio.libc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-gcc",
+      "--sysroot=/home/xiaomin/dev/os/libc/../sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/libc/../sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "-D__is_libc",
+      "-c",
+      "-o",
+      "string.libc.o",
+      "string.c"
+    ],
+    "directory": "/home/xiaomin/dev/os/libc",
+    "file": "/home/xiaomin/dev/os/libc/string.c",
+    "output": "/home/xiaomin/dev/os/libc/string.libc.o"
   }
 ]

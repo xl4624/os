@@ -7,6 +7,10 @@
 
 extern "C" void kernel_main(void) {
     Terminal terminal;
-
-    terminal.writeString("Hello world!\n");
+    terminal.writeString("Hello world123414123!\n");
+    for(size_t i = 0; i < 25; i++){
+        terminal.writeString("Hello world!\n");
+    }
+    terminal.writeString("Test!\n");
+    terminal.writeString("Check\n");
 }

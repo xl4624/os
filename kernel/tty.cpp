@@ -31,18 +31,32 @@ void Terminal::putEntryAt(char c, uint8_t color, size_t x, size_t y) {
     buffer_[index] = VGA::entry(c, color);
 }
 
+void Terminal::scroll(){
+        for(size_t i= 1;i<VGA::HEIGHT;i++){
+            for (size_t j = 0; j<VGA::WIDTH;j++){
+                const size_t row1_ind = (i-1) * VGA::WIDTH + j;
+                const size_t row2_ind = (i) * VGA::WIDTH + j;
+                buffer_[row1_ind] = buffer_[row2_ind];
+            }
+        }       
+        row_--;
+        for (size_t col=0;col<VGA::WIDTH;col++){
+            putEntryAt(' ',color_,col,row_);
+        }
+}
+
+
 void Terminal::putChar(char c) {
     if (c == '\n') {
         column_ = 0;
         if (++row_ == VGA::HEIGHT) {
-            row_ = 0;
+            scroll();
         }
     } else {
         putEntryAt(c, color_, column_, row_);
         if (++column_ == VGA::WIDTH) {
-            column_ = 0;
-            if (++row_ == VGA::HEIGHT) {
-                row_ = 0;
+            if (++row_ == VGA::HEIGHT){
+                scroll();
             }
         }
     }

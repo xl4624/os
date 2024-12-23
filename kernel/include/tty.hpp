@@ -13,6 +13,7 @@ class Terminal {
    private:
     void setColor(uint8_t color);
     void putEntryAt(char c, uint8_t color, size_t x, size_t y);
+    void scroll();
 
     size_t row_;
     size_t column_;

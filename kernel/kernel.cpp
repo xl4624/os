@@ -1,5 +1,8 @@
-#include "tty.hpp"
+#include <stdio.h>
 #include <string.h>
+
+#include "tty.hpp"
+
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
     #error "ix86-elf cross compiler required"
@@ -12,12 +15,13 @@ extern "C" void kernel_main(void) {
     char *test1 = "testing";
     char *test2 = "testimg";
 
-    int r = memcmp((void*)test1, (void*)test2,7);
+    int r = memcmp((void *)test1, (void *)test2, 7);
     if (r < 0) {
-        terminal.writeString("less than");
+        terminal.writeString("less than\n");
     } else if (r > 0) {
-        terminal.writeString("greater than");
+        terminal.writeString("greater than\n");
     } else {
-        terminal.writeString("equal");
+        terminal.writeString("equal\n");
     }
-}   
+    printf("testing: %s", test2);
+}

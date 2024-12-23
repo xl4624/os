@@ -1,10 +1,34 @@
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "tty.h"
 
-// TODO: Implement
 int printf(const char *__restrict format, ...) {
-    return -1;
+    va_list args;
+    va_start(args, format);
+    char *s;
+
+    while (*format) {
+        if (*format == '%') {
+            format++;
+            switch (*format) {
+                case 's':
+                    s = va_arg(args, char *);
+                    puts(s);
+                    break;
+                // TODO: support other formats
+                default:
+                    putchar('%');
+                    putchar(*format);
+            }
+        } else {
+            putchar(*format);
+        }
+        format++;
+    }
+
+    va_end(args);
+    return 1;  // TODO: should return number of bytes printed
 }
 
 int putchar(int c) {
@@ -19,5 +43,15 @@ int putchar(int c) {
 
 // TODO: Implement
 int puts(const char *s) {
-    return -1;
+    while (*s) {
+        if (putchar(*s++) == EOF) {
+            return EOF;
+        }
+    }
+    // Append trailing newline and return nonnegative number on success,
+    // see puts(3)
+    if (putchar('\n') == EOF) {
+        return EOF;
+    }
+    return 1;
 }

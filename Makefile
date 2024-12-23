@@ -1,45 +1,50 @@
-CROSS := i686-elf
-AS    := $(CROSS)-as
-CXX   := $(CROSS)-g++
-
-CXXFLAGS := -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -Ikernel/include
-LDFLAGS  := -T arch/linker.ld -ffreestanding -O2 -nostdlib
-
-CRTI	 := build/crti.o
-CRTN	 := build/crtn.o
-CRTBEGIN := $(shell $(CXX) -print-file-name=crtbegin.o)
-CRTEND	 := $(shell $(CXX) -print-file-name=crtend.o)
-
-GRUBFILE := grub-file
+# ==== Toolchain Settings ====
+CROSS    := i686-elf
+CC       := $(CROSS)-gcc
+CPP      := $(CROSS)-g++
+AS       := $(CROSS)-as
+LD       := $(CROSS)-ld
+AR       := $(CROSS)-ar
 GRUBISO  := grub-mkrescue
+GRUBFILE := grub-file
 
-KERNEL_SRCS := $(wildcard kernel/*.cpp)
-KERNEL_OBJS := $(KERNEL_SRCS:%.cpp=build/%.o)
+# ==== Build Settings ====
+CFLAGS  := -ffreestanding -O2 -g -Wall -Wextra
+LDFLAGS := -T arch/linker.ld -ffreestanding -O2 -nostdlib
+LIBS    := -nostdlib -Lkernel -lkernel -Llibc -lk -lgcc
+SUBDIRS := arch kernel libc
 
-BIN := myos.bin
-ISO := myos.iso
+# ==== Runtime Files ====
+CRTI	 := arch/crti.o
+CRTN	 := arch/crtn.o
+CRTBEGIN := $(shell $(CPP) -print-file-name=crtbegin.o)
+CRTEND	 := $(shell $(CPP) -print-file-name=crtend.o)
 
-.PHONY: all clean check iso
-all: iso
+# ==== Build Artifacts ====
+ARCH_OBJS  := $(wildcard arch/*.o)
+KERNEL_LIB := kernel/libkernel.a
+LIBC_OBJS  := $(wildcard libc/*.libk.o)
+OBJS       := $(CRTI) $(CRTBEGIN) arch/boot.o $(LIBC_OBJS) $(CRTEND) $(CRTN)
 
-$(BIN): $(CRTI) $(CRTBEGIN) $(KERNEL_OBJS) build/boot.o $(CRTEND) $(CRTN)
-	$(CXX) $(LDFLAGS) $^ -o $@ -lgcc
+# ==== Targets ====
+BIN     := myos.bin
+ISO     := myos.iso
+ISODIR  := isodir
+GRUBCFG := grub.cfg
 
-build/%.o: %.cpp
-	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+.PHONY: all clean build iso check run arch kernel libc
 
-build/boot.o: arch/boot.s
-	mkdir -p $(dir $@)
-	$(AS) $< -o $@
+all: $(ISO)
 
-$(CRTI): arch/crti.s
-	mkdir -p $(dir $@)
-	$(AS) $< -o $@
+run: $(ISO)
+	qemu-system-i386 -cdrom $(ISO)
 
-$(CRTN): arch/crtn.s
-	mkdir -p $(dir $@)
-	$(AS) $< -o $@
+clean:
+	@for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir clean; \
+	done
+	rm -f $(BIN) $(ISO)
+	rm -rf $(ISODIR)
 
 check: $(BIN)
 	@if $(GRUBFILE) --is-x86-multiboot $(BIN); then \
@@ -48,12 +53,16 @@ check: $(BIN)
 		echo "NOT MULTIBOOT"; \
 	fi
 
-iso: $(BIN)
-	mkdir -p isodir/boot/grub
-	cp $(BIN) isodir/boot/$(BIN)
-	cp grub.cfg isodir/boot/grub/grub.cfg
-	$(GRUBISO) -o $(ISO) isodir
+$(BIN): build $(OBJS) $(KERNEL_LIB) arch/linker.ld
+	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) -Lkernel -lkernel -Llibc -lk  -lgcc
 
-clean:
-	rm -f $(KERNEL_OBJS) $(BIN) $(ISO) $(CRTI) $(CRTN)
-	rm -rf isodir/ build/
+$(ISO): $(BIN)
+	mkdir -p $(ISODIR)/boot/grub
+	cp $(BIN) $(ISODIR)/boot/$(BIN)
+	cp $(GRUBCFG) $(ISODIR)/boot/grub/grub.cfg
+	$(GRUBISO) -o $(ISO) $(ISODIR)
+
+build: $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C $@

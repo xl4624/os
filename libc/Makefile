@@ -15,7 +15,7 @@ CFLAGS_K := $(CFLAGS) -D__is_libk
 CFLAGS_C := $(CFLAGS) -D__is_libc
 
 # ==== Source and Object Files ====
-SRCS      := $(wildcard *.c)
+SRCS      := $(shell find . -type f -name "*.c")
 KOBJS     := $(SRCS:%.c=%.libk.o)
 COBJS     := $(SRCS:%.c=%.libc.o)
 TARGET_K  := libk.a

@@ -25,5 +25,6 @@ extern "C" void kernel_main(void) {
         terminal.writeString("equal\n");
     }
     printf("testing: %s\n", test2);
-    printf("testing: %c\n", c);
+    printf("testing: %d\n", 32);
+    printf("testing: %c test\n", c);
 }

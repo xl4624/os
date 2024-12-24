@@ -74,6 +74,17 @@ void Terminal::writeString(const char *data) {
 //           C Interface
 // ===============================
 
-extern "C" void terminal_putchar(char c) {
-    Terminal::getInstance().write(&c, 1);
+extern "C" {
+
+void terminal_writestring(const char *data) {
+    Terminal::getInstance().writeString(data);
+}
+
+void terminal_write(const char *data, size_t size) {
+    Terminal::getInstance().write(data, size);
+}
+
+void terminal_putchar(char c) {
+    Terminal::getInstance().putChar(c);
+}
 }

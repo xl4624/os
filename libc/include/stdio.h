@@ -1,5 +1,5 @@
 #ifndef _STDIO_H
-#define _STDIO_H
+#define _STDIO_H 1
 
 #include <sys/cdefs.h>
 
@@ -9,9 +9,9 @@
 extern "C" {
 #endif
 
-int printf(const char* __restrict format, ...);
+int printf(const char *__restrict format, ...);
 int putchar(int c);
-int puts(const char* s);
+int puts(const char *s);
 
 #ifdef __cplusplus
 }

@@ -3,14 +3,14 @@ CROSS ?= i686-elf
 AS    := $(CROSS)-as
 
 # ==== Source and Object Files ====
-SRCS    := $(wildcard *.s)
-OBJS    := $(SRCS:%.s=%.o)
+SRCS    := $(wildcard *.S)
+OBJS    := $(SRCS:%.S=%.o)
 
 .PHONY: all clean
 
 all: $(OBJS) linker.ld
 
-%.o: %.s
+%.o: %.S
 	$(AS) $< -o $@
 
 clean:

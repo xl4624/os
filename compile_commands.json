@@ -136,5 +136,38 @@
     "directory": "/home/xiaomin/dev/os/libc",
     "file": "/home/xiaomin/dev/os/libc/string.c",
     "output": "/home/xiaomin/dev/os/libc/string.libc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-as",
+      "crti.S",
+      "-o",
+      "crti.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/arch",
+    "file": "/home/xiaomin/dev/os/arch/crti.S",
+    "output": "/home/xiaomin/dev/os/arch/crti.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-as",
+      "crtn.S",
+      "-o",
+      "crtn.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/arch",
+    "file": "/home/xiaomin/dev/os/arch/crtn.S",
+    "output": "/home/xiaomin/dev/os/arch/crtn.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-as",
+      "boot.S",
+      "-o",
+      "boot.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/arch",
+    "file": "/home/xiaomin/dev/os/arch/boot.S",
+    "output": "/home/xiaomin/dev/os/arch/boot.o"
   }
 ]

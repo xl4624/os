@@ -7,12 +7,18 @@
     * `xoriso`
     * `grub`
     * `qemu`
-3. Run `chmod +x setup.py` and now you can:
+3. To setup the project you can:
     * Build OS:
     ```bash
-    ./setup.py build
+    ./build.py
     ```
+
     * Run OS:
     ```bash
-    ./setup.py run # Will build OS as well
+    ./run.py # Will build OS as well
+    ```
+
+    * Clean/delete object files, images, and binaries:
+    ```bash
+    ./clean.py
     ```

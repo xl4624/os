@@ -19,8 +19,8 @@ CRTBEGIN := $(shell $(CPP) -print-file-name=crtbegin.o)
 CRTEND	 := $(shell $(CPP) -print-file-name=crtend.o)
 
 # ==== Build Artifacts ====
-KERNEL_OBJS = $(wildcard kernel/*.o)
-LIBC_OBJS   = $(wildcard libc/*.libk.o)
+KERNEL_OBJS = $(shell find kernel -type f -name '*.o')
+LIBC_OBJS   = $(shell find libc -type f -name '*.libk.o')
 OBJS        = $(CRTI) $(CRTBEGIN) arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
 
 # ==== Targets ====

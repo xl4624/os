@@ -22,3 +22,9 @@
     ```bash
     ./clean.py
     ```
+
+# Notes
+
+For debugging purposes, `./run.py` automatically attaches the QEMU monitor to stdio.
+This allows you to control the emulator (pause/resume VM, inspect registers, etc.).
+Check out the docs at: https://qemu-project.gitlab.io/qemu/system/monitor.html

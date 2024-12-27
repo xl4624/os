@@ -7,7 +7,7 @@
 
 #include "tty.h"
 
-int print(const char *s, size_t n) {
+static int print(const char *s, size_t n) {
     const unsigned char *bytes = (const unsigned char *)s;
     for (size_t i = 0; i < n; i++) {
         if (putchar(bytes[i]) == EOF)
@@ -57,7 +57,7 @@ int printf(const char *__restrict format, ...) {
                     break;
                 // TODO: support other formats
                 case '%':
-                    if (putchar('%'))
+                    if (putchar('%') == EOF)
                         goto failure;
 
                     written++;
@@ -70,7 +70,8 @@ int printf(const char *__restrict format, ...) {
                     break;
             }
         } else {
-            putchar(ch);
+            if (putchar(ch) == EOF)
+                goto failure;
             written++;
         }
     }

@@ -4,10 +4,7 @@
 
 #include "vga.hpp"
 
-Terminal &Terminal::getInstance() {
-    static Terminal instance;
-    return instance;
-}
+Terminal terminal;
 
 Terminal::Terminal()
     : row_(0),
@@ -77,14 +74,14 @@ void Terminal::scroll() {
 extern "C" {
 
 void terminal_writestring(const char *data) {
-    Terminal::getInstance().writeString(data);
+    terminal.writeString(data);
 }
 
 void terminal_write(const char *data, size_t size) {
-    Terminal::getInstance().write(data, size);
+    terminal.write(data, size);
 }
 
 void terminal_putchar(char c) {
-    Terminal::getInstance().putChar(c);
+    terminal.putChar(c);
 }
 }

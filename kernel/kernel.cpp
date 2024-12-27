@@ -10,8 +10,6 @@
 #endif
 
 extern "C" void kernel_main(void) {
-    Terminal &terminal = Terminal::getInstance();
-
     terminal.writeString("Hello world!\n");
     terminal.setColor(VGA::entryColor(VGA::Color::RED, VGA::Color::BLACK));
     char *test1 = "testing";

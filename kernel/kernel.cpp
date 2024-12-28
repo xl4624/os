@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "idt.hpp"
-
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
     #error "ix86-elf cross compiler required"
@@ -15,16 +13,15 @@ int test_divide_by_zero() {
     return c;
 }
 
-extern "C" void kernel_main(void) {
-    idt_init();
-
+extern "C" void kmain(void) {
     printf("Hello world!\n");
-    char *test1 = "testing";
-    char *test2 = "testimg";
+    const char *test1 = "testing";
+    const char *test2 = "testimg";
     int r = memcmp((void *)test1, (void *)test2, 7);
     printf("memcmp test: %d\n", r);
     printf("testing: %s\n", test2);
     printf("testing: %d\n", 32);
-    test_divide_by_zero();
-    printf("SHOULD NOT PRINT\n");
+    while (1) {
+        __asm__ volatile("hlt");
+    }
 }

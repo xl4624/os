@@ -16,8 +16,8 @@
  *
  * Base (63–56, 39–32, 41–16): 32-bit base address of the segment.
  *
- * Limit (51-48, 15–0): 20-bit value describing maximum addressable unit (scaled
- * by page granularity).
+ * Limit (51-48, 15–0): 20-bit value describing maximum addressable unit
+ * (scaled by page granularity).
  *
  * Access Byte (47-40):
  *   - P (bit 47): Present bit (must be 1 for valid selectors)
@@ -74,6 +74,5 @@ struct [[gnu::packed]] GDTDescriptor {
     uint32_t offset;  // GDT linear address
 };
 
-extern GDTDescriptor gdtp;
-
 extern "C" void gdt_init();
+extern GDTDescriptor gdtp;

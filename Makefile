@@ -19,7 +19,7 @@ LIBC_OBJS   = $(shell find libc -type f -name '*.libk.o')
 OBJS        = $(CRTI) $(CRTBEGIN) arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
 
 # ==== Targets ====
-BIN     := myos.bin
+BIN := myos.bin
 
 .PHONY: all clean build check arch kernel libc
 

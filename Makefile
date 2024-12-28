@@ -43,10 +43,8 @@ check: $(BIN)
 		echo "NOT MULTIBOOT"; \
 	fi
 
-$(BIN): build $(OBJS) arch/linker.ld
+$(BIN): $(SUBDIRS) $(OBJS) arch/linker.ld
 	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)
 
-build:
-	@for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir; \
-	done
+$(SUBDIRS):
+	$(MAKE) -C $@

@@ -9,7 +9,7 @@ PREFIX      := /usr
 INCLUDEDIR  := $(PREFIX)/include
 
 # ==== Build Settings ====
-CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include -O2 -g -ffreestanding -Wall -Wextra
+CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include -O2 -g -ffreestanding -Wall -Wextra -mgeneral-regs-only
 CPPFLAGS := -fno-exceptions -fno-rtti -fno-threadsafe-statics -D__is_kernel -Iinclude
 
 # ==== Source and Object Files ====

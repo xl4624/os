@@ -60,23 +60,20 @@
  *      1: 64-bit mode segment
  *   - Reserved (bit 52): Must be 0
  */
-struct GDTEntry {
+struct [[gnu::packed]] GDTEntry {
     uint16_t limit_low;
     uint16_t base_low;
     uint8_t base_mid;
     uint8_t access;
     uint8_t granularity;
     uint8_t base_high;
-} __attribute__((packed));
+};
 
-struct GDTDescriptor {
+struct [[gnu::packed]] GDTDescriptor {
     uint16_t size;    // Size of GDT in bytes - 1: (8 * entry) - 1
     uint32_t offset;  // GDT linear address
-} __attribute__((packed));
+};
 
 extern GDTDescriptor gdtp;
 
-extern "C" {
-void gdt_init();
-void load_gdt();
-}
+extern "C" void gdt_init();

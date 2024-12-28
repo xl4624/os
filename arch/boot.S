@@ -76,7 +76,16 @@ _start:
     runtime support to work as well.
     */
     call gdt_init // Setup Global Descriptor Table
+    call idt_init // Setup Interrupt Descriptor Table
+    call pic_init // Setup Programmable Interrupt Controller
     call _init    // Initialize C++ global constructors
+
+    /*
+    Now that we've set up the GDT, IDT, PIC, and initialized our C++
+    environment, we can safely enable interrupts. The CPU will now respond
+    to both hardware and software interrupts using our configured handlers.
+    */
+    sti
 
     /*
     Enter the high-level kernel. The ABI requires the stack is 16-byte
@@ -86,7 +95,7 @@ _start:
     stack since (pushed 0 bytes so far), so the alignment has thus been
     preserved and the call is well defined.
     */
-    call kernel_main
+    call kmain
 
     /*
     If the system has nothing more to do, put the computer into an
@@ -94,7 +103,7 @@ _start:
     1) Disable interrupts with cli (clear interrupt enable in eflags).
        They are already disabled by the bootloader, so this is not needed.
        Mind that you might later enable interrupts and return from
-       kernel_main (which is sort of nonsensical to do).
+       kmain (which is sort of nonsensical to do).
     2) Wait for the next interrupt to arrive with hlt (halt instruction).
        Since they are disabled, this will lock up the computer.
     3) Jump to the hlt instruction if it ever wakes up due to a

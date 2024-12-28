@@ -6,7 +6,9 @@ from utils import run_command, logger
 
 def main():
     sysroot = run_command(
-        "make -s --no-print-directory -f Makefile print-sysroot"
+        "make -s --no-print-directory -f Makefile print-sysroot",
+        capture_output=True,
+
     ).strip()
     logger.info("Installing headers...")
     run_command(f"make -C kernel SYSROOT={sysroot} install")

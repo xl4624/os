@@ -3,12 +3,12 @@
 #include <stdint.h>
 
 /*
- * =======================================
- *     Interrupt Descriptor Table (IDT)
- * =======================================
+ * ==========================================
+ *      Interrupt Descriptor Table (IDT)
+ * ==========================================
  *
- * An IDT entry is an 8-byte structure used by the CPU to handle interrupts and
- * exceptions.
+ * An IDT entry is an 8-byte structure used by the CPU to handle interrupts
+ * and exceptions.
  *
  * Bit Layout:
  * 63  48 | 47 | 46 45 | 44 | 43     40 | 39    32 | 31    16 | 15   0
@@ -50,5 +50,6 @@ struct [[gnu::packed]] IDTDescriptor {
 
 extern IDTDescriptor idtp;
 
-void idt_init();
+extern "C" void idt_init();
+
 IDTEntry create_idt_entry(uint32_t base, uint8_t flags);

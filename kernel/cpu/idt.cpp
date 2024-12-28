@@ -7,15 +7,21 @@
 IDTEntry idt[256];
 IDTDescriptor idtp;
 
-void idt_init() {
+extern "C" void idt_init() {
     idtp.size = (sizeof(IDTEntry) * 256) - 1;
     idtp.offset = (uint32_t)&idt;
-    memset(&idt, 0, sizeof(IDTEntry) * 256);
 
-    idt[0] = create_idt_entry(reinterpret_cast<uint32_t>(isr0_handler), 0x8E);
+    // Clear the IDT
+    memset(&idt, 0, sizeof(idt));
+
+    idt[0] =
+        create_idt_entry(reinterpret_cast<uint32_t>(ISR::divide_by_zero), 0x8E);
+    // TODO: Setup CPU exceptions (0-31)
+
+    idt[33] = create_idt_entry(reinterpret_cast<uint32_t>(ISR::keyboard), 0x8E);
+    // TODO: Set up IRQs (32-47)
 
     __asm__ volatile("lidt %0" : : "m"(idtp));
-    __asm__ volatile("sti");
 }
 
 IDTEntry create_idt_entry(uint32_t base, uint8_t flags) {

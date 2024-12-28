@@ -18,9 +18,10 @@ GRUBCFG = """menuentry "myos" {
 
 def run_command(cmd):
     """Utility to run a shell command in a subprocess."""
-    result = subprocess.run(cmd, shell=True)
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
         sys.exit(result.returncode)
+    return result.stdout
 
 
 def setup_logging():

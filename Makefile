@@ -1,11 +1,6 @@
-# ==== Toolchain Settings ====
-CROSS    := i686-elf
-CC       := $(CROSS)-gcc
-CPP      := $(CROSS)-g++
-AS       := $(CROSS)-as
-LD       := $(CROSS)-ld
-AR       := $(CROSS)-ar
-GRUBFILE := grub-file
+include config.mk
+
+export SYSROOT := $(CURDIR)/sysroot
 
 # ==== Build Settings ====
 LDFLAGS := -T arch/linker.ld -ffreestanding -O2 -nostdlib
@@ -48,3 +43,6 @@ $(BIN): $(SUBDIRS) $(OBJS) arch/linker.ld
 
 $(SUBDIRS):
 	$(MAKE) -C $@
+
+print-sysroot:
+	@echo $(SYSROOT)

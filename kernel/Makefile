@@ -1,15 +1,7 @@
-# ==== Toolchain Settings ====
-CROSS ?= i686-elf
-CPP   := $(CROSS)-g++
-AS    := $(CROSS)-as
-
-# Assume sysroot is in ../sysroot
-SYSROOT := $(CURDIR)/../sysroot
-PREFIX      := /usr
-INCLUDEDIR  := $(PREFIX)/include
+include ../config.mk
 
 # ==== Build Settings ====
-CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include -O2 -g -ffreestanding -Wall -Wextra -mgeneral-regs-only
+CFLAGS := $(BASE_CFLAGS) -mgeneral-regs-only
 CPPFLAGS := -fno-exceptions -fno-rtti -fno-threadsafe-statics -D__is_kernel -Iinclude
 
 # ==== Source and Object Files ====

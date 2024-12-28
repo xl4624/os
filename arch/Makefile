@@ -1,6 +1,4 @@
-# ==== Toolchain Settings ====
-CROSS ?= i686-elf
-AS    := $(CROSS)-as
+include ../config.mk
 
 # ==== Source and Object Files ====
 SRCS    := $(wildcard *.S)

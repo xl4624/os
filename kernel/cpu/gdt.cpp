@@ -15,7 +15,7 @@ extern "C" void gdt_init() {
     gdtp.size = (sizeof(GDTEntry) * 3) - 1;
     gdtp.offset = reinterpret_cast<uint32_t>(&gdt);
 
-    asm volatile(
+    __asm__ volatile(
         "lgdt %0\n"
         "mov $0x10, %%ax\n"
         "mov %%ax, %%ds\n"

@@ -75,4 +75,3 @@ struct [[gnu::packed]] GDTDescriptor {
 };
 
 extern "C" void gdt_init();
-extern GDTDescriptor gdtp;

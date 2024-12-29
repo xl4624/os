@@ -1,19 +1,6 @@
 #!/usr/bin/env python3
 
-import os
-from utils import run_command, logger
-
-SYSROOT = "sysroot/"
-
-ISO = "myos.iso"
-BIN = "myos.bin"
-ISODIR = "isodir"
-GRUBCFGPATH = os.path.join(ISODIR, "boot", "grub", "grub.cfg")
-GRUBCFG = """menuentry "myos" {
-    multiboot /boot/myos.bin
-    boot
-}
-"""
+from utils import run_command, logger, ISO, BIN, ISODIR, GRUBCFGPATH, GRUBCFG
 
 
 def main():

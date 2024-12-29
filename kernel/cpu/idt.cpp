@@ -1,35 +1,28 @@
 #include "idt.hpp"
 
+#include <stdio.h>
 #include <string.h>
 
-#include "isr.hpp"
+__attribute__((aligned(0x10))) static IDTEntry idt[256];
+static IDTDescriptor idtp;
 
-IDTEntry idt[256];
-IDTDescriptor idtp;
-
-extern "C" void idt_init() {
+void idt_init() {
     idtp.size = (sizeof(IDTEntry) * 256) - 1;
     idtp.offset = (uint32_t)&idt;
 
     // Clear the IDT
     memset(&idt, 0, sizeof(idt));
 
-    idt[0] =
-        create_idt_entry(reinterpret_cast<uint32_t>(ISR::divide_by_zero), 0x8E);
-    // TODO: Setup CPU exceptions (0-31)
-
-    idt[33] = create_idt_entry(reinterpret_cast<uint32_t>(ISR::keyboard), 0x8E);
-    // TODO: Set up IRQs (32-47)
-
+    // Load the IDTR
     __asm__ volatile("lidt %0" : : "m"(idtp));
 }
 
-IDTEntry create_idt_entry(uint32_t base, uint8_t flags) {
-    return {
-        .offset_low = static_cast<uint16_t>(base & 0xFFFF),
-        .selector = static_cast<uint16_t>(0x08),
-        .reserved = 0,
-        .attributes = flags,
-        .offset_high = static_cast<uint16_t>((base >> 16) & 0xFFFF),
-    };
+void idt_set_entry(size_t index, size_t base, uint8_t flags) {
+    // TODO: idt_set_entry  should know what flag to put for the index passed
+    // in
+    idt[index].offset_low = static_cast<uint16_t>(base & 0xFFFF);
+    idt[index].selector = static_cast<uint16_t>(0x08);
+    idt[index].reserved = 0;
+    idt[index].attributes = flags;
+    idt[index].offset_high = static_cast<uint16_t>((base >> 16) & 0xFFFF);
 }

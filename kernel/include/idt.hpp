@@ -1,7 +1,7 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
-
 /*
  * ==========================================
  *      Interrupt Descriptor Table (IDT)
@@ -48,8 +48,9 @@ struct [[gnu::packed]] IDTDescriptor {
     uint32_t offset;
 };
 
-extern IDTDescriptor idtp;
+// TODO: Define some enums that might be useful, task gate interrupt gate and
+// trap gate
 
-extern "C" void idt_init();
+void idt_init();
 
-IDTEntry create_idt_entry(uint32_t base, uint8_t flags);
+void idt_set_entry(size_t index, size_t base, uint8_t flags);

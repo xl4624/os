@@ -2,7 +2,7 @@
 
 // TODO: Add TSS entry once implemented
 static GDTEntry gdt[3];
-GDTDescriptor gdtp;
+static GDTDescriptor gdtp;
 
 static GDTEntry create_gdt_entry(uint32_t base, uint32_t limit, uint8_t access,
                                  uint8_t flags);
@@ -15,6 +15,7 @@ extern "C" void gdt_init() {
     gdtp.size = (sizeof(GDTEntry) * 3) - 1;
     gdtp.offset = reinterpret_cast<uint32_t>(&gdt);
 
+    // Load the GDTR
     __asm__ volatile(
         "lgdt %0\n"
         "mov $0x10, %%ax\n"

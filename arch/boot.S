@@ -76,16 +76,7 @@ _start:
     runtime support to work as well.
     */
     call gdt_init // Setup Global Descriptor Table
-    call idt_init // Setup Interrupt Descriptor Table
-    call pic_init // Setup Programmable Interrupt Controller
     call _init    // Initialize C++ global constructors
-
-    /*
-    Now that we've set up the GDT, IDT, PIC, and initialized our C++
-    environment, we can safely enable interrupts. The CPU will now respond
-    to both hardware and software interrupts using our configured handlers.
-    */
-    sti
 
     /*
     Enter the high-level kernel. The ABI requires the stack is 16-byte

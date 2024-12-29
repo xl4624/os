@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "interrupt.hpp"
+#include "keyboard.hpp"
+
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
     #error "ix86-elf cross compiler required"
@@ -14,6 +17,9 @@ int test_divide_by_zero() {
 }
 
 extern "C" void kmain(void) {
+    interrupt_init();
+    keyboard_init();
+
     printf("Hello world!\n");
     const char *test1 = "testing";
     const char *test2 = "testimg";
@@ -21,6 +27,7 @@ extern "C" void kmain(void) {
     printf("memcmp test: %d\n", r);
     printf("testing: %s\n", test2);
     printf("testing: %d\n", 32);
+
     while (1) {
         __asm__ volatile("hlt");
     }

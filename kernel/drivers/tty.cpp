@@ -28,15 +28,29 @@ void Terminal::write(const char *data, size_t size) {
     }
 }
 
+// TODO: Handle other special characters like '\b' or '\t'
 void Terminal::putChar(char c) {
     if (c == '\n') {
         column_ = 0;
         if (++row_ == VGA::HEIGHT) {
             scroll();
         }
+    } else if (c == '\b') {
+        if (column_ > 0) {
+            column_--;
+            putEntryAt(' ', color_, column_, row_);
+        } else if (row_ > 0) {
+            row_--;
+            column_ = VGA::WIDTH - 1;
+            while (column_ > 0 && (buffer_[row_ * VGA::WIDTH + column_ - 1] & 0xFF) == ' ') {
+                column_--;
+            }
+            putEntryAt(' ', color_, column_, row_);
+        }
     } else {
         putEntryAt(c, color_, column_, row_);
         if (++column_ == VGA::WIDTH) {
+            column_ = 0;
             if (++row_ == VGA::HEIGHT) {
                 scroll();
             }

@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+extern "C" struct interrupt_frame;
+
 enum ISR : uint8_t {
     DivideByZero = 0,
     Debug = 1,
@@ -54,9 +56,9 @@ enum IRQ : uint8_t {
     SecondaryATA = 15,
 };
 
-using handler_t = void (*)(struct interrupt_frame *);
+using handler_t = void (*)(interrupt_frame *);
 
-void interrupt_init();
+extern "C" void interrupt_init();
 
 void exception_register_handler(ISR isr, handler_t handler);
 void interrupt_register_handler(IRQ irq, handler_t handler);

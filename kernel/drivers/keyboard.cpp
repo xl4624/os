@@ -5,55 +5,79 @@
 #include <sys/io.h>
 
 #include "interrupt.hpp"
-#include "pic.hpp"
 
-// TODO: Build an actual keyboard driver
-static char scancode_to_ascii(uint8_t scancode) {
-    switch (scancode) {
-        case 0x1E: return 'a';
-        case 0x30: return 'b';
-        case 0x2E: return 'c';
-        case 0x20: return 'd';
-        case 0x12: return 'e';
-        case 0x21: return 'f';
-        case 0x22: return 'g';
-        case 0x23: return 'h';
-        case 0x17: return 'i';
-        case 0x24: return 'j';
-        case 0x25: return 'k';
-        case 0x26: return 'l';
-        case 0x32: return 'm';
-        case 0x31: return 'n';
-        case 0x18: return 'o';
-        case 0x19: return 'p';
-        case 0x10: return 'q';
-        case 0x13: return 'r';
-        case 0x1F: return 's';
-        case 0x14: return 't';
-        case 0x16: return 'u';
-        case 0x2F: return 'v';
-        case 0x11: return 'w';
-        case 0x2D: return 'x';
-        case 0x15: return 'y';
-        case 0x2C: return 'z';
-        case 0x39: return ' ';
-        default: return 0;
-    }
-}
+#define LSHIFT 0x2A
+#define RSHIFT 0x36
 
-__attribute__((interrupt)) void keyboard_handler(
-    struct interrupt_frame *frame) {
+// TODO: https://wiki.osdev.org/PS/2_Keyboard#Command_Queue_and_State_Machine
+
+KeyboardDriver kbd;
+
+// scancode_to_ascii[...][1] is shifted key
+// clang-format off
+static const char scancode_to_ascii[58][2] = {
+    {0, 0},       // (0x00)
+    {0, 0},       // esc (0x01)
+    {'1', '!'}, {'2', '@'}, {'3', '#'},
+    {'4', '$'}, {'5', '%'}, {'6', '^'},
+    {'7', '&'}, {'8', '*'}, {'9', '('},
+    {'0', ')'}, {'-', '_'}, {'=', '+'},
+    {'\b', '\b'}, // backspace (0x0E)
+    {'\t', '\t'}, // tab (0x0F)
+    {'q', 'Q'}, {'w', 'W'}, {'e', 'E'},
+    {'r', 'R'}, {'t', 'T'}, {'y', 'Y'},
+    {'u', 'U'}, {'i', 'I'}, {'o', 'O'},
+    {'p', 'P'}, {'[', '{'}, {']', '}'},
+    {'\n', '\n'}, // enter (0x1C)
+    {0, 0},       // Lctrl (0x1D)
+    {'a', 'A'}, {'s', 'S'}, {'d', 'D'},
+    {'f', 'F'}, {'g', 'G'}, {'h', 'H'},
+    {'j', 'J'}, {'k', 'K'}, {'l', 'L'},
+    {';', ':'}, {'\'', '"'}, {'`', '~'},
+    {0, 0},       // Lshift (0x2A)
+    {'\\', '|'}, {'z', 'Z'}, {'x', 'X'},
+    {'c', 'C'}, {'v', 'V'}, {'b', 'B'},
+    {'n', 'N'}, {'m', 'M'}, {',', '<'},
+    {'.', '>'}, {'/', '?'},
+    {0, 0},       // Rshift (0x36)
+    {'*', '*'},   // Keypad * (0x37)
+    {0, 0},       // Lalt (0x39)
+    {' ', ' '},   // space (0x3A)
+};
+// clang-format on
+
+void keyboard_handler(interrupt_frame *frame) {
     (void)frame;
     uint8_t scancode = inb(0x60);
-    char c;
-    if (scancode < 0x80) {
-        if ((c = scancode_to_ascii(scancode)) != 0) {
-            printf("%c", c);
-        }
-    }
-    pic_sendEOI(IRQ::Keyboard);
+    kbd.handle_scancode(scancode);
 }
 
-void keyboard_init() {
+KeyboardDriver::KeyboardDriver() : buffer_{}, shift_(false) {
     interrupt_register_handler(IRQ::Keyboard, keyboard_handler);
+}
+
+void KeyboardDriver::handle_scancode(uint8_t scancode) {
+    bool is_release = scancode & 0x80;
+    scancode &= ~(0x80);
+    if (is_release) {
+        if (scancode == LSHIFT || scancode == RSHIFT) {
+            shift_ = false;
+        }
+        return;
+    }
+
+    switch (scancode) {
+        case LSHIFT:
+        case RSHIFT: shift_ = true; break;
+
+        default:
+            if (scancode
+                < sizeof(scancode_to_ascii) / sizeof(scancode_to_ascii[0])) {
+                char c = scancode_to_ascii[scancode][shift_ ? 1 : 0];
+                if (c != 0) {
+                    putchar(c);
+                }
+            }
+            break;
+    }
 }

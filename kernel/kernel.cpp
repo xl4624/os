@@ -17,9 +17,6 @@ int test_divide_by_zero() {
 }
 
 extern "C" void kmain(void) {
-    interrupt_init();
-    keyboard_init();
-
     printf("Hello world!\n");
     const char *test1 = "testing";
     const char *test2 = "testimg";

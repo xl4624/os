@@ -1,10 +1,12 @@
 #include "gdt.hpp"
 
+#include <stddef.h>
+
 // TODO: Add TSS entry once implemented
 static GDTEntry gdt[3];
 static GDTDescriptor gdtp;
 
-static GDTEntry create_gdt_entry(uint32_t base, uint32_t limit, uint8_t access,
+static GDTEntry create_gdt_entry(size_t base, uint32_t limit, uint8_t access,
                                  uint8_t flags);
 
 extern "C" void gdt_init() {
@@ -35,7 +37,7 @@ extern "C" void gdt_init() {
     );
 }
 
-static GDTEntry create_gdt_entry(uint32_t base, uint32_t limit, uint8_t access,
+static GDTEntry create_gdt_entry(size_t base, uint32_t limit, uint8_t access,
                                  uint8_t flags) {
     return {
         .limit_low = static_cast<uint16_t>(limit & 0xFFFF),

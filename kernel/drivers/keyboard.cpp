@@ -1,6 +1,5 @@
 #include "keyboard.hpp"
 
-#include <stdint.h>
 #include <stdio.h>
 #include <sys/io.h>
 
@@ -52,7 +51,7 @@ void keyboard_handler(interrupt_frame *frame) {
     kbd.handle_scancode(scancode);
 }
 
-KeyboardDriver::KeyboardDriver() : buffer_{}, shift_(false) {
+KeyboardDriver::KeyboardDriver() : shift_(false) {
     interrupt_register_handler(IRQ::Keyboard, keyboard_handler);
 }
 

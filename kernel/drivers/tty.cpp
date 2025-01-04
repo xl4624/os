@@ -9,7 +9,7 @@ Terminal terminal;
 Terminal::Terminal()
     : row_(0),
       column_(0),
-      color_(VGA::entryColor(VGA::Color::LIGHT_GREY, VGA::Color::BLACK)),
+      color_(VGA::entryColor(VGA::Color::LightGrey, VGA::Color::Black)),
       buffer_(VGA::MEMORY) {
     for (size_t y = 0; y < VGA::HEIGHT; y++) {
         for (size_t x = 0; x < VGA::WIDTH; x++) {

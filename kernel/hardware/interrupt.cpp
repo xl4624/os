@@ -52,35 +52,34 @@ struct HandlerArray {
         Wrapper<Is>::handle...};
 };
 
-using ISRHandlers = HandlerArray<ISRWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                                 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-                                 23, 24, 25, 26, 27, 28, 29, 30, 31>;
+using ISRTable = HandlerArray<ISRWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                              12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                              24, 25, 26, 27, 28, 29, 30, 31>;
 
-using IRQHandlers = HandlerArray<IRQWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                                 11, 12, 13, 14, 15>;
+using IRQTable = HandlerArray<IRQWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                              12, 13, 14, 15>;
 
 extern "C" void interrupt_init() {
-    idt_init();
+    IDT::init();
     pic_init();
 
-    // Set up CPU exceptions
+    // Register default ISR handlers
     for (uint8_t i = 0; i < 32; i++) {
-        idt_set_entry(i, reinterpret_cast<size_t>(ISRHandlers::handlers[i]),
-                      0x8E);
+        IDT::set_entry(i, reinterpret_cast<size_t>(ISRTable::handlers[i]),
+                      IDT::KERN_TRAP);
     }
 
-    // Set up all IRQs
+    // Register default IRQ handlers
     for (uint8_t i = 0; i < 16; i++) {
-        idt_set_entry(i + 32,
-                      reinterpret_cast<size_t>(IRQHandlers::handlers[i]), 0x8E);
+        IDT::set_entry(i + 32, reinterpret_cast<size_t>(IRQTable::handlers[i]),
+                      IDT::KERN_INT);
     }
 
     interrupt_enable();
 }
 
 void exception_register_handler(ISR isr, handler_t handler) {
-    idt_set_entry(static_cast<uint8_t>(isr), reinterpret_cast<size_t>(handler),
-                  0x8E);
+    isr_handlers[static_cast<uint8_t>(isr)] = handler;
 }
 
 void interrupt_register_handler(IRQ irq, handler_t handler) {

@@ -22,32 +22,38 @@
 // clang-format on
 
 void pic_init() {
+    // Disable all IRQs during initialization
     pic_disable();
 
-    uint8_t a1, a2;
-    a1 = inb(PIC1_DATA);
-    a2 = inb(PIC2_DATA);
+    // Save masks
+    uint8_t a1 = inb(PIC1_DATA);  // Master (IRQs 0-7)
+    uint8_t a2 = inb(PIC2_DATA);  // Slave (IRQs 8-15)
 
+    // ICW1: Start initialization sequence in cascade mode
     outb(PIC1_CTRL, ICW1_INIT | ICW1_ICW4);
     io_wait();
     outb(PIC2_CTRL, ICW1_INIT | ICW1_ICW4);
     io_wait();
 
-    outb(PIC1_DATA, IRQ0);
+    // ICW2: Set vector offset for IRQs
+    outb(PIC1_DATA, IRQ0);  // Master IRQs 0-7 mapped to interrupts 32-39
     io_wait();
-    outb(PIC2_DATA, IRQ0 + 8);
+    outb(PIC2_DATA, IRQ0 + 8);  // Slave IRQs 8-15 mapped to interrupts 40-47
     io_wait();
 
+    // ICW3: Tell PICs how they're cascaded
     outb(PIC1_DATA, 4);
     io_wait();
     outb(PIC2_DATA, 2);
     io_wait();
 
+    // ICW4: Set 8086 mode
     outb(PIC1_DATA, ICW4_8086);
     io_wait();
     outb(PIC2_DATA, ICW4_8086);
     io_wait();
 
+    // Restore saved masks
     outb(PIC1_DATA, a1);
     outb(PIC2_DATA, a2);
 }

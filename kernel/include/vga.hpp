@@ -11,22 +11,22 @@ namespace VGA {
 
     /* Hardware text mode color constants. */
     enum class Color : uint8_t {
-        BLACK = 0,
-        BLUE = 1,
-        GREEN = 2,
-        CYAN = 3,
-        RED = 4,
-        MAGENTA = 5,
-        BROWN = 6,
-        LIGHT_GREY = 7,
-        DARK_GREY = 8,
-        LIGHT_BLUE = 9,
-        LIGHT_GREEN = 10,
-        LIGHT_CYAN = 11,
-        LIGHT_RED = 12,
-        LIGHT_MAGENTA = 13,
-        LIGHT_BROWN = 14,
-        WHITE = 15,
+        Black = 0,
+        Blue = 1,
+        Green = 2,
+        Cyan = 3,
+        Red = 4,
+        Magenta = 5,
+        Brown = 6,
+        LightGrey = 7,
+        DarkGrey = 8,
+        LightBlue = 9,
+        LightGreen = 10,
+        LightCyan = 11,
+        LightRed = 12,
+        LightMagenta = 13,
+        LightBrown = 14,
+        White = 15,
     };
 
     inline uint8_t entryColor(Color fg, Color bg) {

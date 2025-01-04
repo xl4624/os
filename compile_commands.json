@@ -18,136 +18,6 @@
       "-Iinclude",
       "-c",
       "-o",
-      "cpu/gdt.o",
-      "cpu/gdt.cpp"
-    ],
-    "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/gdt.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/gdt.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/i686-elf-g++",
-      "--sysroot=/home/xiaomin/dev/os/sysroot",
-      "-isystem",
-      "/home/xiaomin/dev/os/sysroot/usr/include",
-      "-O2",
-      "-g",
-      "-ffreestanding",
-      "-Wall",
-      "-Wextra",
-      "-mgeneral-regs-only",
-      "-fno-exceptions",
-      "-fno-rtti",
-      "-fno-threadsafe-statics",
-      "-D__is_kernel",
-      "-Iinclude",
-      "-c",
-      "-o",
-      "cpu/pic.o",
-      "cpu/pic.cpp"
-    ],
-    "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/pic.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/pic.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/i686-elf-g++",
-      "--sysroot=/home/xiaomin/dev/os/sysroot",
-      "-isystem",
-      "/home/xiaomin/dev/os/sysroot/usr/include",
-      "-O2",
-      "-g",
-      "-ffreestanding",
-      "-Wall",
-      "-Wextra",
-      "-mgeneral-regs-only",
-      "-fno-exceptions",
-      "-fno-rtti",
-      "-fno-threadsafe-statics",
-      "-D__is_kernel",
-      "-Iinclude",
-      "-c",
-      "-o",
-      "cpu/idt.o",
-      "cpu/idt.cpp"
-    ],
-    "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/idt.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/idt.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/i686-elf-g++",
-      "--sysroot=/home/xiaomin/dev/os/sysroot",
-      "-isystem",
-      "/home/xiaomin/dev/os/sysroot/usr/include",
-      "-O2",
-      "-g",
-      "-ffreestanding",
-      "-Wall",
-      "-Wextra",
-      "-mgeneral-regs-only",
-      "-fno-exceptions",
-      "-fno-rtti",
-      "-fno-threadsafe-statics",
-      "-D__is_kernel",
-      "-Iinclude",
-      "-c",
-      "-o",
-      "cpu/interrupt.o",
-      "cpu/interrupt.cpp"
-    ],
-    "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/interrupt.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/interrupt.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/i686-elf-g++",
-      "--sysroot=/home/xiaomin/dev/os/sysroot",
-      "-isystem",
-      "/home/xiaomin/dev/os/sysroot/usr/include",
-      "-O2",
-      "-g",
-      "-ffreestanding",
-      "-Wall",
-      "-Wextra",
-      "-mgeneral-regs-only",
-      "-fno-exceptions",
-      "-fno-rtti",
-      "-fno-threadsafe-statics",
-      "-D__is_kernel",
-      "-Iinclude",
-      "-c",
-      "-o",
-      "cpu/isr.o",
-      "cpu/isr.cpp"
-    ],
-    "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/isr.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/isr.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/i686-elf-g++",
-      "--sysroot=/home/xiaomin/dev/os/sysroot",
-      "-isystem",
-      "/home/xiaomin/dev/os/sysroot/usr/include",
-      "-O2",
-      "-g",
-      "-ffreestanding",
-      "-Wall",
-      "-Wextra",
-      "-mgeneral-regs-only",
-      "-fno-exceptions",
-      "-fno-rtti",
-      "-fno-threadsafe-statics",
-      "-D__is_kernel",
-      "-Iinclude",
-      "-c",
-      "-o",
       "drivers/tty.o",
       "drivers/tty.cpp"
     ],
@@ -209,6 +79,188 @@
   },
   {
     "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "hardware/gdt.o",
+      "hardware/gdt.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/hardware/gdt.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/hardware/gdt.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "hardware/interrupt.o",
+      "hardware/interrupt.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/hardware/interrupt.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/hardware/interrupt.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "hardware/idt.o",
+      "hardware/idt.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/hardware/idt.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/hardware/idt.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "hardware/pic.o",
+      "hardware/pic.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/hardware/pic.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/hardware/pic.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "memory/vmm.o",
+      "memory/vmm.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/memory/vmm.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/memory/vmm.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "memory/heap.o",
+      "memory/heap.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/memory/heap.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/memory/heap.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "memory/paging.o",
+      "memory/paging.cpp"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "file": "/home/xiaomin/dev/os/kernel/memory/paging.cpp",
+    "output": "/home/xiaomin/dev/os/kernel/memory/paging.o"
+  },
+  {
+    "arguments": [
       "/usr/bin/i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
@@ -266,12 +318,12 @@
       "-D__is_libk",
       "-c",
       "-o",
-      "string.libk.o",
-      "string.c"
+      "stdio.libk.o",
+      "stdio.c"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string.c",
-    "output": "/home/xiaomin/dev/os/libc/string.libk.o"
+    "file": "/home/xiaomin/dev/os/libc/stdio.c",
+    "output": "/home/xiaomin/dev/os/libc/stdio.libk.o"
   },
   {
     "arguments": [
@@ -288,12 +340,12 @@
       "-D__is_libk",
       "-c",
       "-o",
-      "stdio.libk.o",
-      "stdio.c"
+      "string.libk.o",
+      "string.c"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio.libk.o"
+    "file": "/home/xiaomin/dev/os/libc/string.c",
+    "output": "/home/xiaomin/dev/os/libc/string.libk.o"
   },
   {
     "arguments": [
@@ -354,12 +406,12 @@
       "-D__is_libc",
       "-c",
       "-o",
-      "string.libc.o",
-      "string.c"
+      "stdio.libc.o",
+      "stdio.c"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string.c",
-    "output": "/home/xiaomin/dev/os/libc/string.libc.o"
+    "file": "/home/xiaomin/dev/os/libc/stdio.c",
+    "output": "/home/xiaomin/dev/os/libc/stdio.libc.o"
   },
   {
     "arguments": [
@@ -376,11 +428,11 @@
       "-D__is_libc",
       "-c",
       "-o",
-      "stdio.libc.o",
-      "stdio.c"
+      "string.libc.o",
+      "string.c"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio.libc.o"
+    "file": "/home/xiaomin/dev/os/libc/string.c",
+    "output": "/home/xiaomin/dev/os/libc/string.libc.o"
   }
 ]

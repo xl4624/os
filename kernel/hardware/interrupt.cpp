@@ -31,7 +31,7 @@ struct ISRWrapper {
         } else {
             printf("%s (#%d)\n", messages[N], N);
             while (1) {
-                asm volatile("cli; hlt");
+                asm("cli; hlt");
             }
         }
     }
@@ -88,9 +88,9 @@ void interrupt_register_handler(IRQ irq, handler_t handler) {
 }
 
 void interrupt_enable() {
-    __asm__ volatile("sti");
+    asm("sti");
 }
 
 void interrupt_disable() {
-    __asm__ volatile("cli");
+    asm("cli");
 }

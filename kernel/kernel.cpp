@@ -30,6 +30,6 @@ extern "C" void kmain(void) {
     printf("testing: %d\n", 32);
 
     while (1) {
-        __asm__ volatile("hlt");
+        asm("hlt");
     }
 }

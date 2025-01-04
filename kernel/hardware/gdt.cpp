@@ -18,8 +18,7 @@ extern "C" void gdt_init() {
     gdtp.offset = reinterpret_cast<uint32_t>(&gdt);
 
     // Load the GDTR
-    __asm__ volatile(
-        "lgdt %0\n"
+    asm("lgdt %0\n"
         "mov $0x10, %%ax\n"
         "mov %%ax, %%ds\n"
         "mov %%ax, %%es\n"

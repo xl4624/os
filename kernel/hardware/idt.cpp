@@ -14,7 +14,7 @@ namespace IDT {
         memset(&idt, 0, sizeof(idt));
 
         // Load the IDTR
-        __asm__ volatile("lidt %0" : : "m"(idtp));
+        asm("lidt %0" : : "m"(idtp));
     }
 
     void set_entry(size_t index, size_t base, uint8_t flags) {

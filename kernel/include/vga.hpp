@@ -29,7 +29,7 @@ namespace VGA {
         White = 15,
     };
 
-    inline uint8_t entryColor(Color fg, Color bg) {
+    inline uint8_t entry_color(Color fg, Color bg) {
         return static_cast<uint8_t>(fg) | (static_cast<uint8_t>(bg) << 4);
     }
 

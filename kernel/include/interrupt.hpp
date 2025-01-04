@@ -2,7 +2,7 @@
 
 extern "C" struct interrupt_frame;
 
-enum ISR : uint8_t {
+enum class ISR : uint8_t {
     DivideByZero = 0,
     Debug = 1,
     NonMaskableInterrupt = 2,
@@ -37,7 +37,7 @@ enum ISR : uint8_t {
     Reserved31 = 31
 };
 
-enum IRQ : uint8_t {
+enum class IRQ : uint8_t {
     Timer = 0,
     Keyboard = 1,
     Cascade = 2,

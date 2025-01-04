@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "interrupt.hpp"
-#include "keyboard.hpp"
-
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
     #error "ix86-elf cross compiler required"
@@ -18,11 +15,18 @@ int test_divide_by_zero() {
 
 extern "C" void kmain(void) {
     printf("Hello world!\n");
-    const char *test1 = "testing";
-    const char *test2 = "testimg";
-    int r = memcmp((void *)test1, (void *)test2, 7);
-    printf("memcmp test: %d\n", r);
-    printf("testing: %s\n", test2);
+    char test1[] = "testing";
+    char test2[] = "testimg";
+    int r1 = memcmp((void *)test1, (void *)test2, 7);
+    void *r2 = memmove((void *)test1, (void *)test2, 8);
+
+    printf("memcmp test: %d\n", r1);  // should return 1
+
+    // should return test2's contents in test1's memory address
+    printf("memmove test: %s\n", r2);
+    printf("memmove test: %d\n", r2 == test1);
+
+    printf("testing: %s\n", "testing");
     printf("testing: %d\n", 32);
 
     while (1) {

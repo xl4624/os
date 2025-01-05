@@ -2,10 +2,9 @@
 #define _SYS_IO_H
 
 #include <stdint.h>
+#include <sys/cdefs.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+__BEGIN_DECLS
 
 static inline void outb(uint16_t port, uint8_t val) {
     asm("outb %b0, %w1" : : "a"(val), "Nd"(port) : "memory");
@@ -21,8 +20,6 @@ static inline void io_wait(void) {
     outb(0x80, 0);
 }
 
-#ifdef __cplusplus
-}
-#endif
+__END_DECLS
 
 #endif

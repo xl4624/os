@@ -1,20 +1,16 @@
 #ifndef _STDIO_H
-#define _STDIO_H 1
+#define _STDIO_H
 
 #include <sys/cdefs.h>
 
 #define EOF (-1)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+__BEGIN_DECLS
 
 int printf(const char *__restrict format, ...);
 int putchar(int c);
 int puts(const char *s);
 
-#ifdef __cplusplus
-}
-#endif
+__END_DECLS
 
 #endif

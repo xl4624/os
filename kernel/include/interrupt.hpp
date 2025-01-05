@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" struct interrupt_frame;
+struct interrupt_frame;
 
 enum class ISR : uint8_t {
     DivideByZero = 0,
@@ -58,7 +58,7 @@ enum class IRQ : uint8_t {
 
 using handler_t = void (*)(interrupt_frame *);
 
-extern "C" void interrupt_init();
+void interrupt_init();
 
 void exception_register_handler(ISR isr, handler_t handler);
 void interrupt_register_handler(IRQ irq, handler_t handler);

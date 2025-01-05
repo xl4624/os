@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "gdt.hpp"
+#include "interrupt.hpp"
+
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
     #error "ix86-elf cross compiler required"
@@ -13,7 +16,12 @@ int test_divide_by_zero() {
     return c;
 }
 
-extern "C" void kmain(void) {
+extern "C" void kernel_init() {
+    GDT::init();
+    interrupt_init();
+}
+
+extern "C" void kernel_main() {
     printf("Hello world!\n");
     char test1[] = "testing";
     char test2[] = "testimg";

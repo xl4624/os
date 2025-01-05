@@ -28,8 +28,8 @@ class Terminal {
 
         void newline();
         bool backspace();
-        bool move_up();
-        bool move_down();
+        void move_up();
+        void move_down();
         void move_left();
         // TODO: should not move further if it hits a '0'
         void move_right();

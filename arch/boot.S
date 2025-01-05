@@ -75,9 +75,8 @@ _start:
     C++ features such as global constructors and exceptions will require
     runtime support to work as well.
     */
-    call gdt_init       // Setup Global Descriptor Table
-    call interrupt_init // Setup Interrupt Descriptor Table (and CPU exceptions)
-    call _init          // Initialize C++ global constructors
+    call kernel_init // Do early CPU setup (GDT, IDT, Paging)
+    call _init       // Initialize C++ global constructors
 
     /*
     Enter the high-level kernel. The ABI requires the stack is 16-byte
@@ -87,7 +86,7 @@ _start:
     stack since (pushed 0 bytes so far), so the alignment has thus been
     preserved and the call is well defined.
     */
-    call kmain
+    call kernel_main
 
     /*
     If the system has nothing more to do, put the computer into an

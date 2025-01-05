@@ -1,17 +1,13 @@
 #ifndef _STDLIB_H
-#define _STDLIB_H 1
+#define _STDLIB_H
 
 #include <sys/cdefs.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+__BEGIN_DECLS
 
 __attribute__((__noreturn__)) void abort(void);
 void itoa(int n, char *s);
 
-#ifdef __cplusplus
-}
-#endif
+__END_DECLS
 
 #endif

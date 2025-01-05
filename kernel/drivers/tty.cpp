@@ -75,18 +75,8 @@ void Terminal::handle_key(KeyEvent event) {
 
     clear_cursor();
     switch (event.key) {
-        case Key::Up:
-            if (pos_.move_up()) {
-                size_t last_char = find_last_char_in_row(pos_.row);
-                pos_.col = MIN(pos_.col, last_char);
-            }
-            break;
-        case Key::Down:
-            if (pos_.move_down()) {
-                size_t last_char = find_last_char_in_row(pos_.row);
-                pos_.col = MIN(pos_.col, last_char);
-            }
-            break;
+        case Key::Up: pos_.move_up(); break;
+        case Key::Down: pos_.move_down(); break;
         case Key::Left: pos_.move_left(); break;
         case Key::Right: pos_.move_right(); break;
         default: break;
@@ -194,20 +184,20 @@ bool Terminal::Position::backspace() {
     return false;
 }
 
-bool Terminal::Position::move_up() {
+void Terminal::Position::move_up() {
     if (row > 0) {
         row--;
-        return true;
     }
-    return false;
+    size_t last_char = terminal.find_last_char_in_row(row);
+    col = MIN(col, last_char);
 }
 
-bool Terminal::Position::move_down() {
+void Terminal::Position::move_down() {
     if (row < VGA::HEIGHT - 1) {
         row++;
-        return true;
     }
-    return false;
+    size_t last_char = terminal.find_last_char_in_row(row);
+    col = MIN(col, last_char);
 }
 
 void Terminal::Position::move_left() {
@@ -217,12 +207,13 @@ void Terminal::Position::move_left() {
         row--;
         col = VGA::WIDTH - 1;
     }
+    size_t last_char = terminal.find_last_char_in_row(row);
+    col = MIN(col, last_char);
 }
 
-// TODO: should not move further if it hits a '0'
-// probably needs 'find_last_char_in_row'
 void Terminal::Position::move_right() {
-    if (col < VGA::WIDTH - 1) {
+    size_t last_char = terminal.find_last_char_in_row(row);
+    if (col < last_char) {
         col++;
     } else if (row < VGA::HEIGHT - 1) {
         row++;

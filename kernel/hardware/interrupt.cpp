@@ -59,20 +59,20 @@ using ISRTable = HandlerArray<ISRWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
 using IRQTable = HandlerArray<IRQWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
                               12, 13, 14, 15>;
 
-extern "C" void interrupt_init() {
+void interrupt_init() {
     IDT::init();
     pic_init();
 
     // Register default ISR handlers
     for (uint8_t i = 0; i < 32; i++) {
         IDT::set_entry(i, reinterpret_cast<size_t>(ISRTable::handlers[i]),
-                      IDT::KERN_TRAP);
+                       IDT::KERN_TRAP);
     }
 
     // Register default IRQ handlers
     for (uint8_t i = 0; i < 16; i++) {
         IDT::set_entry(i + 32, reinterpret_cast<size_t>(IRQTable::handlers[i]),
-                      IDT::KERN_INT);
+                       IDT::KERN_INT);
     }
 
     interrupt_enable();

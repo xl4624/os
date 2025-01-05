@@ -1,5 +1,5 @@
 #ifndef _SYS_CDEFS_H
-#define _SYS_CDEFS_H 1
+#define _SYS_CDEFS_H
 
 #if defined(__cplusplus)
     #define __BEGIN_DECLS extern "C" {

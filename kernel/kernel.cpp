@@ -34,9 +34,6 @@ extern "C" void kernel_main() {
     printf("memmove test: %s\n", r2);
     printf("memmove test: %d\n", r2 == test1);
 
-    printf("testing: %s\n", "testing");
-    printf("testing: %d\n", 32);
-
     while (1) {
         asm("hlt");
     }

@@ -37,10 +37,11 @@ char *strrchr(const char *s, int c);
 // size_t strspn(const char *, const char *);
 // char *strstr(const char *, const char *);
 // char *strtok(char *__restrict__, const char *__restrict__);
-// char *strtok_r(char *__restrict__, const char *__restrict__, char **__restrict__);
-// size_t strxfrm(char *__restrict__, const char *__restrict__, size_t);
-// size_t strxfrm_l(char *__restrict__, const char *__restrict__, size_t, locale_t);
+// char *strtok_r(char *__restrict__, const char *__restrict__, char
+// **__restrict__); size_t strxfrm(char *__restrict__, const char *__restrict__,
+// size_t); size_t strxfrm_l(char *__restrict__, const char *__restrict__,
+// size_t, locale_t);
 
 __END_DECLS
 
-#endif
+#endif /* _STRING_H */

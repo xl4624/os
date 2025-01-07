@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "gdt.hpp"
 #include "interrupt.hpp"
+#include "paging.hpp"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
@@ -19,6 +21,7 @@ int test_divide_by_zero() {
 extern "C" void kernel_init() {
     GDT::init();
     interrupt_init();
+    // paging_init();
 }
 
 extern "C" void kernel_main() {
@@ -34,6 +37,7 @@ extern "C" void kernel_main() {
     printf("memmove test: %s\n", r2);
     printf("memmove test: %d\n", r2 == test1);
 
+    assert(0);
     while (1) {
         asm("hlt");
     }

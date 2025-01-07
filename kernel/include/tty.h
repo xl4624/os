@@ -12,4 +12,4 @@ void terminal_putchar(char c);
 
 __END_DECLS
 
-#endif
+#endif /* TTY_H */

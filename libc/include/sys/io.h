@@ -22,4 +22,4 @@ static inline void io_wait(void) {
 
 __END_DECLS
 
-#endif
+#endif /* _SYS_IO_H */

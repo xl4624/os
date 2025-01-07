@@ -58,8 +58,6 @@ static const char flag_chars[] = "#0- +";
 #define FLAG_ALT2        (1 << 8)
 // clang-format on
 
-#define NUMBUF_SIZE 24
-
 static char *fill_numbuf(char *numbuf_end, unsigned long val, int base) {
     static const char upper_digits[] = "0123456789ABCDEF";
     static const char lower_digits[] = "0123456789abcdef";
@@ -77,6 +75,8 @@ static char *fill_numbuf(char *numbuf_end, unsigned long val, int base) {
     } while (val != 0);
     return numbuf_end;
 }
+
+#define NUMBUF_SIZE 24
 
 int vprintf(const char *__restrict__ format, va_list ap) {
     char numbuf[NUMBUF_SIZE];
@@ -109,6 +109,7 @@ int vprintf(const char *__restrict__ format, va_list ap) {
             ++format;
         }
 
+        // process precision
         int precision = -1;
         if (*format == '.') {
             ++format;

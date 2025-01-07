@@ -21,4 +21,4 @@ __BEGIN_DECLS
 
 __END_DECLS
 
-#endif
+#endif /* _SYS_PARAM_H */

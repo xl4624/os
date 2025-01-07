@@ -5,8 +5,8 @@
 
 __BEGIN_DECLS
 
-__attribute__((__noreturn__)) void abort(void);
-void itoa(int n, char *s);
+__attribute__((noreturn)) void abort(void);
+void itoa(int value, char *str, int base);
 
 __END_DECLS
 

@@ -7,7 +7,8 @@
 
 __BEGIN_DECLS
 
-int printf(const char *__restrict format, ...);
+int vprint(const char *__restrict__ format, ...);
+int printf(const char *__restrict__ format, ...);
 int putchar(int c);
 int puts(const char *s);
 

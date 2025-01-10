@@ -20,28 +20,40 @@ OBJS        = $(CRTI) $(CRTBEGIN) arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTE
 
 # ==== Targets ====
 BIN := myos.bin
+ISODIR = isodir
+ISO = myos.iso
 
-.PHONY: all clean build check arch kernel libc
+.PHONY: all run debug clean check install arch kernel libc
 
 all: $(BIN)
+
+run: $(ISO)
+	qemu-system-i386 -cdrom $(ISO)
+
+debug: $(ISO)
+	qemu-system-i386 -s -S -cdrom $(ISO) -monitor stdio
 
 clean:
 	@for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean; \
 	done
-	rm -f $(BIN)
+	rm -f $(BIN) $(ISO)
+	rm -rf $(ISODIR) $(SYSROOT)
 
-check: $(BIN)
-	@if $(GRUBFILE) --is-x86-multiboot $(BIN); then \
-		echo "multiboot confirmed"; \
-	else \
-		echo "NOT MULTIBOOT"; \
-	fi
+install:
+	python install.py
 
 $(BIN): $(SUBDIRS) $(OBJS) arch/linker.ld
 	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)
+	@grub-file --is-x86-multiboot $@ || { echo "NOT MULTIBOOT"; exit 1; }
 
-$(SUBDIRS):
+$(ISO): $(BIN)
+	mkdir -p $(ISODIR)/boot/grub
+	cp $< $(ISODIR)/boot/
+	cp grub.cfg $(ISODIR)/boot/grub/
+	grub-mkrescue -o $@ $(ISODIR)
+
+$(SUBDIRS): install
 	$(MAKE) -C $@
 
 print-sysroot:

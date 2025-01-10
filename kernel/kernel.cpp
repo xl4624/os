@@ -1,15 +1,17 @@
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 #include "gdt.hpp"
 #include "interrupt.hpp"
-#include "paging.hpp"
+#include "x86.hpp"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
     #error "ix86-elf cross compiler required"
 #endif
+
+multiboot_info_t *multiboot_data;
 
 int test_divide_by_zero() {
     volatile int a = 10;
@@ -21,24 +23,28 @@ int test_divide_by_zero() {
 extern "C" void kernel_init() {
     GDT::init();
     interrupt_init();
-    // paging_init();
 }
 
-extern "C" void kernel_main() {
+extern "C" __attribute__((noreturn)) void kernel_main(uint32_t magic,
+                                                      multiboot_info_t *mbd) {
+    assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
+    multiboot_data = mbd;
+
     printf("Hello world!\n");
     char test1[] = "testing";
-    char test2[] = "testimg";
-    int r1 = memcmp((void *)test1, (void *)test2, 7);
-    void *r2 = memmove((void *)test1, (void *)test2, 8);
+    char test2[] = "samples";
+    assert(memcmp((void *)test1, (void *)test2, 8) == 1);
 
-    printf("memcmp test: %d\n", r1);  // should return 1
-
+    void *r = memmove((void *)test1, (void *)test2, 8);
     // should return test2's contents in test1's memory address
-    printf("memmove test: %s\n", r2);
-    printf("memmove test: %d\n", r2 == test1);
+    assert(memcmp(r, test2, 8) == 0);
+    assert(r == test1);
 
-    assert(0);
+    printf("kernel_start: %p\n", &kernel_start);
+    printf("kernel_end: %p\n", &kernel_end);
+
     while (1) {
-        asm("hlt");
+        asm volatile("hlt");
     }
+    __builtin_unreachable();
 }

@@ -66,6 +66,14 @@ _start:
     mov $stack_top, %esp
 
     /*
+    Preserve bootloader-provided values and pass during kernel_main call:
+    - %eax: contains magic number (0x1BAD002)
+    - %ebx: contains multiboot info pointer
+    */
+    mov %eax, %edi
+    mov %ebx, %esi
+
+    /*
     This is a good place to initialize crucial processor state before the
     high-level kernel is entered. It's best to minimize the early
     environment where crucial features are offline. Note that the
@@ -75,8 +83,8 @@ _start:
     C++ features such as global constructors and exceptions will require
     runtime support to work as well.
     */
-    call kernel_init // Do early CPU setup (GDT, IDT, Paging)
     call _init       // Initialize C++ global constructors
+    call kernel_init // Do early CPU setup (GDT, IDT, Paging)
 
     /*
     Enter the high-level kernel. The ABI requires the stack is 16-byte
@@ -86,6 +94,8 @@ _start:
     stack since (pushed 0 bytes so far), so the alignment has thus been
     preserved and the call is well defined.
     */
+    push %esi /* Multiboot info struct pointer */
+    push %edi /* Magic number */
     call kernel_main
 
     /*

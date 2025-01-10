@@ -2,8 +2,10 @@
 
 #include <stdint.h>
 
-void pic_init();
-void pic_sendEOI(uint8_t irq);
-void pic_mask(uint8_t irq);
-void pic_unmask(uint8_t irq);
-void pic_disable();
+namespace PIC {
+    void init();
+    void sendEOI(uint8_t irq);
+    void mask(uint8_t irq);
+    void unmask(uint8_t irq);
+    void disable();
+}  // namespace PIC

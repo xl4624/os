@@ -8,23 +8,38 @@
     * `grub`
     * `qemu`
 3. To setup the project you can:
-    * Build OS:
+    * Build kernel binary and bootable ISO:
     ```bash
-    ./build.py
+    make # all
     ```
 
-    * Run OS:
+    * Run OS (with QEMU):
     ```bash
-    ./run.py # Will build OS as well
+    make run # builds OS as well
     ```
 
     * Clean/delete object files, images, and binaries:
     ```bash
-    ./clean.py
+    make clean
+    ```
+
+    * Install libc/kernel headers (by default in `sysroot/`), gets run during builds
+    ```bash
+    make install
     ```
 
 # Notes
 
-For debugging purposes, `./run.py` automatically attaches the QEMU monitor to stdio.
+For debugging purposes, `make run` automatically attaches the QEMU monitor to stdio.
 This allows you to control the emulator (pause/resume VM, inspect registers, etc.).
-Check out the docs at: https://qemu-project.gitlab.io/qemu/system/monitor.html
+Check out the docs at: https://qemu-project.gitlab.io/qemu/system/monitor.html.
+
+To debug, you can run `make debug` to attach a debugger and a QEMU monitor to stdio,
+which allows you to control the emulator (pause/resume VM, inspect registers, etc.).
+You run `gdb` and type:
+
+```gdb
+(gdb) file myos.bin
+(gdb) target remote localhost:1234
+(gdb) continue
+```

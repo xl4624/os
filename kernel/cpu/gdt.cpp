@@ -11,15 +11,16 @@ namespace GDT {
                                   uint8_t flags);
 
     void init() {
-        gdt[0] = create_gdt_entry(0, 0, 0, 0);             // Null descriptor
-        gdt[1] = create_gdt_entry(0, 0xFFFFF, 0x9A, 0xC);  // Code segment
-        gdt[2] = create_gdt_entry(0, 0xFFFFF, 0x92, 0xC);  // Data segment
+        gdt[0] = create_gdt_entry(0, 0, 0, 0);              // Null descriptor
+        gdt[1] = create_gdt_entry(0, 0xFFFFF, 0x9A, 0xCF);  // Code segment
+        gdt[2] = create_gdt_entry(0, 0xFFFFF, 0x92, 0xCF);  // Data segment
 
         gdtp.size = (sizeof(Entry) * 3) - 1;
-        gdtp.offset = reinterpret_cast<uint32_t>(&gdt);
+        gdtp.offset = reinterpret_cast<uintptr_t>(&gdt);
 
         // Load the GDTR
-        asm("lgdt %0\n"
+        asm volatile(
+            "lgdt %0\n"
             "mov $0x10, %%ax\n"
             "mov %%ax, %%ds\n"
             "mov %%ax, %%es\n"

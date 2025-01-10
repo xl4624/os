@@ -1,6 +1,8 @@
 #include <stdint.h>
+#include <sys/cdefs.h>
 
 struct interrupt_frame;
+using handler_t = void (*)(interrupt_frame *);
 
 enum class ISR : uint8_t {
     DivideByZero = 0,
@@ -56,12 +58,15 @@ enum class IRQ : uint8_t {
     SecondaryATA = 15,
 };
 
-using handler_t = void (*)(interrupt_frame *);
-
 void interrupt_init();
 
 void exception_register_handler(ISR isr, handler_t handler);
 void interrupt_register_handler(IRQ irq, handler_t handler);
 
+__BEGIN_DECLS
+
 void interrupt_enable();
 void interrupt_disable();
+__attribute__((noreturn)) void halt_and_catch_fire();
+
+__END_DECLS

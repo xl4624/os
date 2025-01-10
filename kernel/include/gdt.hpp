@@ -61,19 +61,19 @@
  *   - Reserved (bit 52): Must be 0
  */
 namespace GDT {
-    struct [[gnu::packed]] Entry {
+    struct Entry {
         uint16_t limit_low;
         uint16_t base_low;
         uint8_t base_mid;
         uint8_t access;
         uint8_t granularity;
         uint8_t base_high;
-    };
+    } __attribute__((packed));
 
-    struct [[gnu::packed]] Descriptor {
+    struct Descriptor {
         uint16_t size;    // Size of GDT in bytes - 1: (8 * entry) - 1
-        uint32_t offset;  // GDT linear address
-    };
+        uintptr_t offset;  // GDT linear address
+    } __attribute__((packed));
 
     void init();
 }  // namespace GDT

@@ -25,15 +25,15 @@ struct ISRWrapper {
         // clang-format on
     };
 
-    static __attribute__((interrupt)) void handle(interrupt_frame *frame) {
+    static __attribute__((interrupt, noreturn)) void handle(
+        interrupt_frame *frame) {
         if (isr_handlers[N]) {
             isr_handlers[N](frame);
         } else {
             printf("%s (#%d)\n", messages[N], N);
-            while (1) {
-                asm("cli; hlt");
-            }
+            halt_and_catch_fire();
         }
+        __builtin_unreachable();
     }
 };
 
@@ -42,7 +42,7 @@ struct IRQWrapper {
     static __attribute__((interrupt)) void handle(interrupt_frame *frame) {
         if (irq_handlers[N])
             irq_handlers[N](frame);
-        pic_sendEOI(N);
+        PIC::sendEOI(N);
     }
 };
 
@@ -61,18 +61,16 @@ using IRQTable = HandlerArray<IRQWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
 
 void interrupt_init() {
     IDT::init();
-    pic_init();
+    PIC::init();
 
-    // Register default ISR handlers
+    // Register default ISR/IRQ handlers
     for (uint8_t i = 0; i < 32; i++) {
         IDT::set_entry(i, reinterpret_cast<size_t>(ISRTable::handlers[i]),
-                       IDT::KERN_TRAP);
+                       IDT::Gate::Trap, IDT::Ring::Kernel);
     }
-
-    // Register default IRQ handlers
     for (uint8_t i = 0; i < 16; i++) {
         IDT::set_entry(i + 32, reinterpret_cast<size_t>(IRQTable::handlers[i]),
-                       IDT::KERN_INT);
+                       IDT::Gate::Interrupt, IDT::Ring::Kernel);
     }
 
     interrupt_enable();
@@ -84,13 +82,23 @@ void exception_register_handler(ISR isr, handler_t handler) {
 
 void interrupt_register_handler(IRQ irq, handler_t handler) {
     irq_handlers[static_cast<uint8_t>(irq)] = handler;
-    pic_unmask(static_cast<uint8_t>(irq));
+    PIC::unmask(static_cast<uint8_t>(irq));
 }
 
+__BEGIN_DECLS
+
 void interrupt_enable() {
-    asm("sti");
+    asm volatile("sti");
 }
 
 void interrupt_disable() {
-    asm("cli");
+    asm volatile("cli");
 }
+
+__attribute__((noreturn)) void halt_and_catch_fire() {
+    interrupt_disable();
+    asm volatile("hlt");
+    __builtin_unreachable();
+}
+
+__END_DECLS

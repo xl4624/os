@@ -3,13 +3,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-[[noreturn]] void panic(const char *format, ...) {
+#include "interrupt.hpp"
+
+__attribute__((noreturn)) void panic(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    printf("PANIC: ");
+    printf("panic: ");
     vprintf(format, args);
     va_end(args);
 
-    asm("cli; hlt");
-    __builtin_unreachable();
+    halt_and_catch_fire();
 }

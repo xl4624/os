@@ -1,6 +1,5 @@
 #include "keyboard.hpp"
 
-#include <stdio.h>
 #include <sys/io.h>
 
 #include "interrupt.hpp"

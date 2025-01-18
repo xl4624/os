@@ -28,7 +28,7 @@ ISO = myos.iso
 all: $(BIN)
 
 run: $(ISO)
-	qemu-system-i386 -cdrom $(ISO)
+	qemu-system-i386 -cdrom $(ISO) -monitor stdio
 
 debug: $(ISO)
 	qemu-system-i386 -s -S -cdrom $(ISO) -monitor stdio

@@ -4,14 +4,14 @@
 
 #include "gdt.hpp"
 #include "interrupt.hpp"
+#include "multiboot.h"
+#include "paging.hpp"
 #include "x86.hpp"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__) || !defined(__i386__)
     #error "ix86-elf cross compiler required"
 #endif
-
-multiboot_info_t *multiboot_data;
 
 int test_divide_by_zero() {
     volatile int a = 10;
@@ -21,15 +21,13 @@ int test_divide_by_zero() {
 }
 
 extern "C" void kernel_init() {
+    assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
     GDT::init();
     interrupt_init();
+    paging_init();
 }
 
-extern "C" __attribute__((noreturn)) void kernel_main(uint32_t magic,
-                                                      multiboot_info_t *mbd) {
-    assert(magic == MULTIBOOT_BOOTLOADER_MAGIC);
-    multiboot_data = mbd;
-
+extern "C" __attribute__((noreturn)) void kernel_main() {
     printf("Hello world!\n");
     char test1[] = "testing";
     char test2[] = "samples";

@@ -5,10 +5,10 @@
 
 #include "multiboot.h"
 
-/* Passed in to kernel_main() */
-extern multiboot_info_t *multiboot_data;
-
 __BEGIN_DECLS
+
+extern uint32_t mboot_magic;
+extern multiboot_info_t *mboot_info;
 
 /* Defined in arch/linker.ld */
 extern uint32_t kernel_start;

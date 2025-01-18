@@ -18,6 +18,15 @@ forced to be within the first 8 KiB of the kernel file.
 .long FLAGS
 .long CHECKSUM
 
+.section .data
+.align 4
+.global mboot_magic
+.global mboot_info
+mboot_magic:
+    .long 0
+mboot_info:
+    .long 0
+
 /*
 The multiboot standard does not define the value of the stack pointer register
 (esp) and it is up to the kernel to provide a stack. This allocates room for a
@@ -70,8 +79,8 @@ _start:
     - %eax: contains magic number (0x1BAD002)
     - %ebx: contains multiboot info pointer
     */
-    mov %eax, %edi
-    mov %ebx, %esi
+    mov %eax, mboot_magic
+    mov %ebx, mboot_info
 
     /*
     This is a good place to initialize crucial processor state before the
@@ -86,6 +95,7 @@ _start:
     call _init       // Initialize C++ global constructors
     call kernel_init // Do early CPU setup (GDT, IDT, Paging)
 
+
     /*
     Enter the high-level kernel. The ABI requires the stack is 16-byte
     aligned at the time of the call instruction (which afterwards pushes
@@ -94,8 +104,6 @@ _start:
     stack since (pushed 0 bytes so far), so the alignment has thus been
     preserved and the call is well defined.
     */
-    push %esi /* Multiboot info struct pointer */
-    push %edi /* Magic number */
     call kernel_main
 
     /*

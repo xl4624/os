@@ -1,16 +1,18 @@
-/* Declare constants for the multiboot header. */
-.set ALIGN,    1<<0             /* align loaded modules on page boundaries */
-.set MEMINFO,  1<<1             /* provide memory map */
-.set FLAGS,    ALIGN | MEMINFO  /* this is the Multiboot 'flag' field */
-.set MAGIC,    0x1BADB002       /* 'magic number' lets bootloader find the header */
-.set CHECKSUM, -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
+/* Higher-half kernel boot code for i686.
+   GRUB loads the kernel at physical 2 MiB. This code sets up initial page
+   tables that identity-map and higher-half-map the first 8 MiB, enables
+   paging, then jumps to the kernel's virtual address in the higher half. */
+
+.set KERNEL_VMA,  0xC0000000
+.set ALIGN,       1<<0             /* align loaded modules on page boundaries */
+.set MEMINFO,     1<<1             /* provide memory map */
+.set FLAGS,       ALIGN | MEMINFO  /* this is the Multiboot 'flag' field */
+.set MAGIC,       0x1BADB002       /* 'magic number' lets bootloader find the header */
+.set CHECKSUM,    -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
 
 /*
-Declare a multiboot header that marks the program as a kernel. These are magic
-values that are documented in the multiboot standard. The bootloader will
-search for this signature in the first 8 KiB of the kernel file, aligned at a
-32-bit boundary. The signature is in its own section so the header can be
-forced to be within the first 8 KiB of the kernel file.
+Multiboot header — must be within the first 8 KiB of the kernel binary.
+Placed in .multiboot section so the linker script can force it first.
 */
 .section .multiboot
 .align 4
@@ -18,6 +20,10 @@ forced to be within the first 8 KiB of the kernel file.
 .long FLAGS
 .long CHECKSUM
 
+/* ================================================================
+   Data stored in .data (linked at virtual addresses).
+   Boot code accesses these via (symbol - KERNEL_VMA).
+   ================================================================ */
 .section .data
 .align 4
 .global mboot_magic
@@ -27,103 +33,143 @@ mboot_magic:
 mboot_info:
     .long 0
 
-/*
-The multiboot standard does not define the value of the stack pointer register
-(esp) and it is up to the kernel to provide a stack. This allocates room for a
-small stack by creating a symbol at the bottom of it, then allocating 16384
-bytes for it, and finally creating a symbol at the top. The stack grows
-downwards on x86. The stack is in its own section so it can be marked nobits,
-which means the kernel file is smaller because it does not contain an
-uninitialized stack. The stack on x86 must be 16-byte aligned according to the
-System V ABI standard and de-facto extensions. The compiler will assume the
-stack is properly aligned and failure to align the stack will result in
-undefined behavior.
-*/
+/* ================================================================
+   Stack — 16 KiB in .bss (virtual addresses).
+   ================================================================ */
 .section .bss
 .align 16
 stack_bottom:
-.skip 16384 # 16 KiB
+.skip 16384
 stack_top:
 
-/*
-The linker script specifies _start as the entry point to the kernel and the
-bootloader will jump to this position once the kernel has been loaded. It
-doesn't make sense to return from this function as the bootloader is gone.
-*/
-.section .text
+/* ================================================================
+   Boot page tables — 3 pages in .bss (virtual addresses).
+   Boot code accesses via (symbol - KERNEL_VMA) to get physical addr.
+   ================================================================ */
+.align 4096
+.global boot_page_directory
+boot_page_directory:
+    .skip 4096
+boot_page_table0:
+    .skip 4096
+boot_page_table1:
+    .skip 4096
+
+/* ================================================================
+   Boot code — linked and loaded at physical addresses (in .boot).
+   Runs with paging DISABLED.
+   ================================================================ */
+.section .boot, "ax"
 .global _start
 .type _start, @function
 _start:
     /*
-    The bootloader has loaded us into 32-bit protected mode on a x86
-    machine. Interrupts are disabled. Paging is disabled. The processor
-    state is as defined in the multiboot standard. The kernel has full
-    control of the CPU. The kernel can only make use of hardware features
-    and any code it provides as part of itself. There's no printf
-    function, unless the kernel provides its own <stdio.h> header and a
-    printf implementation. There are no security restrictions, no
-    safeguards, no debugging mechanisms, only what the kernel provides
-    itself. It has absolute and complete power over the
-    machine.
+    Save multiboot info in callee-saved registers.
+    %eax = magic number, %ebx = multiboot info pointer.
+    We cannot store to globals yet because they are at virtual addresses
+    and paging is not enabled.
     */
+    mov %eax, %edi
+    mov %ebx, %esi
 
-    /*
-    To set up a stack, we set the esp register to point to the top of the
-    stack (as it grows downwards on x86 systems). This is necessarily done
-    in assembly as languages such as C cannot function without a stack.
-    */
+    /* ---- Zero boot page tables (3 pages = 3072 dwords) ---- */
+    mov $(boot_page_directory - KERNEL_VMA), %eax
+    xor %ecx, %ecx
+.Lzero:
+    movl $0, (%eax, %ecx, 4)
+    inc %ecx
+    cmp $(3 * 1024), %ecx
+    jl .Lzero
+
+    /* ---- Fill boot_page_table0: map physical 0x00000000–0x003FFFFF ---- */
+    mov $(boot_page_table0 - KERNEL_VMA), %eax
+    xor %ecx, %ecx
+    mov $0x003, %edx                /* present (1) + writable (2) */
+.Lfill0:
+    mov %edx, (%eax, %ecx, 4)
+    add $0x1000, %edx
+    inc %ecx
+    cmp $1024, %ecx
+    jl .Lfill0
+
+    /* ---- Fill boot_page_table1: map physical 0x00400000–0x007FFFFF ---- */
+    mov $(boot_page_table1 - KERNEL_VMA), %eax
+    xor %ecx, %ecx
+    mov $0x400003, %edx             /* 4 MiB + present + writable */
+.Lfill1:
+    mov %edx, (%eax, %ecx, 4)
+    add $0x1000, %edx
+    inc %ecx
+    cmp $1024, %ecx
+    jl .Lfill1
+
+    /* ---- Set up page directory entries ---- */
+    mov $(boot_page_directory - KERNEL_VMA), %eax
+
+    /* PDE[0]: identity-map 0x00000000–0x003FFFFF (temporary) */
+    mov $(boot_page_table0 - KERNEL_VMA + 0x003), %edx
+    mov %edx, 0(%eax)
+
+    /* PDE[1]: identity-map 0x00400000–0x007FFFFF (temporary) */
+    mov $(boot_page_table1 - KERNEL_VMA + 0x003), %edx
+    mov %edx, 4(%eax)
+
+    /* PDE[768]: higher-half map 0xC0000000–0xC03FFFFF → physical 0–4M */
+    mov $(boot_page_table0 - KERNEL_VMA + 0x003), %edx
+    mov %edx, (768*4)(%eax)
+
+    /* PDE[769]: higher-half map 0xC0400000–0xC07FFFFF → physical 4–8M */
+    mov $(boot_page_table1 - KERNEL_VMA + 0x003), %edx
+    mov %edx, (769*4)(%eax)
+
+    /* ---- Enable paging ---- */
+    mov $(boot_page_directory - KERNEL_VMA), %eax
+    mov %eax, %cr3
+
+    mov %cr0, %eax
+    or $0x80000000, %eax
+    mov %eax, %cr0
+
+    /* ---- Jump to higher half ---- */
+    /* _higher_half is in .text, linked at a virtual address (0xC0......).
+       After enabling paging, both identity and higher-half mappings are
+       active, so the jump target is valid. */
+    lea _higher_half, %eax
+    jmp *%eax
+
+/* ================================================================
+   Higher-half entry point — in .text, linked at virtual addresses.
+   Runs with paging ENABLED.
+   ================================================================ */
+.section .text
+_higher_half:
+    /* Remove the temporary identity mapping */
+    movl $0, boot_page_directory + 0
+    movl $0, boot_page_directory + 4
+
+    /* Flush TLB for the identity-mapped pages */
+    invlpg (0)
+    invlpg (0x400000)
+
+    /* Set up the kernel stack (virtual address) */
     mov $stack_top, %esp
 
-    /*
-    Preserve bootloader-provided values and pass during kernel_main call:
-    - %eax: contains magic number (0x1BAD002)
-    - %ebx: contains multiboot info pointer
-    */
-    mov %eax, mboot_magic
-    mov %ebx, mboot_info
+    /* Store multiboot info into globals (now at virtual addresses) */
+    mov %edi, mboot_magic
+    mov %esi, mboot_info
 
-    /*
-    This is a good place to initialize crucial processor state before the
-    high-level kernel is entered. It's best to minimize the early
-    environment where crucial features are offline. Note that the
-    processor is not fully initialized yet: Features such as floating
-    point instructions and instruction set extensions are not initialized
-    yet. The GDT should be loaded here. Paging should be enabled here.
-    C++ features such as global constructors and exceptions will require
-    runtime support to work as well.
-    */
-    call _init       // Initialize C++ global constructors
-    call kernel_init // Do early CPU setup (GDT, IDT, Paging)
+    /* Call C++ global constructors */
+    call _init
 
+    /* Kernel early init: GDT, IDT, interrupts */
+    call kernel_init
 
-    /*
-    Enter the high-level kernel. The ABI requires the stack is 16-byte
-    aligned at the time of the call instruction (which afterwards pushes
-    the return pointer of size 4 bytes). The stack was originally 16-byte
-    aligned above and we've pushed a multiple of 16 bytes to the
-    stack since (pushed 0 bytes so far), so the alignment has thus been
-    preserved and the call is well defined.
-    */
+    /* Enter high-level kernel */
     call kernel_main
 
-    /*
-    If the system has nothing more to do, put the computer into an
-    infinite loop. To do that:
-    1) Disable interrupts with cli (clear interrupt enable in eflags).
-       They are already disabled by the bootloader, so this is not needed.
-       Mind that you might later enable interrupts and return from
-       kmain (which is sort of nonsensical to do).
-    2) Wait for the next interrupt to arrive with hlt (halt instruction).
-       Since they are disabled, this will lock up the computer.
-    3) Jump to the hlt instruction if it ever wakes up due to a
-       non-maskable interrupt occurring or due to system management mode.
-    */
+    /* Halt if kernel_main returns */
     cli
 1:  hlt
     jmp 1b
 
-/*
-Set the size of the _start symbol to the current location '.' minus its start.
-This is useful when debugging or when you implement call tracing.
-*/
-.size _start, . - _start
+.size _higher_half, . - _higher_half

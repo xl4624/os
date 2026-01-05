@@ -7,7 +7,7 @@ namespace VGA {
     constexpr size_t WIDTH = 80;
     constexpr size_t HEIGHT = 25;
 
-    inline uint16_t *MEMORY = reinterpret_cast<uint16_t *>(0xB8000);
+    inline uint16_t *MEMORY = reinterpret_cast<uint16_t *>(0xC00B8000);
 
     /* Hardware text mode color constants. */
     enum class Color : uint8_t {

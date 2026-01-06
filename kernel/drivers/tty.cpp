@@ -5,7 +5,9 @@
 #include <sys/cdefs.h>
 #include <sys/param.h>
 
-static inline constexpr size_t to_index(size_t row, size_t col) {
+constexpr size_t TAB_WIDTH = 4;
+
+[[nodiscard]] static constexpr size_t to_index(size_t row, size_t col) {
     return row * VGA::WIDTH + col;
 }
 
@@ -40,7 +42,7 @@ void Terminal::put_char(char c) {
         }
         put_entry_at(0, color_, row_, col_);
     } else if (c == '\t') {
-        for (size_t i = 0; i < 4 - (col_ % 4); i++) {
+        for (size_t i = 0; i < TAB_WIDTH - (col_ % TAB_WIDTH); i++) {
             put_char(' ');
         }
     } else {

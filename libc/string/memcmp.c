@@ -1,6 +1,5 @@
 #include <string.h>
 
-// The way this works is by casting to unsigned char and comparing
 int memcmp(const void *s1, const void *s2, size_t n) {
     const unsigned char *first = (const unsigned char *)s1;
     const unsigned char *second = (const unsigned char *)s2;

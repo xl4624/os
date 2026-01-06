@@ -35,9 +35,11 @@ namespace PIC {
         io_wait();
 
         // ICW3: Tell PICs how they're cascaded
-        outb(PIC1_DATA, 4);
+        constexpr uint8_t MASTER_CASCADE_IRQ = 4;
+        constexpr uint8_t SLAVE_CASCADE_IDENTITY = 2;
+        outb(PIC1_DATA, MASTER_CASCADE_IRQ);
         io_wait();
-        outb(PIC2_DATA, 2);
+        outb(PIC2_DATA, SLAVE_CASCADE_IDENTITY);
         io_wait();
 
         // ICW4: Set 8086 mode
@@ -47,7 +49,7 @@ namespace PIC {
         io_wait();
     }
 
-    void sendEOI(uint8_t irq) {
+    void send_eoi(uint8_t irq) {
         if (irq >= 8)
             outb(PIC2_CTRL, PIC_EOI);
         outb(PIC1_CTRL, PIC_EOI);

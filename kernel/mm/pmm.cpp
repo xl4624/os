@@ -36,7 +36,8 @@ void Bitmap::print() const {
     for (size_t i = 0; i < size_; i++) {
         printf("%c", is_set(i) ? '1' : '0');
 
-        if ((i + 1) % 8 == 0)
+        constexpr size_t BITS_PER_BYTE = 8;
+        if ((i + 1) % BITS_PER_BYTE == 0)
             printf(" ");
 
         if ((i + 1) % 32 == 0) {

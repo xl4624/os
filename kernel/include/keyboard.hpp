@@ -18,9 +18,6 @@ class KeyboardDriver {
     char lookup_ascii(Key key) const;
 
    private:
-    static constexpr size_t SCANCODE_TABLE_SIZE = 69;
-    static const Key scancode_to_key[SCANCODE_TABLE_SIZE];
-
     Key lookup_extended(uint8_t scancode);
 
     bool shift_ = false;

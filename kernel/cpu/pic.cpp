@@ -79,7 +79,7 @@ namespace PIC {
             port = PIC2_DATA;
             irq -= 8;
         }
-        value = inb(port) & ~(1 << irq);
+        value = static_cast<uint8_t>(inb(port) & static_cast<uint8_t>(~(1U << irq)));
         outb(port, value);
     }
 

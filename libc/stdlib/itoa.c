@@ -24,7 +24,7 @@ void itoa(int value, char *str, int base) {
     while (value) {
         int digit = value % base;
         // handle hexadecimals
-        str[i++] = digit < 10 ? digit + '0' : digit - 10 + 'a';
+        str[i++] = (char)(digit < 10 ? digit + '0' : digit - 10 + 'a');
         value /= base;
     }
 

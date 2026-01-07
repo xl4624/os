@@ -7,7 +7,8 @@
 
 constexpr size_t TAB_WIDTH = 4;
 
-[[nodiscard]] static constexpr size_t to_index(size_t row, size_t col) {
+[[nodiscard]]
+static constexpr size_t to_index(size_t row, size_t col) {
     return row * VGA::WIDTH + col;
 }
 

@@ -45,7 +45,7 @@ namespace IDT {
 
             Attributes() = default;
             constexpr Attributes(Gate gate, Ring ring)
-                : gate_type(static_cast<uint8_t>(gate)),
+                : gate_type(static_cast<uint8_t>(gate) & 0x0F),
                   zero(0),
                   dpl(ring),
                   present(1) {}

@@ -14,11 +14,13 @@ using vaddr_t = uintptr_t;
 
 constexpr vaddr_t KERNEL_VMA = 0xC0000000;
 
-[[nodiscard]] constexpr paddr_t virt_to_phys(vaddr_t vaddr) {
+[[nodiscard]]
+constexpr paddr_t virt_to_phys(vaddr_t vaddr) {
     return vaddr - KERNEL_VMA;
 }
 
-[[nodiscard]] constexpr vaddr_t phys_to_virt(paddr_t paddr) {
+[[nodiscard]]
+constexpr vaddr_t phys_to_virt(paddr_t paddr) {
     return paddr + KERNEL_VMA;
 }
 

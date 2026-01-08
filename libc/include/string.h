@@ -16,7 +16,7 @@ void *memset(void *s, int c, size_t n);
 // char *stpncpy(char *__restrict__, const char *__restrict__, size_t);
 // char *strcat(char *__restrict__, const char *__restrict__);
 char *strchr(const char *s, int c);
-// int strcmp(const char *, const char *);
+int strcmp(const char *s1, const char *s2);
 // int strcoll(const char *, const char *);
 // int strcoll_l(const char *, const char *, locale_t);
 char *strcpy(char *__restrict__ dst, const char *__restrict__ src);

@@ -1,7 +1,8 @@
 [
   {
+    "file": "stdio/putchar.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -10,20 +11,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "stdio/putchar.c",
       "-o",
-      "stdlib/itoa.libk.o",
-      "stdlib/itoa.c"
+      "stdio/putchar.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdlib/itoa.c",
-    "output": "/home/xiaomin/dev/os/libc/stdlib/itoa.libk.o"
+    "output": "stdio/putchar.libk.o"
   },
   {
+    "file": "stdio/puts.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -32,20 +35,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "stdio/puts.c",
       "-o",
-      "stdlib/abort.libk.o",
-      "stdlib/abort.c"
+      "stdio/puts.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdlib/abort.c",
-    "output": "/home/xiaomin/dev/os/libc/stdlib/abort.libk.o"
+    "output": "stdio/puts.libk.o"
   },
   {
+    "file": "stdio/printf.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -54,20 +59,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "stdio/printf.c",
       "-o",
-      "stdlib/assert.libk.o",
-      "stdlib/assert.c"
+      "stdio/printf.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdlib/assert.c",
-    "output": "/home/xiaomin/dev/os/libc/stdlib/assert.libk.o"
+    "output": "stdio/printf.libk.o"
   },
   {
+    "file": "stdlib/itoa.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -76,20 +83,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "stdlib/itoa.c",
       "-o",
-      "stdio/putchar.libk.o",
-      "stdio/putchar.c"
+      "stdlib/itoa.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio/putchar.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio/putchar.libk.o"
+    "output": "stdlib/itoa.libk.o"
   },
   {
+    "file": "stdlib/abort.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -98,20 +107,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "stdlib/abort.c",
       "-o",
-      "stdio/puts.libk.o",
-      "stdio/puts.c"
+      "stdlib/abort.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio/puts.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio/puts.libk.o"
+    "output": "stdlib/abort.libk.o"
   },
   {
+    "file": "stdlib/assert.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -120,20 +131,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "stdlib/assert.c",
       "-o",
-      "stdio/printf.libk.o",
-      "stdio/printf.c"
+      "stdlib/assert.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio/printf.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio/printf.libk.o"
+    "output": "stdlib/assert.libk.o"
   },
   {
+    "file": "string/memcpy.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -142,20 +155,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/memcpy.c",
       "-o",
-      "string/memcmp.libk.o",
-      "string/memcmp.c"
+      "string/memcpy.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memcmp.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memcmp.libk.o"
+    "output": "string/memcpy.libk.o"
   },
   {
+    "file": "string/memset.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -164,20 +179,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/memset.c",
       "-o",
-      "string/memcpy.libk.o",
-      "string/memcpy.c"
+      "string/memset.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memcpy.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memcpy.libk.o"
+    "output": "string/memset.libk.o"
   },
   {
+    "file": "string/strcpy.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -186,20 +203,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/strcpy.c",
       "-o",
-      "string/memmove.libk.o",
-      "string/memmove.c"
+      "string/strcpy.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memmove.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memmove.libk.o"
+    "output": "string/strcpy.libk.o"
   },
   {
+    "file": "string/memcmp.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -208,20 +227,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/memcmp.c",
       "-o",
-      "string/memset.libk.o",
-      "string/memset.c"
+      "string/memcmp.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memset.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memset.libk.o"
+    "output": "string/memcmp.libk.o"
   },
   {
+    "file": "string/memmove.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -230,20 +251,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/memmove.c",
       "-o",
-      "string/strchr.libk.o",
-      "string/strchr.c"
+      "string/memmove.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strchr.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strchr.libk.o"
+    "output": "string/memmove.libk.o"
   },
   {
+    "file": "string/strnlen.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -252,20 +275,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/strnlen.c",
       "-o",
-      "string/strcpy.libk.o",
-      "string/strcpy.c"
+      "string/strnlen.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strcpy.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strcpy.libk.o"
+    "output": "string/strnlen.libk.o"
   },
   {
+    "file": "string/strchr.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -274,20 +299,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/strchr.c",
       "-o",
-      "string/strlen.libk.o",
-      "string/strlen.c"
+      "string/strchr.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strlen.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strlen.libk.o"
+    "output": "string/strchr.libk.o"
   },
   {
+    "file": "string/strlen.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -296,20 +323,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libk",
       "-c",
+      "string/strlen.c",
       "-o",
-      "string/strnlen.libk.o",
-      "string/strnlen.c"
+      "string/strlen.libk.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strnlen.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strnlen.libk.o"
+    "output": "string/strlen.libk.o"
   },
   {
+    "file": "string/strcmp.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -318,20 +347,46 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Iinclude",
+      "-D__is_libk",
+      "-c",
+      "string/strcmp.c",
+      "-o",
+      "string/strcmp.libk.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/libc",
+    "output": "string/strcmp.libk.o"
+  },
+  {
+    "file": "stdio/putchar.c",
+    "arguments": [
+      "i686-elf-gcc",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "stdio/putchar.c",
       "-o",
-      "stdlib/itoa.libc.o",
-      "stdlib/itoa.c"
+      "stdio/putchar.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdlib/itoa.c",
-    "output": "/home/xiaomin/dev/os/libc/stdlib/itoa.libc.o"
+    "output": "stdio/putchar.libc.o"
   },
   {
+    "file": "stdio/puts.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -340,20 +395,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "stdio/puts.c",
       "-o",
-      "stdlib/abort.libc.o",
-      "stdlib/abort.c"
+      "stdio/puts.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdlib/abort.c",
-    "output": "/home/xiaomin/dev/os/libc/stdlib/abort.libc.o"
+    "output": "stdio/puts.libc.o"
   },
   {
+    "file": "stdio/printf.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -362,20 +419,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "stdio/printf.c",
       "-o",
-      "stdlib/assert.libc.o",
-      "stdlib/assert.c"
+      "stdio/printf.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdlib/assert.c",
-    "output": "/home/xiaomin/dev/os/libc/stdlib/assert.libc.o"
+    "output": "stdio/printf.libc.o"
   },
   {
+    "file": "stdlib/itoa.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -384,20 +443,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "stdlib/itoa.c",
       "-o",
-      "stdio/putchar.libc.o",
-      "stdio/putchar.c"
+      "stdlib/itoa.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio/putchar.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio/putchar.libc.o"
+    "output": "stdlib/itoa.libc.o"
   },
   {
+    "file": "stdlib/abort.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -406,20 +467,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "stdlib/abort.c",
       "-o",
-      "stdio/puts.libc.o",
-      "stdio/puts.c"
+      "stdlib/abort.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio/puts.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio/puts.libc.o"
+    "output": "stdlib/abort.libc.o"
   },
   {
+    "file": "stdlib/assert.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -428,20 +491,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "stdlib/assert.c",
       "-o",
-      "stdio/printf.libc.o",
-      "stdio/printf.c"
+      "stdlib/assert.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/stdio/printf.c",
-    "output": "/home/xiaomin/dev/os/libc/stdio/printf.libc.o"
+    "output": "stdlib/assert.libc.o"
   },
   {
+    "file": "string/memcpy.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -450,20 +515,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/memcpy.c",
       "-o",
-      "string/memcmp.libc.o",
-      "string/memcmp.c"
+      "string/memcpy.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memcmp.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memcmp.libc.o"
+    "output": "string/memcpy.libc.o"
   },
   {
+    "file": "string/memset.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -472,20 +539,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/memset.c",
       "-o",
-      "string/memcpy.libc.o",
-      "string/memcpy.c"
+      "string/memset.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memcpy.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memcpy.libc.o"
+    "output": "string/memset.libc.o"
   },
   {
+    "file": "string/strcpy.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -494,20 +563,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/strcpy.c",
       "-o",
-      "string/memmove.libc.o",
-      "string/memmove.c"
+      "string/strcpy.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memmove.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memmove.libc.o"
+    "output": "string/strcpy.libc.o"
   },
   {
+    "file": "string/memcmp.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -516,20 +587,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/memcmp.c",
       "-o",
-      "string/memset.libc.o",
-      "string/memset.c"
+      "string/memcmp.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/memset.c",
-    "output": "/home/xiaomin/dev/os/libc/string/memset.libc.o"
+    "output": "string/memcmp.libc.o"
   },
   {
+    "file": "string/memmove.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -538,20 +611,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/memmove.c",
       "-o",
-      "string/strchr.libc.o",
-      "string/strchr.c"
+      "string/memmove.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strchr.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strchr.libc.o"
+    "output": "string/memmove.libc.o"
   },
   {
+    "file": "string/strnlen.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -560,20 +635,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/strnlen.c",
       "-o",
-      "string/strcpy.libc.o",
-      "string/strcpy.c"
+      "string/strnlen.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strcpy.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strcpy.libc.o"
+    "output": "string/strnlen.libc.o"
   },
   {
+    "file": "string/strchr.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -582,20 +659,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/strchr.c",
       "-o",
-      "string/strlen.libc.o",
-      "string/strlen.c"
+      "string/strchr.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strlen.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strlen.libc.o"
+    "output": "string/strchr.libc.o"
   },
   {
+    "file": "string/strlen.c",
     "arguments": [
-      "/usr/bin/i686-elf-gcc",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -604,20 +683,22 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-Iinclude",
       "-D__is_libc",
       "-c",
+      "string/strlen.c",
       "-o",
-      "string/strnlen.libc.o",
-      "string/strnlen.c"
+      "string/strlen.libc.o"
     ],
     "directory": "/home/xiaomin/dev/os/libc",
-    "file": "/home/xiaomin/dev/os/libc/string/strnlen.c",
-    "output": "/home/xiaomin/dev/os/libc/string/strnlen.libc.o"
+    "output": "string/strlen.libc.o"
   },
   {
+    "file": "string/strcmp.c",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-gcc",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -626,6 +707,32 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Iinclude",
+      "-D__is_libc",
+      "-c",
+      "string/strcmp.c",
+      "-o",
+      "string/strcmp.libc.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/libc",
+    "output": "string/strcmp.libc.o"
+  },
+  {
+    "file": "cpu/idt.cpp",
+    "arguments": [
+      "i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -633,17 +740,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "cpu/idt.cpp",
       "-o",
-      "drivers/keyboard.o",
-      "drivers/keyboard.cpp"
+      "cpu/idt.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/drivers/keyboard.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/drivers/keyboard.o"
+    "output": "cpu/idt.o"
   },
   {
+    "file": "cpu/interrupt.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -652,6 +759,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -659,17 +768,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "cpu/interrupt.cpp",
       "-o",
-      "drivers/tty.o",
-      "drivers/tty.cpp"
+      "cpu/interrupt.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/drivers/tty.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/drivers/tty.o"
+    "output": "cpu/interrupt.o"
   },
   {
+    "file": "cpu/gdt.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -678,6 +787,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -685,17 +796,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "cpu/gdt.cpp",
       "-o",
-      "mm/pmm.o",
-      "mm/pmm.cpp"
+      "cpu/gdt.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/mm/pmm.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/mm/pmm.o"
+    "output": "cpu/gdt.o"
   },
   {
+    "file": "cpu/pic.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -704,6 +815,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -711,17 +824,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "cpu/pic.cpp",
       "-o",
-      "cpu/gdt.o",
-      "cpu/gdt.cpp"
+      "cpu/pic.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/gdt.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/gdt.o"
+    "output": "cpu/pic.o"
   },
   {
+    "file": "drivers/keyboard.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -730,6 +843,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -737,17 +852,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "drivers/keyboard.cpp",
       "-o",
-      "cpu/idt.o",
-      "cpu/idt.cpp"
+      "drivers/keyboard.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/idt.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/idt.o"
+    "output": "drivers/keyboard.o"
   },
   {
+    "file": "drivers/tty.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -756,6 +871,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -763,17 +880,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "drivers/tty.cpp",
       "-o",
-      "cpu/pic.o",
-      "cpu/pic.cpp"
+      "drivers/tty.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/pic.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/pic.o"
+    "output": "drivers/tty.o"
   },
   {
+    "file": "lib/panic.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -782,6 +899,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -789,17 +908,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "lib/panic.cpp",
       "-o",
-      "cpu/interrupt.o",
-      "cpu/interrupt.cpp"
+      "lib/panic.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/cpu/interrupt.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/cpu/interrupt.o"
+    "output": "lib/panic.o"
   },
   {
+    "file": "mm/paging.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -808,6 +927,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -815,17 +936,17 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "mm/paging.cpp",
       "-o",
-      "lib/panic.o",
-      "lib/panic.cpp"
+      "mm/paging.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/lib/panic.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/lib/panic.o"
+    "output": "mm/paging.o"
   },
   {
+    "file": "mm/pmm.cpp",
     "arguments": [
-      "/usr/bin/i686-elf-g++",
+      "i686-elf-g++",
       "--sysroot=/home/xiaomin/dev/os/sysroot",
       "-isystem",
       "/home/xiaomin/dev/os/sysroot/usr/include",
@@ -834,6 +955,8 @@
       "-ffreestanding",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
       "-mgeneral-regs-only",
       "-fno-exceptions",
       "-fno-rtti",
@@ -841,12 +964,250 @@
       "-D__is_kernel",
       "-Iinclude",
       "-c",
+      "mm/pmm.cpp",
       "-o",
-      "kernel.o",
-      "kernel.cpp"
+      "mm/pmm.o"
     ],
     "directory": "/home/xiaomin/dev/os/kernel",
-    "file": "/home/xiaomin/dev/os/kernel/kernel.cpp",
-    "output": "/home/xiaomin/dev/os/kernel/kernel.o"
+    "output": "mm/pmm.o"
+  },
+  {
+    "file": "kernel.cpp",
+    "arguments": [
+      "i686-elf-g++",
+      "--sysroot=/home/xiaomin/dev/os/sysroot",
+      "-isystem",
+      "/home/xiaomin/dev/os/sysroot/usr/include",
+      "-O2",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-mgeneral-regs-only",
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-D__is_kernel",
+      "-Iinclude",
+      "-c",
+      "kernel.cpp",
+      "-o",
+      "kernel.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/kernel",
+    "output": "kernel.o"
+  },
+  {
+    "file": "unit/test_stdlib.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++17",
+      "-Wall",
+      "-Wextra",
+      "-I./framework",
+      "-I../libc/include",
+      "-c",
+      "unit/test_stdlib.cpp",
+      "-o",
+      "build/test_stdlib.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/test_stdlib.o"
+  },
+  {
+    "file": "unit/test_string.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++17",
+      "-Wall",
+      "-Wextra",
+      "-I./framework",
+      "-I../libc/include",
+      "-c",
+      "unit/test_string.cpp",
+      "-o",
+      "build/test_string.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/test_string.o"
+  },
+  {
+    "file": "unit/main.cpp",
+    "arguments": [
+      "g++",
+      "-std=c++17",
+      "-Wall",
+      "-Wextra",
+      "-I./framework",
+      "-I../libc/include",
+      "-c",
+      "unit/main.cpp",
+      "-o",
+      "build/main.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/main.o"
+  },
+  {
+    "file": "../libc/string/memcpy.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/memcpy.c",
+      "-o",
+      "build/libc/string/memcpy.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/memcpy.o"
+  },
+  {
+    "file": "../libc/string/memset.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/memset.c",
+      "-o",
+      "build/libc/string/memset.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/memset.o"
+  },
+  {
+    "file": "../libc/string/strcpy.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/strcpy.c",
+      "-o",
+      "build/libc/string/strcpy.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/strcpy.o"
+  },
+  {
+    "file": "../libc/string/memcmp.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/memcmp.c",
+      "-o",
+      "build/libc/string/memcmp.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/memcmp.o"
+  },
+  {
+    "file": "../libc/string/memmove.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/memmove.c",
+      "-o",
+      "build/libc/string/memmove.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/memmove.o"
+  },
+  {
+    "file": "../libc/string/strnlen.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/strnlen.c",
+      "-o",
+      "build/libc/string/strnlen.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/strnlen.o"
+  },
+  {
+    "file": "../libc/string/strchr.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/strchr.c",
+      "-o",
+      "build/libc/string/strchr.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/strchr.o"
+  },
+  {
+    "file": "../libc/string/strlen.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/strlen.c",
+      "-o",
+      "build/libc/string/strlen.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/strlen.o"
+  },
+  {
+    "file": "../libc/string/strcmp.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/string/strcmp.c",
+      "-o",
+      "build/libc/string/strcmp.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/string/strcmp.o"
+  },
+  {
+    "file": "../libc/stdlib/itoa.c",
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-I../libc/include",
+      "-c",
+      "../libc/stdlib/itoa.c",
+      "-o",
+      "build/libc/stdlib/itoa.o"
+    ],
+    "directory": "/home/xiaomin/dev/os/tests",
+    "output": "build/libc/stdlib/itoa.o"
   }
 ]

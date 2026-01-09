@@ -96,10 +96,7 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
     event.shift = shift_;
     event.ctrl = ctrl_;
     event.alt = alt_;
-
-    if (event.pressed) {
-        event.ascii = lookup_ascii(event.key);
-    }
+    event.ascii = event.pressed ? lookup_ascii(event.key) : 0;
 
     terminal.handle_key(event);
 }

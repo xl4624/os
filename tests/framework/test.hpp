@@ -20,7 +20,8 @@ struct TestRegistrar {
     TestRegistrar(const char *name, void (*func)(), const char *file,
                   int line) {
         if (g_test_count >= MAX_TESTS) {
-            printf("ERROR: Too many tests! Increase MAX_TESTS (currently %d)\n", MAX_TESTS);
+            printf("ERROR: Too many tests! Increase MAX_TESTS (currently %d)\n",
+                   MAX_TESTS);
             printf("Failed to register: %s\n", name);
             return;
         }

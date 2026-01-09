@@ -10,9 +10,6 @@ int main() {
         return 1;
     }
 
-    printf("myos test suite\n");
-    printf("===============\n\n");
-
     // Group by category
     char current_category[64] = "";
     for (int i = 0; i < g_test_count; i++) {

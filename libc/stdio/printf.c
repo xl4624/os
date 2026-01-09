@@ -141,12 +141,13 @@ int vprintf(const char *__restrict__ format, va_list ap) {
                 ++format;
                 goto again;
             case 'd':
-            case 'i':
+            case 'i': {
                 long x = length ? va_arg(ap, long) : va_arg(ap, int);
                 int negative = x < 0 ? FLAG_NEGATIVE : 0;
                 num = negative ? (unsigned long)(-x) : (unsigned long)x;
                 flags |= FLAG_NUMERIC | FLAG_SIGNED | negative;
                 break;
+            }
             case 'u':
             format_unsigned:
                 num = length ? va_arg(ap, unsigned long) : va_arg(ap, unsigned);

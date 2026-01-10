@@ -36,6 +36,8 @@
 *.iso
 *.xml
 
+# Build directories
 isodir/
 sysroot/
-.cache
+.cache/
+tests/build/

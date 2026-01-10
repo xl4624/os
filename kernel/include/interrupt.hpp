@@ -58,10 +58,11 @@ enum class IRQ : uint8_t {
     SecondaryATA = 15,
 };
 
-void interrupt_init();
-
-void exception_register_handler(ISR isr, handler_t handler);
-void interrupt_register_handler(IRQ irq, handler_t handler);
+namespace Interrupt {
+    void init();
+    void register_handler(ISR isr, handler_t handler);
+    void register_handler(IRQ irq, handler_t handler);
+}  // namespace Interrupt
 
 __BEGIN_DECLS
 

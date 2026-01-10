@@ -58,7 +58,7 @@ void keyboard_handler([[maybe_unused]] interrupt_frame *frame) {
 }
 
 KeyboardDriver::KeyboardDriver() {
-    interrupt_register_handler(IRQ::Keyboard, keyboard_handler);
+    Interrupt::register_handler(IRQ::Keyboard, keyboard_handler);
 }
 
 void KeyboardDriver::process_scancode(uint8_t scancode) {

@@ -16,6 +16,7 @@ class KeyboardDriver {
     void process_scancode(uint8_t scancode);
 
     char lookup_ascii(Key key) const;
+    static Key scancode_to_key(uint8_t scancode);
 
    private:
     Key lookup_extended(uint8_t scancode);

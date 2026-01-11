@@ -39,6 +39,8 @@ struct PageEntry {
     uint32_t frame : 20;
 
     PageEntry() = default;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
     PageEntry(paddr_t phys_addr, bool is_writeable = true, bool is_user = true)
         : present(1),
           rw(is_writeable ? 1 : 0),
@@ -50,8 +52,10 @@ struct PageEntry {
           pat(0),
           global(0),
           available(0),
-          frame(phys_addr >> PAGE_OFFSET_BITS)  // lower 16 bits used for flags
+          frame((phys_addr >> PAGE_OFFSET_BITS)
+                & 0xFFFFF)  // 20-bit frame address
     {}
+#pragma GCC diagnostic pop
 } __attribute__((packed));
 
 struct PageTable {

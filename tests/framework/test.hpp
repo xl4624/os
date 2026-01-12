@@ -11,8 +11,8 @@ struct TestCase {
     int line;
 };
 
-// TODO: consider using a dynamic array or linked list
 #define MAX_TESTS 128
+
 extern TestCase g_tests[MAX_TESTS];
 extern int g_test_count;
 
@@ -29,7 +29,6 @@ struct TestRegistrar {
     }
 };
 
-// Current test state
 struct TestState {
     int passed = 0;
     int failed = 0;
@@ -39,7 +38,6 @@ struct TestState {
 
 extern TestState g_state;
 
-// Assertion macros
 #define ASSERT(expr)                                                     \
     do {                                                                 \
         if (!(expr)) {                                                   \
@@ -48,20 +46,20 @@ extern TestState g_state;
             g_state.current_failed = true;                               \
             return;                                                      \
         }                                                                \
-    } while (0)
+    } while (false)
 
 #define ASSERT_EQ(a, b) ASSERT((a) == (b))
 #define ASSERT_NE(a, b) ASSERT((a) != (b))
 #define ASSERT_TRUE(expr) ASSERT(expr)
 #define ASSERT_FALSE(expr) ASSERT(!(expr))
+#define ASSERT_NULL(p) ASSERT((p) == nullptr)
+#define ASSERT_NOT_NULL(p) ASSERT((p) != nullptr)
 #define ASSERT_STR_EQ(a, b) ASSERT(strcmp((a), (b)) == 0)
 
-// Test registration macro
 #define TEST(category, name)                                                \
     static void test_##category##_##name();                                 \
     static TestRegistrar registrar_##category##_##name(                     \
         #category "/" #name, test_##category##_##name, __FILE__, __LINE__); \
     static void test_##category##_##name()
 
-// Main runner - implemented in main.cpp
 int run_all_tests();

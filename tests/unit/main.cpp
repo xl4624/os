@@ -1,19 +1,19 @@
 #include "../framework/test.hpp"
 
-TestCase g_tests[MAX_TESTS];
-int g_test_count = 0;
-TestState g_state;
+TestCase kTests[kMaxTests];
+int kTestCount = 0;
+TestState kTestState;
 
 int main() {
-    if (g_test_count == 0) {
+    if (kTestCount == 0) {
         printf("No tests found!\n");
         return 1;
     }
 
     // Group by category
     char current_category[64] = "";
-    for (int i = 0; i < g_test_count; i++) {
-        TestCase &test = g_tests[i];
+    for (int i = 0; i < kTestCount; i++) {
+        TestCase &test = kTests[i];
         const char *slash = strchr(test.name, '/');
         if (!slash)
             continue;
@@ -35,21 +35,21 @@ int main() {
 
         printf("  %s ... ", test_name);
 
-        g_state.current_test = test.name;
-        g_state.current_failed = false;
+        kTestState.current_test = test.name;
+        kTestState.current_failed = false;
         test.func();
 
-        if (!g_state.current_failed) {
+        if (!kTestState.current_failed) {
             printf("OK\n");
-            g_state.passed++;
+            kTestState.passed++;
         } else {
-            g_state.failed++;
+            kTestState.failed++;
         }
     }
 
     printf("\n========================================\n");
-    printf("Total: %d passed, %d failed\n", g_state.passed, g_state.failed);
+    printf("Total: %d passed, %d failed\n", kTestState.passed, kTestState.failed);
     printf("========================================\n");
 
-    return g_state.failed > 0 ? 1 : 0;
+    return kTestState.failed > 0 ? 1 : 0;
 }

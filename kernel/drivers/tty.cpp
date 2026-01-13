@@ -13,7 +13,8 @@ static constexpr size_t to_index(size_t row, size_t col) {
     return row * VGA::WIDTH + col;
 }
 
-Terminal terminal;
+// The global VGA text-mode terminal instance.
+Terminal kTerminal;
 
 Terminal::Terminal() {
     for (size_t y = 0; y < VGA::HEIGHT; ++y)
@@ -170,10 +171,10 @@ void Terminal::move_cursor(size_t row, size_t col) {
 
 __BEGIN_DECLS
 void terminal_write(const char *data) {
-    terminal.write(data);
+    kTerminal.write(data);
 }
 
 void terminal_putchar(char c) {
-    terminal.put_char(c);
+    kTerminal.put_char(c);
 }
 __END_DECLS

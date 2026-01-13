@@ -6,9 +6,9 @@
 
 #include "keyboard.hpp"
 
-TestCase g_tests[MAX_TESTS];
-int g_test_count = 0;
-TestState g_state;
+TestCase kTests[kMaxTests];
+int kTestCount = 0;
+TestState kTestState;
 
 namespace {
     // PS/2 Controller ports
@@ -30,8 +30,8 @@ namespace KTest {
 
         char current_category[64] = "";
 
-        for (int i = 0; i < g_test_count; ++i) {
-            TestCase &tc = g_tests[i];
+        for (int i = 0; i < kTestCount; ++i) {
+            TestCase &tc = kTests[i];
 
             // Parse "category/test_name"
             const char *slash = strchr(tc.name, '/');
@@ -51,19 +51,19 @@ namespace KTest {
 
             printf("  %-42s... ", test_name);
 
-            g_state.current_failed = false;
+            kTestState.current_failed = false;
             tc.func();
 
-            if (!g_state.current_failed) {
+            if (!kTestState.current_failed) {
                 printf("OK\n");
-                ++g_state.passed;
+                ++kTestState.passed;
             } else {
-                ++g_state.failed;
+                ++kTestState.failed;
             }
         }
 
         printf("\n==============================\n");
-        printf("Total: %d passed, %d failed\n", g_state.passed, g_state.failed);
+        printf("Total: %d passed, %d failed\n", kTestState.passed, kTestState.failed);
         printf("==============================\n");
 
         printf("\nPress any key to exit...\n");

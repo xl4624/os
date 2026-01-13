@@ -37,4 +37,4 @@ class Terminal {
     volatile uint16_t *buffer_ = VGA::MEMORY_ADDR;
 };
 
-extern Terminal terminal;
+extern Terminal kTerminal;

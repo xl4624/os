@@ -140,4 +140,4 @@ class PhysicalMemoryManager {
     size_t free_count_ = 0;
 };
 
-extern PhysicalMemoryManager pmm;
+extern PhysicalMemoryManager kPmm;

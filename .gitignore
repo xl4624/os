@@ -41,3 +41,4 @@ isodir/
 sysroot/
 .cache/
 tests/build/
+compile_commands.json

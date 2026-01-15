@@ -31,7 +31,6 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
            reinterpret_cast<void *>(&kernel_end),
            static_cast<unsigned>(HEAP_SIZE / 1024));
 
-    // --- Heap smoke test ---
     printf("Heap smoke test:\n");
 
     void *a = kmalloc(64);

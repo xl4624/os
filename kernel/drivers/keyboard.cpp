@@ -62,42 +62,7 @@ KeyboardDriver::KeyboardDriver() {
 }
 
 void KeyboardDriver::process_scancode(uint8_t scancode) {
-    if (scancode == SCANCODE_EXTENDED) {
-        extended_scancode_ = true;
-        return;
-    }
-
-    KeyEvent event;
-
-    // Check if a key is pressed
-    event.pressed = !(scancode & SCANCODE_RELEASE_BIT);
-    scancode &= ~SCANCODE_RELEASE_BIT;
-
-    // Get the Key enum from lookup table
-    if (extended_scancode_) {
-        event.key = lookup_extended(scancode);
-        extended_scancode_ = false;
-    } else if (scancode < SCANCODE_TABLE_SIZE) {
-        event.key = scancode_table[scancode];
-    } else {
-        event.key = Key::Unknown;
-    }
-
-    switch (event.key) {
-        case Key::LeftShift:
-        case Key::RightShift: shift_ = event.pressed; break;
-        case Key::LeftCtrl:
-        case Key::RightCtrl: ctrl_ = event.pressed; break;
-        case Key::LeftAlt:
-        case Key::RightAlt: alt_ = event.pressed; break;
-        default: break;
-    }
-
-    event.shift = shift_;
-    event.ctrl = ctrl_;
-    event.alt = alt_;
-    event.ascii = event.pressed ? lookup_ascii(event.key) : 0;
-
+    KeyEvent event = scancode_to_event(scancode);
     kTerminal.handle_key(event);
 }
 

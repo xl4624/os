@@ -63,8 +63,9 @@ void Terminal::put_char(char c) {
 }
 
 void Terminal::handle_key(KeyEvent event) {
-    if (!event.pressed)
+    if (!event.pressed) {
         return;
+    }
 
     if (event.ascii) {
         put_char(event.ascii);

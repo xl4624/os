@@ -8,52 +8,137 @@
 // TODO: https://wiki.osdev.org/PS/2_Keyboard#Command_Queue_and_State_Machine
 
 namespace {
-    constexpr uint16_t KEYBOARD_DATA_PORT = 0x60;
-    constexpr uint8_t SCANCODE_EXTENDED = 0xE0;
-    constexpr uint8_t SCANCODE_RELEASE_BIT = 0x80;
 
-    constexpr uint8_t EXT_ARROW_UP = 0x48;
-    constexpr uint8_t EXT_ARROW_DOWN = 0x50;
-    constexpr uint8_t EXT_ARROW_LEFT = 0x4B;
-    constexpr uint8_t EXT_ARROW_RIGHT = 0x4D;
+    constexpr uint16_t kDataPort = 0x60;
+    constexpr uint8_t kExtended = 0xE0;
+    constexpr uint8_t kReleaseBit = 0x80;
 
-    constexpr size_t SCANCODE_TABLE_SIZE = 69;
-    constexpr Key scancode_table[] = {
-        Key::Unknown,  // (0x00)
-        Key::Esc,       Key::Num1,        Key::Num2,
-        Key::Num3,      Key::Num4,        Key::Num5,
-        Key::Num6,      Key::Num7,        Key::Num8,
-        Key::Num9,      Key::Num0,        Key::Minus,
-        Key::Equals,    Key::Backspace,   Key::Tab,
-        Key::Q,         Key::W,           Key::E,
-        Key::R,         Key::T,           Key::Y,
-        Key::U,         Key::I,           Key::O,
-        Key::P,         Key::LeftBracket, Key::RightBracket,
-        Key::Enter,     Key::LeftCtrl,    Key::A,
-        Key::S,         Key::D,           Key::F,
-        Key::G,         Key::H,           Key::J,
-        Key::K,         Key::L,           Key::Semicolon,
-        Key::Quote,     Key::Backtick,    Key::LeftShift,
-        Key::Backslash, Key::Z,           Key::X,
-        Key::C,         Key::V,           Key::B,
-        Key::N,         Key::M,           Key::Comma,
-        Key::Period,    Key::Slash,       Key::RightShift,
-        Key::Unknown,  // (keypad) *
-        Key::LeftAlt,   Key::Space,       Key::CapsLock,
-        Key::F1,        Key::F2,          Key::F3,
-        Key::F4,        Key::F5,          Key::F6,
-        Key::F7,        Key::F8,          Key::F9,
-        Key::F10,
+    constexpr uint8_t kExtUp = 0x48;
+    constexpr uint8_t kExtDown = 0x50;
+    constexpr uint8_t kExtLeft = 0x4B;
+    constexpr uint8_t kExtRight = 0x4D;
+
+    // PS/2 scan set 1 make-codes 0x00–0x44 → Key::Value.
+    // The array is indexed directly by scancode byte.
+    // clang-format off
+    constexpr size_t kScancodeTableSize = 69;
+    constexpr Key::Value kScancodeTable[kScancodeTableSize] = {
+        Key::Unknown,                                                        // 0x00
+        Key::Esc,                                                            // 0x01
+        Key::Num1,      Key::Num2,      Key::Num3,      Key::Num4,           // 0x02–0x05
+        Key::Num5,      Key::Num6,      Key::Num7,      Key::Num8,           // 0x06–0x09
+        Key::Num9,      Key::Num0,      Key::Minus,     Key::Equals,         // 0x0A–0x0D
+        Key::Backspace, Key::Tab,                                            // 0x0E–0x0F
+        Key::Q,         Key::W,         Key::E,         Key::R,              // 0x10–0x13
+        Key::T,         Key::Y,         Key::U,         Key::I,              // 0x14–0x17
+        Key::O,         Key::P,         Key::LeftBracket, Key::RightBracket, // 0x18–0x1B
+        Key::Enter,     Key::LeftCtrl,                                       // 0x1C–0x1D
+        Key::A,         Key::S,         Key::D,         Key::F,              // 0x1E–0x21
+        Key::G,         Key::H,         Key::J,         Key::K,              // 0x22–0x25
+        Key::L,         Key::Semicolon, Key::Apostrophe, Key::Grave,         // 0x26–0x29
+        Key::LeftShift, Key::Backslash,                                      // 0x2A–0x2B
+        Key::Z,         Key::X,         Key::C,         Key::V,              // 0x2C–0x2F
+        Key::B,         Key::N,         Key::M,         Key::Comma,          // 0x30–0x33
+        Key::Period,    Key::Slash,     Key::RightShift,                     // 0x34–0x36
+        Key::Unknown,                                                        // 0x37 (keypad *)
+        Key::LeftAlt,   Key::Space,     Key::CapsLock,                       // 0x38–0x3A
+        Key::F1,        Key::F2,        Key::F3,        Key::F4,             // 0x3B–0x3E
+        Key::F5,        Key::F6,        Key::F7,        Key::F8,             // 0x3F–0x42
+        Key::F9,        Key::F10,                                            // 0x43–0x44
     };
+    // clang-format on
 
-    static_assert(sizeof(scancode_table) / sizeof(Key) == SCANCODE_TABLE_SIZE,
-                  "scancode_table array size must match SCANCODE_TABLE_SIZE");
+    static_assert(sizeof(kScancodeTable) / sizeof(Key::Value)
+                      == kScancodeTableSize,
+                  "kScancodeTable size must match kScancodeTableSize");
+
+    // ASCII lookup table indexed by Key::Value.
+    // Entries are {normal, shifted} characters; 0 means non-printable.
+    // clang-format off
+    struct AsciiPair { char normal; char shifted; };
+    constexpr AsciiPair kAsciiTable[Key::COUNT] = {
+        {0, 0},                                   // Unknown
+        {'a','A'}, {'b','B'}, {'c','C'},          // A  B  C
+        {'d','D'}, {'e','E'}, {'f','F'},          // D  E  F
+        {'g','G'}, {'h','H'}, {'i','I'},          // G  H  I
+        {'j','J'}, {'k','K'}, {'l','L'},          // J  K  L
+        {'m','M'}, {'n','N'}, {'o','O'},          // M  N  O
+        {'p','P'}, {'q','Q'}, {'r','R'},          // P  Q  R
+        {'s','S'}, {'t','T'}, {'u','U'},          // S  T  U
+        {'v','V'}, {'w','W'}, {'x','X'},          // V  W  X
+        {'y','Y'}, {'z','Z'},                     // Y  Z
+        {'0',')'}, {'1','!'}, {'2','@'},          // Num0  Num1  Num2
+        {'3','#'}, {'4','$'}, {'5','%'},          // Num3  Num4  Num5
+        {'6','^'}, {'7','&'}, {'8','*'},          // Num6  Num7  Num8
+        {'9','('},                                // Num9
+        {' ',' '}, {'\n','\n'},                  // Space  Enter
+        {'\b','\b'}, {'\t','\t'},                // Backspace  Tab
+        {0, 0},                                   // Esc
+        {'-','_'}, {'=','+'},                    // Minus  Equals
+        {'[','{'}, {']','}'},                    // LeftBracket  RightBracket
+        {'\\','|'},                               // Backslash
+        {';',':'}, {'\'','"'}, {'`','~'},        // Semicolon  Apostrophe  Grave
+        {',','<'}, {'.','>'}, {'/','?'},         // Comma  Period  Slash
+        // Modifiers (no ASCII)
+        {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, // LeftShift..CapsLock
+        // Function keys (no ASCII)
+        {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},         // F1..F6
+        {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},         // F7..F12
+        // Navigation keys (no ASCII)
+        {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},         // Insert..PageDown
+        // Arrow keys (no ASCII)
+        {0,0}, {0,0}, {0,0}, {0,0},                       // Up  Down  Left  Right
+    };
+    // clang-format on
+
+    static_assert(sizeof(kAsciiTable) / sizeof(AsciiPair) == Key::COUNT,
+                  "kAsciiTable size must match Key::COUNT");
+
 }  // namespace
+
+// === Key methods =============================================================
+
+Key Key::from_scancode(uint8_t scancode) {
+    if (scancode < kScancodeTableSize)
+        return Key(kScancodeTable[scancode]);
+    return Key(Unknown);
+}
+
+Key Key::from_extended_scancode(uint8_t scancode) {
+    switch (scancode) {
+        case kExtUp: return Key(Up);
+        case kExtDown: return Key(Down);
+        case kExtLeft: return Key(Left);
+        case kExtRight: return Key(Right);
+        default: return Key(Unknown);
+    }
+}
+
+char Key::ascii(bool shift) const {
+    if (value_ < COUNT)
+        return shift ? kAsciiTable[value_].shifted : kAsciiTable[value_].normal;
+    return '\0';
+}
+
+bool Key::is_modifier() const {
+    switch (value_) {
+        case LeftShift:
+        case RightShift:
+        case LeftCtrl:
+        case RightCtrl:
+        case LeftAlt:
+        case RightAlt:
+        case CapsLock: return true;
+        default: return false;
+    }
+}
+
+// === KeyboardDriver ==========================================================
 
 KeyboardDriver keyboard;
 
-void keyboard_handler([[maybe_unused]] interrupt_frame *frame) {
-    uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+static void keyboard_handler([[maybe_unused]] interrupt_frame *frame) {
+    uint8_t scancode = inb(kDataPort);
     keyboard.process_scancode(scancode);
 }
 
@@ -66,131 +151,33 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
     kTerminal.handle_key(event);
 }
 
-Key KeyboardDriver::lookup_extended(uint8_t scancode) {
-    switch (scancode) {
-        case EXT_ARROW_UP: return Key::Up;
-        case EXT_ARROW_DOWN: return Key::Down;
-        case EXT_ARROW_LEFT: return Key::Left;
-        case EXT_ARROW_RIGHT: return Key::Right;
-        default: return Key::Unknown;
-    }
-}
-
 KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
-    KeyEvent event;
-
-    if (scancode == SCANCODE_EXTENDED) {
+    // The 0xE0 prefix byte is not a key event itself; set the flag and bail.
+    if (scancode == kExtended) {
         extended_scancode_ = true;
-        event.key = Key::Unknown;
-        event.pressed = false;
-        event.ascii = 0;
-        event.shift = shift_;
-        event.ctrl = ctrl_;
-        event.alt = alt_;
-        return event;
+        return KeyEvent{Key{}, false, '\0', shift_, ctrl_, alt_};
     }
 
-    event.pressed = !(scancode & SCANCODE_RELEASE_BIT);
-    scancode &= ~SCANCODE_RELEASE_BIT;
+    const bool pressed = !(scancode & kReleaseBit);
+    scancode &= ~kReleaseBit;
 
-    if (extended_scancode_) {
-        event.key = lookup_extended(scancode);
-        extended_scancode_ = false;
-    } else if (scancode < SCANCODE_TABLE_SIZE) {
-        event.key = scancode_table[scancode];
-    } else {
-        event.key = Key::Unknown;
+    Key key = extended_scancode_ ? Key::from_extended_scancode(scancode)
+                                 : Key::from_scancode(scancode);
+    extended_scancode_ = false;
+
+    if (key.is_modifier()) {
+        switch (key.value()) {
+            case Key::LeftShift:
+            case Key::RightShift: shift_ = pressed; break;
+            case Key::LeftCtrl:
+            case Key::RightCtrl: ctrl_ = pressed; break;
+            case Key::LeftAlt:
+            case Key::RightAlt: alt_ = pressed; break;
+            default: break;
+        }
     }
 
-    switch (event.key) {
-        case Key::LeftShift:
-        case Key::RightShift: shift_ = event.pressed; break;
-        case Key::LeftCtrl:
-        case Key::RightCtrl: ctrl_ = event.pressed; break;
-        case Key::LeftAlt:
-        case Key::RightAlt: alt_ = event.pressed; break;
-        default: break;
-    }
-
-    event.shift = shift_;
-    event.ctrl = ctrl_;
-    event.alt = alt_;
-    event.ascii = event.pressed ? lookup_ascii(event.key) : 0;
-
-    return event;
-}
-
-Key KeyboardDriver::scancode_to_key(uint8_t scancode) {
-    if (scancode >= SCANCODE_TABLE_SIZE) {
-        return Key::Unknown;
-    }
-    return ::scancode_table[scancode];
-}
-
-char KeyboardDriver::lookup_ascii(Key key) const {
-    // ctrl/alt combinations don't produce ascii
-    if (ctrl_ || alt_) {
-        return 0;
-    }
-
-    switch (key) {
-        case Key::A: return shift_ ? 'A' : 'a';
-        case Key::B: return shift_ ? 'B' : 'b';
-        case Key::C: return shift_ ? 'C' : 'c';
-        case Key::D: return shift_ ? 'D' : 'd';
-        case Key::E: return shift_ ? 'E' : 'e';
-        case Key::F: return shift_ ? 'F' : 'f';
-        case Key::G: return shift_ ? 'G' : 'g';
-        case Key::H: return shift_ ? 'H' : 'h';
-        case Key::I: return shift_ ? 'I' : 'i';
-        case Key::J: return shift_ ? 'J' : 'j';
-        case Key::K: return shift_ ? 'K' : 'k';
-        case Key::L: return shift_ ? 'L' : 'l';
-        case Key::M: return shift_ ? 'M' : 'm';
-        case Key::N: return shift_ ? 'N' : 'n';
-        case Key::O: return shift_ ? 'O' : 'o';
-        case Key::P: return shift_ ? 'P' : 'p';
-        case Key::Q: return shift_ ? 'Q' : 'q';
-        case Key::R: return shift_ ? 'R' : 'r';
-        case Key::S: return shift_ ? 'S' : 's';
-        case Key::T: return shift_ ? 'T' : 't';
-        case Key::U: return shift_ ? 'U' : 'u';
-        case Key::V: return shift_ ? 'V' : 'v';
-        case Key::W: return shift_ ? 'W' : 'w';
-        case Key::X: return shift_ ? 'X' : 'x';
-        case Key::Y: return shift_ ? 'Y' : 'y';
-        case Key::Z: return shift_ ? 'Z' : 'z';
-
-        // Numbers/symbols
-        case Key::Num1: return shift_ ? '!' : '1';
-        case Key::Num2: return shift_ ? '@' : '2';
-        case Key::Num3: return shift_ ? '#' : '3';
-        case Key::Num4: return shift_ ? '$' : '4';
-        case Key::Num5: return shift_ ? '%' : '5';
-        case Key::Num6: return shift_ ? '^' : '6';
-        case Key::Num7: return shift_ ? '&' : '7';
-        case Key::Num8: return shift_ ? '*' : '8';
-        case Key::Num9: return shift_ ? '(' : '9';
-        case Key::Num0: return shift_ ? ')' : '0';
-
-        // Special characters
-        case Key::Space: return ' ';
-        case Key::Enter: return '\n';
-        case Key::Tab: return '\t';
-        case Key::Backspace: return '\b';
-
-        case Key::Minus: return shift_ ? '_' : '-';
-        case Key::Equals: return shift_ ? '+' : '=';
-        case Key::LeftBracket: return shift_ ? '{' : '[';
-        case Key::RightBracket: return shift_ ? '}' : ']';
-        case Key::Backslash: return shift_ ? '|' : '\\';
-        case Key::Semicolon: return shift_ ? ':' : ';';
-        case Key::Quote: return shift_ ? '"' : '\'';
-        case Key::Backtick: return shift_ ? '~' : '`';
-        case Key::Comma: return shift_ ? '<' : ',';
-        case Key::Period: return shift_ ? '>' : '.';
-        case Key::Slash: return shift_ ? '?' : '/';
-
-        default: return 0;  // Non-printable or unknown key
-    }
+    // ctrl/alt combinations suppress printable output.
+    const char ascii = (pressed && !ctrl_ && !alt_) ? key.ascii(shift_) : '\0';
+    return KeyEvent{key, pressed, ascii, shift_, ctrl_, alt_};
 }

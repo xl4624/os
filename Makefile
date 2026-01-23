@@ -22,9 +22,6 @@ KERNEL_OBJS = $(shell find kernel -type f -name '*.o')
 LIBC_OBJS   = $(shell find libc -type f -name '*.libk.o')
 OBJS        = $(CRTI) $(CRTBEGIN) arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
 
-# Test build artifacts (rebuild kernel with tests enabled)
-# Note: KTEST_KERNEL_OBJS is expanded at recipe time, not parse time
-
 # ==== Targets ====
 BIN       := myos.bin
 ISODIR     = isodir
@@ -45,11 +42,20 @@ debug: $(ISO)
 test:
 	$(MAKE) -C tests unit
 
-# Run kernel tests in QEMU
 ktest: install $(KTEST_ISO)
 	@echo "Running kernel tests in QEMU..."
-	qemu-system-i386 -no-reboot -cdrom $(KTEST_ISO) -device isa-debug-exit,iobase=0xf4,iosize=0x04; true
-	$(MAKE) -C kernel clean KERNEL_TESTS=1
+	qemu-system-i386 -no-reboot -cdrom $(KTEST_ISO) -device isa-debug-exit,iobase=0xf4,iosize=0x04; \
+		status=$$?; \
+		if [ $$status -eq 1 ]; then \
+			echo "[SUCCESS] All tests passed!"; \
+			exit 0; \
+		elif [ $$status -eq 3 ]; then \
+			echo "[FAILURE] Tests failed (exit code: $$status)"; \
+			exit 1; \
+		else \
+			echo "[FAILURE] Unknown error (exit code: $$status)"; \
+			exit $$status; \
+		fi
 
 clean: clean-test
 	@for dir in $(SUBDIRS); do \
@@ -93,7 +99,6 @@ $(KTEST_ISO): $(KTEST_BIN)
 	cp $< $(ISODIR)/boot/myos.bin
 	cp grub.cfg $(ISODIR)/boot/grub/
 	grub-mkrescue -o $@ $(ISODIR)
-
 
 $(SUBDIRS): install
 	$(MAKE) -C $@

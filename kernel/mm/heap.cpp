@@ -4,26 +4,26 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "paging.hpp"
 #include "panic.h"
-#include "x86.hpp"
+#include "pmm.hpp"
+#include "vmm.hpp"
 
 struct BlockHeader {
-    uint32_t size;      // bytes of payload (not counting this header)
-    uint32_t free;      // 1 = free, 0 = allocated
-    BlockHeader *next;  // reserved for future explicit free-list link
-    BlockHeader *prev;  // reserved for future explicit free-list link
+    uint32_t size;  // bytes of payload (not counting this header)
+    bool free;
+    BlockHeader *next;
+    BlockHeader *prev;
 };
 
 static_assert(sizeof(BlockHeader) == 16,
               "BlockHeader must be 16 bytes for payload alignment invariant");
 
-static BlockHeader *heap_base_ = nullptr;  // pointer to first block
-static uint8_t *heap_end_ = nullptr;       // one byte past the last heap byte
-
 // Round sz up to the nearest multiple of 16; minimum 16.
 static inline size_t align16(size_t sz) {
-    if (sz == 0)
+    if (sz == 0) {
         return 16;
+    }
     return (sz + 15u) & ~static_cast<size_t>(15u);
 }
 
@@ -34,95 +34,151 @@ static inline BlockHeader *block_after(const BlockHeader *hdr) {
         + sizeof(BlockHeader) + hdr->size);
 }
 
-// Linear scan from heap_base_: return the block whose physical successor is
-// 'target', or nullptr if 'target' is the first block.
-static BlockHeader *find_prev_block(const BlockHeader *target) {
-    if (target == heap_base_)
+// Linear scan: return the block whose successor is 'target', or nullptr.
+static BlockHeader *find_prev_block(const BlockHeader *base, const uint8_t *end,
+                                    const BlockHeader *target) {
+    if (target == base) {
         return nullptr;
-    BlockHeader *cur = heap_base_;
-    while (reinterpret_cast<uint8_t *>(cur) < heap_end_) {
+    }
+    BlockHeader *cur = const_cast<BlockHeader *>(base);
+    while (reinterpret_cast<uint8_t *>(cur) < end) {
         BlockHeader *nxt = block_after(cur);
-        if (nxt == target)
+        if (nxt == target) {
             return cur;
+        }
         cur = nxt;
     }
     return nullptr;
 }
 
-namespace Heap {
+Heap kHeap;
 
-    void init() {
-        // &kernel_end is the virtual address of the end of the kernel image
-        // (4K-aligned by the linker script).  Round up to 16 defensively.
-        uintptr_t base = reinterpret_cast<uintptr_t>(&kernel_end);
-        base = (base + 15u) & ~static_cast<uintptr_t>(15u);
-
-        heap_base_ = reinterpret_cast<BlockHeader *>(base);
-        heap_end_ = reinterpret_cast<uint8_t *>(base + HEAP_SIZE);
-
-        // The heap must fit inside the 8 MiB boot-mapped window.
-        constexpr uintptr_t MAPPED_END = 0xC0000000u + 8u * 1024u * 1024u;
-        if (reinterpret_cast<uintptr_t>(heap_end_) > MAPPED_END) {
-            panic("Heap::init: heap end %p exceeds mapped region %p\n",
-                  reinterpret_cast<void *>(heap_end_),
-                  reinterpret_cast<void *>(MAPPED_END));
+BlockHeader *Heap::find_last_block() const {
+    BlockHeader *last = base_;
+    while (true) {
+        BlockHeader *nxt = block_after(last);
+        if (reinterpret_cast<uint8_t *>(nxt) >= end_) {
+            return last;
         }
+        last = nxt;
+    }
+}
 
-        // One initial free block covering the entire heap payload area.
-        heap_base_->size =
-            static_cast<uint32_t>(HEAP_SIZE - sizeof(BlockHeader));
-        heap_base_->free = 1;
-        heap_base_->next = nullptr;
-        heap_base_->prev = nullptr;
+bool Heap::grow(size_t min_bytes) {
+    const size_t pages_needed = (min_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
+
+    const uintptr_t limit = kVirtBase + kMaxSize;
+    uintptr_t va = reinterpret_cast<uintptr_t>(end_);
+
+    // Refuse to grow if it would exceed the heap's maximum virtual address
+    // limit.
+    if (va + pages_needed * PAGE_SIZE > limit) {
+        return false;
     }
 
-    void dump() {
-        printf("Heap dump [%p .. %p] (%u KiB):\n",
-               reinterpret_cast<void *>(heap_base_),
-               reinterpret_cast<void *>(heap_end_),
-               static_cast<unsigned>(HEAP_SIZE / 1024));
+    // Find the last block BEFORE advancing end_, so the scan doesn't
+    // walk into the freshly mapped (uninitialised) pages.
+    uint8_t *old_end = end_;
+    BlockHeader *last = find_last_block();
 
-        size_t total_used = 0;
-        size_t total_free = 0;
-        size_t block_count = 0;
-
-        BlockHeader *cur = heap_base_;
-        while (reinterpret_cast<uint8_t *>(cur) < heap_end_) {
-            void *payload =
-                reinterpret_cast<uint8_t *>(cur) + sizeof(BlockHeader);
-            printf("  [%p] payload=%p size=%6u %s\n",
-                   reinterpret_cast<void *>(cur), payload,
-                   static_cast<unsigned>(cur->size),
-                   cur->free ? "FREE" : "USED");
-            if (cur->free)
-                total_free += cur->size;
-            else
-                total_used += cur->size;
-            ++block_count;
-            cur = block_after(cur);
+    for (size_t i = 0; i < pages_needed; ++i) {
+        paddr_t phys = kPmm.alloc();
+        if (!phys) {
+            panic("Heap::grow: out of physical memory\n");
         }
 
-        printf("  blocks=%u  used=%u  free=%u  (payload bytes)\n",
-               static_cast<unsigned>(block_count),
-               static_cast<unsigned>(total_used),
-               static_cast<unsigned>(total_free));
+        VMM::map(static_cast<vaddr_t>(va), phys);
+        va += PAGE_SIZE;
     }
 
-}  // namespace Heap
+    const size_t added = pages_needed * PAGE_SIZE;
+    end_ = reinterpret_cast<uint8_t *>(va);
 
-void *kmalloc(size_t size) {
-    if (!heap_base_)
+    // Extend the last block if it is free, otherwise create a new free block.
+    if (reinterpret_cast<uint8_t *>(block_after(last)) == old_end
+        && last->free) {
+        last->size += static_cast<uint32_t>(added);
+    } else {
+        auto *blk = reinterpret_cast<BlockHeader *>(old_end);
+        blk->size = static_cast<uint32_t>(added - sizeof(BlockHeader));
+        blk->free = true;
+        blk->next = nullptr;
+        blk->prev = nullptr;
+    }
+
+    return true;
+}
+
+size_t Heap::mapped_size() const {
+    return static_cast<size_t>(end_ - reinterpret_cast<uint8_t *>(base_));
+}
+
+void Heap::init() {
+    base_ = reinterpret_cast<BlockHeader *>(kVirtBase);
+    end_ = reinterpret_cast<uint8_t *>(kVirtBase);
+
+    for (size_t i = 0; i < kInitialPages; ++i) {
+        paddr_t phys = kPmm.alloc();
+        if (!phys) {
+            panic("Heap::init: out of physical memory\n");
+        }
+        vaddr_t va = kVirtBase + i * PAGE_SIZE;
+        VMM::map(va, phys);
+        end_ += PAGE_SIZE;
+    }
+
+    const size_t initial_size = kInitialPages * PAGE_SIZE;
+
+    base_->size = static_cast<uint32_t>(initial_size - sizeof(BlockHeader));
+    base_->free = true;
+    base_->next = nullptr;
+    base_->prev = nullptr;
+}
+
+void Heap::dump() const {
+    printf("Heap dump [%p .. %p] (%u KiB):\n",
+           reinterpret_cast<const void *>(base_),
+           reinterpret_cast<const void *>(end_),
+           static_cast<unsigned>(mapped_size() / 1024));
+
+    size_t total_used = 0;
+    size_t total_free = 0;
+    size_t block_count = 0;
+
+    BlockHeader *cur = base_;
+    while (reinterpret_cast<uint8_t *>(cur) < end_) {
+        void *payload = reinterpret_cast<uint8_t *>(cur) + sizeof(BlockHeader);
+        printf("  [%p] payload=%p size=%6u %s\n", reinterpret_cast<void *>(cur),
+               payload, static_cast<unsigned>(cur->size),
+               cur->free ? "FREE" : "USED");
+        if (cur->free) {
+            total_free += cur->size;
+        } else {
+            total_used += cur->size;
+        }
+        ++block_count;
+        cur = block_after(cur);
+    }
+
+    printf("  blocks=%u  used=%u  free=%u  (payload bytes)\n",
+           static_cast<unsigned>(block_count),
+           static_cast<unsigned>(total_used),
+           static_cast<unsigned>(total_free));
+}
+
+void *Heap::alloc(size_t size) {
+    if (!base_) {
         panic("kmalloc: heap not initialised\n");
-    if (size == 0)
+    }
+    if (size == 0) {
         return nullptr;
+    }
 
     const size_t need = align16(size);
 
-    // First-fit linear scan through all blocks.
-    BlockHeader *cur = heap_base_;
-    while (reinterpret_cast<uint8_t *>(cur) < heap_end_) {
+    BlockHeader *cur = base_;
+    while (reinterpret_cast<uint8_t *>(cur) < end_) {
         if (cur->free && static_cast<size_t>(cur->size) >= need) {
-            // Split only if the remainder can hold a header + ≥ 16 B payload.
             if (static_cast<size_t>(cur->size)
                 >= need + sizeof(BlockHeader) + 16u) {
                 auto *rem = reinterpret_cast<BlockHeader *>(
@@ -130,84 +186,105 @@ void *kmalloc(size_t size) {
                     + need);
                 rem->size = static_cast<uint32_t>(cur->size - need
                                                   - sizeof(BlockHeader));
-                rem->free = 1;
+                rem->free = true;
                 rem->next = nullptr;
                 rem->prev = nullptr;
                 cur->size = static_cast<uint32_t>(need);
             }
-            cur->free = 0;
+            cur->free = false;
             return reinterpret_cast<uint8_t *>(cur) + sizeof(BlockHeader);
         }
         cur = block_after(cur);
     }
 
-    return nullptr;  // OOM
+    if (!grow(need + sizeof(BlockHeader))) {
+        return nullptr;
+    }
+    return alloc(size);
 }
 
-void kfree(void *ptr) {
-    if (!ptr)
+void Heap::free(void *ptr) {
+    if (!ptr) {
         return;
+    }
 
     auto *hdr = reinterpret_cast<BlockHeader *>(reinterpret_cast<uint8_t *>(ptr)
                                                 - sizeof(BlockHeader));
 
-    if (reinterpret_cast<uint8_t *>(hdr)
-            < reinterpret_cast<uint8_t *>(heap_base_)
-        || reinterpret_cast<uint8_t *>(ptr) >= heap_end_) {
+    if (reinterpret_cast<uint8_t *>(hdr) < reinterpret_cast<uint8_t *>(base_)
+        || reinterpret_cast<uint8_t *>(ptr) >= end_) {
         panic("kfree(%p): pointer outside heap [%p, %p)\n", ptr,
-              reinterpret_cast<void *>(heap_base_),
-              reinterpret_cast<void *>(heap_end_));
+              reinterpret_cast<void *>(base_), reinterpret_cast<void *>(end_));
     }
 
-    if (hdr->free)
+    if (hdr->free) {
         panic("kfree(%p): double free\n", ptr);
+    }
 
-    hdr->free = 1;
+    hdr->free = true;
 
-    // Forward coalesce: absorb the next block if it is free.
     BlockHeader *nxt = block_after(hdr);
-    if (reinterpret_cast<uint8_t *>(nxt) < heap_end_ && nxt->free) {
+    if (reinterpret_cast<uint8_t *>(nxt) < end_ && nxt->free) {
         hdr->size += static_cast<uint32_t>(sizeof(BlockHeader)) + nxt->size;
     }
 
-    // Backward coalesce: absorb this block into the previous one if free.
-    BlockHeader *prv = find_prev_block(hdr);
+    BlockHeader *prv = find_prev_block(base_, end_, hdr);
     if (prv && prv->free) {
         prv->size += static_cast<uint32_t>(sizeof(BlockHeader)) + hdr->size;
     }
 }
 
-void *kcalloc(size_t nmemb, size_t size) {
-    // Overflow-safe total size computation.
-    if (nmemb != 0 && size > static_cast<size_t>(-1) / nmemb)
+void *Heap::calloc(size_t nmemb, size_t size) {
+    if (nmemb != 0 && size > static_cast<size_t>(-1) / nmemb) {
         return nullptr;
+    }
     const size_t total = nmemb * size;
-    void *ptr = kmalloc(total);
-    if (ptr)
+    void *ptr = alloc(total);
+    if (ptr) {
         memset(ptr, 0, total);
+    }
     return ptr;
 }
 
-void *krealloc(void *ptr, size_t size) {
-    if (!ptr)
-        return kmalloc(size);
+void *Heap::realloc(void *ptr, size_t size) {
+    if (!ptr) {
+        return alloc(size);
+    }
     if (size == 0) {
-        kfree(ptr);
+        free(ptr);
         return nullptr;
     }
 
     auto *hdr = reinterpret_cast<BlockHeader *>(reinterpret_cast<uint8_t *>(ptr)
                                                 - sizeof(BlockHeader));
 
-    // If the current block already covers the request, return as-is.
-    if (static_cast<size_t>(hdr->size) >= align16(size))
+    if (static_cast<size_t>(hdr->size) >= align16(size)) {
         return ptr;
+    }
 
-    void *new_ptr = kmalloc(size);
-    if (!new_ptr)
-        return nullptr;  // original ptr preserved (C standard behaviour)
+    void *new_ptr = alloc(size);
+    if (!new_ptr) {
+        return nullptr;
+    }
 
     memcpy(new_ptr, ptr, hdr->size);
-    kfree(ptr);
+    free(ptr);
     return new_ptr;
+}
+
+// ==============================================================
+// C wrappers
+// ==============================================================
+
+void *kmalloc(size_t size) {
+    return kHeap.alloc(size);
+}
+void kfree(void *ptr) {
+    kHeap.free(ptr);
+}
+void *kcalloc(size_t nmemb, size_t size) {
+    return kHeap.calloc(nmemb, size);
+}
+void *krealloc(void *ptr, size_t size) {
+    return kHeap.realloc(ptr, size);
 }

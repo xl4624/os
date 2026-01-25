@@ -21,16 +21,17 @@ extern "C" void kernel_init() {
     assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
     GDT::init();
     Interrupt::init();
-    Heap::init();
+    kHeap.init();
 }
 
 extern "C" __attribute__((noreturn)) void kernel_main() {
 #ifdef KERNEL_TESTS
     KTest::run_all();  // runs all registered tests then exits QEMU
 #else
-    printf("Heap initialised: base=%p  size=%u KiB\n",
-           reinterpret_cast<void *>(&kernel_end),
-           static_cast<unsigned>(HEAP_SIZE / 1024));
+    printf("Heap initialised: base=%p  initial=%u KiB  max=%u MiB\n",
+           reinterpret_cast<void *>(Heap::kVirtBase),
+           static_cast<unsigned>(Heap::kInitialPages * 4),
+           static_cast<unsigned>(Heap::kMaxSize / (1024 * 1024)));
 
     printf("Heap smoke test:\n");
 
@@ -62,7 +63,7 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
     kfree(d);
 
     printf("Heap smoke test PASSED\n");
-    Heap::dump();
+    kHeap.dump();
 
     printf("\nVMM smoke test:\n");
     {
@@ -78,7 +79,7 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
 
         printf("  mapped virt=%p -> phys=%p\n", reinterpret_cast<void *>(VA),
                reinterpret_cast<void *>(VMM::get_phys(VA)));
-        printf("  wrote 0xCAFEBABE, read back 0x%08x\n",
+        printf("  wrote 0xcafebabe, read back 0x%08x\n",
                static_cast<unsigned>(*p));
         assert(*p == 0xCAFEBABE);
 

@@ -2,19 +2,21 @@
 
 #include "paging.hpp"
 
-// Virtual Memory Mapper
-//
-// Provides page-granularity mapping and unmapping of virtual addresses to
-// physical frames. Operates on the single kernel page directory
-// (boot_page_directory) that is set up by boot.S and extended on demand.
-//
-// All virtual addresses must be 4 KiB-aligned. Physical addresses returned
-// by kPmm.alloc() are always 4 KiB-aligned, so they satisfy this requirement.
-//
-// Newly required page tables are allocated from the PMM. Their physical
-// addresses must fall within the first 8 MiB so that they can be reached via
-// phys_to_virt(). The PMM allocates from the lowest available frames first,
-// so this holds in practice; a panic fires if it is ever violated.
+/*
+ * Virtual Memory Mapper
+ *
+ * Provides page-granularity mapping and unmapping of virtual addresses to
+ * physical frames. Operates on the single kernel page directory
+ * (boot_page_directory) that is set up by boot.S and extended on demand.
+ *
+ * All virtual addresses must be 4 KiB-aligned. Physical addresses returned
+ * by kPmm.alloc() are always 4 KiB-aligned, so they satisfy this requirement.
+ *
+ * Newly required page tables are allocated from the PMM. Their physical
+ * addresses must fall within the first 8 MiB so that they can be reached via
+ * phys_to_virt(). The PMM allocates from the lowest available frames first,
+ * so this holds in practice; a panic fires if it is ever violated.
+ */
 
 namespace VMM {
 

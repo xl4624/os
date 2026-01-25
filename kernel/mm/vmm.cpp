@@ -8,22 +8,18 @@
 #include "pmm.hpp"
 
 // =============================================================================
-// Address decomposition helpers
+// Internal helpers
 // =============================================================================
 
-// Top 10 bits of a virtual address → page directory index.
+// Top 10 bits of a virtual address -> page directory index.
 static constexpr uint32_t pd_index(vaddr_t va) {
     return va >> (PAGE_TABLE_BITS + PAGE_OFFSET_BITS);
 }
 
-// Middle 10 bits of a virtual address → page table index.
+// Middle 10 bits of a virtual address -> page table index.
 static constexpr uint32_t pt_index(vaddr_t va) {
     return (va >> PAGE_OFFSET_BITS) & (PAGES_PER_TABLE - 1);
 }
-
-// =============================================================================
-// Internal helpers
-// =============================================================================
 
 // Return a virtual pointer to the page table covering `virt`.
 // If the PDE is absent and `create` is true, a new page table is allocated
@@ -34,15 +30,17 @@ static PageTable *page_table_for(vaddr_t virt, bool create, bool user) {
     PageEntry &pde = boot_page_directory.entry[pdi];
 
     if (!pde.present) {
-        if (!create)
+        if (!create) {
             return nullptr;
+        }
 
         const paddr_t pt_phys = kPmm.alloc();
-        if (!pt_phys)
+        if (!pt_phys) {
             panic("VMM: out of physical memory allocating page table\n");
+        }
 
         // page_table_for is called only after kernel_init() has run, so the
-        // first 8 MiB are mapped.  PMM hands out the lowest available frames
+        // first 8 MiB are mapped. PMM hands out the lowest available frames
         // first, which are always in the first 8 MiB.
         constexpr paddr_t MAPPED_PHYS_END = 8u * 1024u * 1024u;
         if (pt_phys >= MAPPED_PHYS_END) {
@@ -54,7 +52,7 @@ static PageTable *page_table_for(vaddr_t virt, bool create, bool user) {
         auto *pt = reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
         memset(pt, 0, sizeof(PageTable));
 
-        // Install in page directory.  Use the caller's `user` flag so kernel
+        // Install in page directory. Use the caller's `user` flag so kernel
         // PDEs stay ring-0 only.
         pde = PageEntry(pt_phys, /*writeable=*/true, /*user=*/user);
         return pt;
@@ -91,25 +89,32 @@ namespace VMM {
                   static_cast<unsigned>(virt));
 
         PageTable *pt = page_table_for(virt, /*create=*/false, false);
-        if (!pt)
+        if (!pt) {
             return;
+        }
 
         PageEntry &pte = pt->entry[pt_index(virt)];
-        if (!pte.present)
+        if (!pte.present) {
             return;
+        }
 
+        // Zero the page table entry to unmap it.
         pte = PageEntry{};
+
+        // Flush the TLB entry for this virtual address.
         asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
     }
 
     paddr_t get_phys(vaddr_t virt) {
         const PageTable *pt = page_table_for(virt, /*create=*/false, false);
-        if (!pt)
+        if (!pt) {
             return 0;
+        }
 
         const PageEntry &pte = pt->entry[pt_index(virt)];
-        if (!pte.present)
+        if (!pte.present) {
             return 0;
+        }
 
         return (static_cast<paddr_t>(pte.frame) << PAGE_OFFSET_BITS)
                | (virt & (PAGE_SIZE - 1));

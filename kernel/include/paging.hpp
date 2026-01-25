@@ -2,12 +2,10 @@
 
 #include <stdint.h>
 
-// clang-format off
 constexpr uint32_t PAGE_OFFSET_BITS = 12;
 constexpr uint32_t PAGE_SIZE = 1U << PAGE_OFFSET_BITS;
 constexpr uint32_t PAGE_TABLE_BITS = 10;
 constexpr uint32_t PAGES_PER_TABLE = 1U << PAGE_TABLE_BITS;
-// clang-format on
 
 using paddr_t = uintptr_t;
 using vaddr_t = uintptr_t;

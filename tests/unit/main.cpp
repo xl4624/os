@@ -48,7 +48,8 @@ int main() {
     }
 
     printf("\n========================================\n");
-    printf("Total: %d passed, %d failed\n", kTestState.passed, kTestState.failed);
+    printf("Total: %d passed, %d failed\n", kTestState.passed,
+           kTestState.failed);
     printf("========================================\n");
 
     return kTestState.failed > 0 ? 1 : 0;

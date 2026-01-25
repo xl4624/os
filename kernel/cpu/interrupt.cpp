@@ -42,8 +42,9 @@ struct ISRWrapper {
 template <uint8_t N>
 struct IRQWrapper {
     static __attribute__((interrupt)) void handle(interrupt_frame *frame) {
-        if (irq_handlers[N])
+        if (irq_handlers[N]) {
             irq_handlers[N](frame);
+        }
         PIC::send_eoi(N);
     }
 };
@@ -73,11 +74,11 @@ namespace Interrupt {
         PIC::init();
 
         // Register default ISR/IRQ handlers
-        for (uint8_t i = 0; i < 32; i++) {
+        for (uint8_t i = 0; i < 32; ++i) {
             IDT::set_entry(i, reinterpret_cast<size_t>(ISRTable::handlers[i]),
                            IDT::Gate::Trap, IDT::Ring::Kernel);
         }
-        for (uint8_t i = 0; i < 16; i++) {
+        for (uint8_t i = 0; i < 16; ++i) {
             IDT::set_entry(i + 32,
                            reinterpret_cast<size_t>(IRQTable::handlers[i]),
                            IDT::Gate::Interrupt, IDT::Ring::Kernel);

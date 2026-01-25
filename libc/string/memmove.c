@@ -7,7 +7,7 @@ void *memmove(void *dest, const void *src, size_t n) {
     // Choose direction by checking where src and dest are relative to each
     // other to avoid overwriting
     if (d > s) {
-        for (size_t i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; ++i) {
             d[i] = s[i];
         }
     } else {

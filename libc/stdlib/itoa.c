@@ -18,8 +18,9 @@ void itoa(int value, char *str, int base) {
         return;
     }
 
-    if (negative)
+    if (negative) {
         value = -value;
+    }
 
     while (value) {
         int digit = value % base;
@@ -28,11 +29,12 @@ void itoa(int value, char *str, int base) {
         value /= base;
     }
 
-    if (negative)
+    if (negative) {
         str[i++] = '-';
+    }
     str[i] = '\0';
 
-    for (int j = 0; j < i / 2; j++) {
+    for (int j = 0; j < i / 2; ++j) {
         char temp = str[j];
         str[j] = str[i - 1 - j];
         str[i - 1 - j] = temp;

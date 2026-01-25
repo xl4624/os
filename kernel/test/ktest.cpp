@@ -34,8 +34,9 @@ namespace KTest {
 
             // Parse "category/test_name"
             const char *slash = strchr(tc.name, '/');
-            if (!slash)
+            if (!slash) {
                 continue;
+            }
 
             size_t cat_len = static_cast<size_t>(slash - tc.name);
             char category[64] = {};

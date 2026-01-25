@@ -99,8 +99,9 @@ namespace {
 // === Key methods =============================================================
 
 Key Key::from_scancode(uint8_t scancode) {
-    if (scancode < kScancodeTableSize)
+    if (scancode < kScancodeTableSize) {
         return Key(kScancodeTable[scancode]);
+    }
     return Key(Unknown);
 }
 
@@ -115,8 +116,9 @@ Key Key::from_extended_scancode(uint8_t scancode) {
 }
 
 char Key::ascii(bool shift) const {
-    if (value_ < COUNT)
+    if (value_ < COUNT) {
         return shift ? kAsciiTable[value_].shifted : kAsciiTable[value_].normal;
+    }
     return '\0';
 }
 

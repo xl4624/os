@@ -7,6 +7,7 @@
 #include "heap.hpp"
 #include "interrupt.hpp"
 #include "multiboot.h"
+#include "pit.hpp"
 #include "pmm.hpp"
 #include "test/ktest.hpp"
 #include "vmm.hpp"
@@ -21,6 +22,7 @@ extern "C" void kernel_init() {
     assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
     GDT::init();
     Interrupt::init();
+    PIT::init();
     kHeap.init();
 }
 
@@ -89,6 +91,19 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
         printf("  unmapped and freed -- OK\n");
     }
     printf("VMM smoke test PASSED\n");
+
+    printf("\nPIT smoke test:\n");
+    {
+        uint64_t t0 = PIT::get_ticks();
+        printf("  ticks before sleep: %u\n", static_cast<unsigned>(t0));
+        PIT::sleep_ms(500);
+        uint64_t t1 = PIT::get_ticks();
+        printf("  ticks after 500ms sleep: %u (delta=%u)\n",
+               static_cast<unsigned>(t1),
+               static_cast<unsigned>(t1 - t0));
+        assert(t1 > t0);
+    }
+    printf("PIT smoke test PASSED\n");
 
     while (true) {
         asm volatile("hlt");

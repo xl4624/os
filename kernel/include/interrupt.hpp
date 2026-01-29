@@ -60,6 +60,7 @@ enum class IRQ : uint8_t {
 
 namespace Interrupt {
     void init();
+    bool is_initialized();
     void register_handler(ISR isr, handler_t handler);
     void register_handler(IRQ irq, handler_t handler);
 }  // namespace Interrupt

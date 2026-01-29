@@ -1,5 +1,6 @@
 #include "pmm.hpp"
 
+#include <assert.h>
 #include <stddef.h>
 
 #include "multiboot.h"
@@ -95,6 +96,10 @@ PhysicalMemoryManager::PhysicalMemoryManager() {
 }
 
 void PhysicalMemoryManager::mark_free_range(paddr_t start, size_t length) {
+    assert(start < static_cast<paddr_t>(total_frames_) * PAGE_SIZE
+           && "PMM::mark_free_range(): start beyond managed memory");
+    assert(length > 0 && "PMM::mark_free_range(): length is zero");
+
     // Round start UP and end DOWN so we only free fully-available frames.
     const size_t first =
         (static_cast<size_t>(start) + PAGE_SIZE - 1) / PAGE_SIZE;
@@ -109,6 +114,10 @@ void PhysicalMemoryManager::mark_free_range(paddr_t start, size_t length) {
 }
 
 void PhysicalMemoryManager::mark_used_range(paddr_t start, size_t length) {
+    assert(start < static_cast<paddr_t>(total_frames_) * PAGE_SIZE
+           && "PMM::mark_used_range(): start beyond managed memory");
+    assert(length > 0 && "PMM::mark_used_range(): length is zero");
+
     // Round start DOWN and end UP so we cover every frame that overlaps the
     // region.
     const size_t first = static_cast<size_t>(start) / PAGE_SIZE;
@@ -132,10 +141,15 @@ paddr_t PhysicalMemoryManager::alloc() {
     }
     bitmap_.set(frame);
     --free_count_;
-    return static_cast<paddr_t>(frame) * PAGE_SIZE;
+    const paddr_t result = static_cast<paddr_t>(frame) * PAGE_SIZE;
+    assert((result & (PAGE_SIZE - 1)) == 0
+           && "PMM::alloc(): returned address is not page-aligned");
+    return result;
 }
 
 void PhysicalMemoryManager::free(paddr_t addr) {
+    assert((addr & (PAGE_SIZE - 1)) == 0
+           && "PMM::free(): address is not page-aligned");
     const size_t frame = static_cast<size_t>(addr) / PAGE_SIZE;
     if (frame >= total_frames_) {
         panic("PMM::free(%p): address out of range\n",

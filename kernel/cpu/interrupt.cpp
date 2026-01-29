@@ -1,12 +1,15 @@
 #include "interrupt.hpp"
 
+#include <assert.h>
 #include <stdio.h>
 
+#include "gdt.hpp"
 #include "idt.hpp"
 #include "pic.hpp"
 
 handler_t isr_handlers[32] = {nullptr};
 handler_t irq_handlers[16] = {nullptr};
+static bool initialized = false;
 
 template <uint8_t N>
 struct ISRWrapper {
@@ -70,6 +73,9 @@ static_assert(sizeof(IRQTable::handlers) / sizeof(IRQTable::handlers[0]) == 16,
 namespace Interrupt {
 
     void init() {
+        assert(GDT::is_initialized()
+               && "Interrupt::init(): GDT must be initialized first");
+        assert(!initialized && "Interrupt::init(): called more than once");
         IDT::init();
         PIC::init();
 
@@ -85,13 +91,20 @@ namespace Interrupt {
         }
 
         interrupt_enable();
+        initialized = true;
     }
 
+    bool is_initialized() { return initialized; }
+
     void register_handler(ISR isr, handler_t handler) {
+        assert(static_cast<uint8_t>(isr) < 32
+               && "Interrupt::register_handler(ISR): isr out of range (0-31)");
         isr_handlers[static_cast<uint8_t>(isr)] = handler;
     }
 
     void register_handler(IRQ irq, handler_t handler) {
+        assert(static_cast<uint8_t>(irq) < 16
+               && "Interrupt::register_handler(IRQ): irq out of range (0-15)");
         irq_handlers[static_cast<uint8_t>(irq)] = handler;
         PIC::unmask(static_cast<uint8_t>(irq));
     }

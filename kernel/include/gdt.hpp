@@ -90,4 +90,5 @@ namespace GDT {
     } __attribute__((packed));
 
     void init();
+    bool is_initialized();
 }  // namespace GDT

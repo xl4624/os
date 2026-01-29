@@ -1,5 +1,6 @@
 #include "pic.hpp"
 
+#include <assert.h>
 #include <sys/io.h>
 
 namespace {
@@ -50,6 +51,7 @@ namespace PIC {
     }
 
     void send_eoi(uint8_t irq) {
+        assert(irq <= 15 && "PIC::send_eoi(): irq out of range (0–15)");
         if (irq >= 8) {
             outb(PIC2_CTRL, PIC_EOI);
         }
@@ -57,6 +59,7 @@ namespace PIC {
     }
 
     void mask(uint8_t irq) {
+        assert(irq <= 15 && "PIC::mask(): irq out of range (0–15)");
         uint16_t port;
         uint8_t value;
 
@@ -64,13 +67,14 @@ namespace PIC {
             port = PIC1_DATA;
         } else {
             port = PIC2_DATA;
-            irq -= 8;
+            irq = static_cast<uint8_t>(irq - 8u);
         }
-        value = inb(port) | (1 << irq);
+        value = static_cast<uint8_t>(inb(port) | (1U << irq));
         outb(port, value);
     }
 
     void unmask(uint8_t irq) {
+        assert(irq <= 15 && "PIC::unmask(): irq out of range (0–15)");
         uint16_t port;
         uint8_t value;
 
@@ -78,7 +82,7 @@ namespace PIC {
             port = PIC1_DATA;
         } else {
             port = PIC2_DATA;
-            irq -= 8;
+            irq = static_cast<uint8_t>(irq - 8u);
         }
         value = static_cast<uint8_t>(inb(port)
                                      & static_cast<uint8_t>(~(1U << irq)));

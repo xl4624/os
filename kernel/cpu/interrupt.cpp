@@ -1,11 +1,11 @@
-#include "interrupt.hpp"
+#include "interrupt.h"
 
 #include <assert.h>
 #include <stdio.h>
 
-#include "gdt.hpp"
-#include "idt.hpp"
-#include "pic.hpp"
+#include "gdt.h"
+#include "idt.h"
+#include "pic.h"
 
 handler_t isr_handlers[32] = {nullptr};
 handler_t irq_handlers[16] = {nullptr};

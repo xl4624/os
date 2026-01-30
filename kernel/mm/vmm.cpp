@@ -1,12 +1,12 @@
-#include "vmm.hpp"
+#include "vmm.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
-#include "paging.hpp"
+#include "paging.h"
 #include "panic.h"
-#include "pmm.hpp"
+#include "pmm.h"
 
 // =============================================================================
 // Internal helpers
@@ -43,7 +43,7 @@ static PageTable *page_table_for(vaddr_t virt, bool create, bool user) {
         // page_table_for is called only after kernel_init() has run, so the
         // first 8 MiB are mapped. PMM hands out the lowest available frames
         // first, which are always in the first 8 MiB.
-        constexpr paddr_t MAPPED_PHYS_END = 8u * 1024u * 1024u;
+        static constexpr paddr_t MAPPED_PHYS_END = 8u * 1024u * 1024u;
         if (pt_phys >= MAPPED_PHYS_END) {
             panic("VMM: new page table phys 0x%08x outside mapped region\n",
                   static_cast<unsigned>(pt_phys));

@@ -1,4 +1,22 @@
-#include "../framework/test.hpp"
+#include "../framework/test.h"
+
+#include <stdlib.h>
+
+TEST(stdlib, abs_positive) {
+    ASSERT(abs(5) == 5);
+    ASSERT(abs(1) == 1);
+    ASSERT(abs(12345) == 12345);
+}
+
+TEST(stdlib, abs_negative) {
+    ASSERT(abs(-5) == 5);
+    ASSERT(abs(-1) == 1);
+    ASSERT(abs(-12345) == 12345);
+}
+
+TEST(stdlib, abs_zero) {
+    ASSERT(abs(0) == 0);
+}
 
 TEST(stdlib, itoa_positive) {
     char buf[20];

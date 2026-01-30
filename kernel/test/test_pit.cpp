@@ -1,5 +1,5 @@
-#include "ktest.hpp"
-#include "pit.hpp"
+#include "ktest.h"
+#include "pit.h"
 
 TEST(pit, ticks_advance) {
     uint64_t t0 = PIT::get_ticks();

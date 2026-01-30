@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "paging.hpp"
+#include "paging.h"
 #include "panic.h"
 
 // Fixed-size bitmap with inline storage.

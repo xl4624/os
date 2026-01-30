@@ -1,4 +1,4 @@
-#include "gdt.hpp"
+#include "gdt.h"
 
 #include <assert.h>
 #include <stddef.h>

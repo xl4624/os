@@ -1,4 +1,4 @@
-#include "../framework/test.hpp"
+#include "../framework/test.h"
 
 TestCase kTests[kMaxTests];
 int kTestCount = 0;

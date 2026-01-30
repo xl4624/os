@@ -3,15 +3,15 @@
 #include <string.h>
 #include <sys/io.h>
 
-#include "gdt.hpp"
-#include "heap.hpp"
-#include "interrupt.hpp"
+#include "gdt.h"
+#include "heap.h"
+#include "interrupt.h"
 #include "multiboot.h"
-#include "pit.hpp"
-#include "pmm.hpp"
-#include "test/ktest.hpp"
-#include "vmm.hpp"
-#include "x86.hpp"
+#include "pit.h"
+#include "pmm.h"
+#include "test/ktest.h"
+#include "vmm.h"
+#include "x86.h"
 
 /* Verify we are using the i686-elf cross-compile */
 #if !defined(__i386__)
@@ -71,7 +71,7 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
     {
         // Map a fresh physical page into the kernel VA space just past the
         // boot-mapped 8 MiB window and write through it.
-        constexpr vaddr_t VA = 0xC0800000;
+        static constexpr vaddr_t VA = 0xC0800000;
         const paddr_t phys = kPmm.alloc();
         assert(phys != 0);
         VMM::map(VA, phys);

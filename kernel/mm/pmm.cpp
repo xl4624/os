@@ -1,12 +1,12 @@
-#include "pmm.hpp"
+#include "pmm.h"
 
 #include <assert.h>
 #include <stddef.h>
 
 #include "multiboot.h"
-#include "paging.hpp"
+#include "paging.h"
 #include "panic.h"
-#include "x86.hpp"
+#include "x86.h"
 
 namespace {
 

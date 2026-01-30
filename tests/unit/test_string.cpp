@@ -1,4 +1,4 @@
-#include "../framework/test.hpp"
+#include "../framework/test.h"
 
 TEST(string, memcmp_equal) {
     char buf1[] = "hello";

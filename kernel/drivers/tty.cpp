@@ -1,4 +1,4 @@
-#include "tty.hpp"
+#include "tty.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -7,7 +7,7 @@
 #include <sys/io.h>
 #include <sys/param.h>
 
-constexpr size_t TAB_WIDTH = 4;
+static constexpr size_t TAB_WIDTH = 4;
 
 [[nodiscard]]
 static constexpr size_t to_index(size_t row, size_t col) {

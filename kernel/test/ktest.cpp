@@ -1,4 +1,4 @@
-#include "ktest.hpp"
+#include "ktest.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -8,19 +8,17 @@ TestCase kTests[kMaxTests];
 int kTestCount = 0;
 TestState kTestState;
 
-namespace {
-    // PS/2 Controller ports
-    constexpr uint16_t PS2_STATUS_PORT = 0x64;
-    constexpr uint16_t PS2_DATA_PORT = 0x60;
+// PS/2 Controller ports
+static constexpr uint16_t PS2_STATUS_PORT = 0x64;
+static constexpr uint16_t PS2_DATA_PORT = 0x60;
 
-    // PS/2 Status register bits
-    constexpr uint8_t PS2_STATUS_OUTPUT_FULL = 0x01;
+// PS/2 Status register bits
+static constexpr uint8_t PS2_STATUS_OUTPUT_FULL = 0x01;
 
-    // QEMU isa-debug-exit port (for automated testing)
-    constexpr uint16_t QEMU_DEBUG_EXIT_PORT = 0xF4;
-    constexpr uint8_t QEMU_EXIT_CODE_SUCCESS = 0x00;
-    constexpr uint8_t QEMU_EXIT_CODE_FAILURE = 0x01;
-}  // namespace
+// QEMU isa-debug-exit port (for automated testing)
+static constexpr uint16_t QEMU_DEBUG_EXIT_PORT = 0xF4;
+static constexpr uint8_t QEMU_EXIT_CODE_SUCCESS = 0x00;
+static constexpr uint8_t QEMU_EXIT_CODE_FAILURE = 0x01;
 
 namespace KTest {
 

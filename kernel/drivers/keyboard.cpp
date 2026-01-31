@@ -6,9 +6,10 @@
 #include "interrupt.h"
 #include "tty.h"
 
-// TODO: https://wiki.osdev.org/PS/2_Keyboard#Command_Queue_and_State_Machine
-
 static constexpr uint16_t kDataPort = 0x60;
+static constexpr uint16_t kStatusPort = 0x64;
+static constexpr uint8_t kStatusOutputFull = 0x01;
+static constexpr uint8_t kStatusInputFull = 0x02;
 static constexpr uint8_t kExtended = 0xE0;
 static constexpr uint8_t kReleaseBit = 0x80;
 
@@ -130,13 +131,15 @@ bool Key::is_modifier() const {
     }
 }
 
-// === KeyboardDriver ==========================================================
+// ====================================================================
+// KeyboardDriver
+// ====================================================================
 
-KeyboardDriver keyboard;
+KeyboardDriver kKeyboard;
 
 static void keyboard_handler([[maybe_unused]] interrupt_frame *frame) {
     uint8_t scancode = inb(kDataPort);
-    keyboard.process_scancode(scancode);
+    kKeyboard.process_scancode(scancode);
 }
 
 KeyboardDriver::KeyboardDriver() {
@@ -144,6 +147,12 @@ KeyboardDriver::KeyboardDriver() {
 }
 
 void KeyboardDriver::process_scancode(uint8_t scancode) {
+    // First, try to process as a command response.
+    if (process_response(scancode)) {
+        return;
+    }
+
+    // If not a command response; process as key scancode.
     KeyEvent event = scancode_to_event(scancode);
     kTerminal.handle_key(event);
 }
@@ -177,4 +186,169 @@ KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
     // ctrl/alt combinations suppress printable output.
     const char ascii = (pressed && !ctrl_ && !alt_) ? key.ascii(shift_) : '\0';
     return KeyEvent{key, pressed, ascii, shift_, ctrl_, alt_};
+}
+
+// Check if the output buffer has data to read.
+bool KeyboardDriver::wait_for_output() const {
+    // For interrupt-driven handling, we just check the status bit.
+    // Return true if output buffer is full (data available).
+    return (inb(kStatusPort) & kStatusOutputFull) != 0;
+}
+
+// Check if the input buffer is empty (ready to send).
+bool KeyboardDriver::wait_for_input() const {
+    // Return true if input buffer is empty (ready to send).
+    return (inb(kStatusPort) & kStatusInputFull) == 0;
+}
+
+void KeyboardDriver::send_byte(uint8_t data) {
+    // Wait for input buffer to be empty before sending.
+    while (!wait_for_input()) {
+        // Spin-wait
+        // TODO: could add timeout here
+    }
+    outb(kDataPort, data);
+}
+
+bool KeyboardDriver::send_command(PS2Command command) {
+    assert(queue_count_ < kKeyboardCommandQueueSize
+           && "KeyboardDriver::send_command(): command queue full");
+
+    PS2CommandEntry entry{};
+    entry.command = command;
+    entry.has_parameter = false;
+    entry.retry_count = 0;
+
+    command_queue_[queue_tail_] = entry;
+    queue_tail_ = (queue_tail_ + 1) % kKeyboardCommandQueueSize;
+    ++queue_count_;
+
+    // If idle, start processing immediately.
+    if (state_ == PS2State::Idle) {
+        process_command_queue();
+    }
+
+    return true;
+}
+
+bool KeyboardDriver::send_command_with_param(PS2Command command,
+                                             uint8_t parameter) {
+    assert(queue_count_ < kKeyboardCommandQueueSize
+           && "KeyboardDriver::send_command_with_param(): command queue full");
+
+    PS2CommandEntry entry{};
+    entry.command = command;
+    entry.parameter = parameter;
+    entry.has_parameter = true;
+    entry.retry_count = 0;
+
+    command_queue_[queue_tail_] = entry;
+    queue_tail_ = (queue_tail_ + 1) % kKeyboardCommandQueueSize;
+    ++queue_count_;
+
+    // If idle, start processing immediately.
+    if (state_ == PS2State::Idle) {
+        process_command_queue();
+    }
+
+    return true;
+}
+
+bool KeyboardDriver::is_command_queue_empty() const {
+    return queue_count_ == 0 && state_ == PS2State::Idle;
+}
+
+void KeyboardDriver::flush_command_queue() {
+    queue_head_ = 0;
+    queue_tail_ = 0;
+    queue_count_ = 0;
+    state_ = PS2State::Idle;
+}
+
+void KeyboardDriver::process_command_queue() {
+    assert(queue_count_ > 0
+           && "process_command_queue(): called with empty queue");
+
+    PS2CommandEntry &entry = command_queue_[queue_head_];
+
+    // Set state BEFORE sending so that if the IRQ fires immediately after
+    // outb (before the next instruction), process_response() sees
+    // WaitingForAck and handles the ACK correctly rather than discarding it.
+    state_ = PS2State::WaitingForAck;
+    send_byte(static_cast<uint8_t>(entry.command));
+}
+
+// Process a response byte from the keyboard.
+// Returns true if the byte was consumed as a command response.
+bool KeyboardDriver::process_response(uint8_t data) {
+    switch (state_) {
+        case PS2State::Idle:
+            // Not expecting any response; this is a scancode.
+            return false;
+
+        case PS2State::WaitingForAck:
+            if (data == kPS2Ack) {
+                // Command acknowledged.
+                PS2CommandEntry &entry = command_queue_[queue_head_];
+
+                if (entry.has_parameter) {
+                    // Clear the flag first: the next ACK (for the parameter)
+                    // must complete the command, not re-send the parameter.
+                    entry.has_parameter = false;
+                    send_byte(entry.parameter);
+                    return true;
+                }
+
+                // No parameter; command complete.
+                queue_head_ = (queue_head_ + 1) % kKeyboardCommandQueueSize;
+                --queue_count_;
+                state_ = PS2State::Idle;
+
+                // Process next command if any.
+                if (queue_count_ > 0) {
+                    process_command_queue();
+                }
+                return true;
+            } else if (data == kPS2Resend) {
+                // Resend requested.
+                PS2CommandEntry &entry = command_queue_[queue_head_];
+                ++entry.retry_count;
+
+                if (entry.retry_count > kMaxRetries) {
+                    // Max retries exceeded; drop the command.
+                    queue_head_ = (queue_head_ + 1) % kKeyboardCommandQueueSize;
+                    --queue_count_;
+                    state_ = PS2State::Idle;
+
+                    if (queue_count_ > 0) {
+                        process_command_queue();
+                    }
+                } else {
+                    // Retry the command.
+                    process_command_queue();
+                }
+                return true;
+            }
+            // Received something that is neither ACK nor RESEND while expecting
+            // a response.  This should never happen with a well-behaved
+            // keyboard and signals a state-machine or protocol error.
+            assert(false
+                   && "KeyboardDriver: unexpected byte while WaitingForAck");
+            return false;
+
+        case PS2State::WaitingForData:
+            // For commands that expect data responses (like identify).
+            // For now, just complete the command.
+            queue_head_ = (queue_head_ + 1) % kKeyboardCommandQueueSize;
+            --queue_count_;
+            state_ = PS2State::Idle;
+
+            if (queue_count_ > 0) {
+                process_command_queue();
+            }
+            return true;
+    }
+
+    assert(false && "KeyboardDriver::process_response: unknown PS2State");
+    return false;
 }

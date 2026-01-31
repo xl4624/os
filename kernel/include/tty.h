@@ -13,8 +13,8 @@ __END_DECLS
 
 #ifdef __cplusplus
 
-#include "keyboard.h"
-#include "vga.h"
+    #include "keyboard.h"
+    #include "vga.h"
 
 class Terminal {
    public:

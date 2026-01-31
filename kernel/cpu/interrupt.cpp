@@ -94,7 +94,9 @@ namespace Interrupt {
         initialized = true;
     }
 
-    bool is_initialized() { return initialized; }
+    bool is_initialized() {
+        return initialized;
+    }
 
     void register_handler(ISR isr, handler_t handler) {
         assert(static_cast<uint8_t>(isr) < 32

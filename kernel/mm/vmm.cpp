@@ -118,4 +118,14 @@ namespace VMM {
                | (virt & (PAGE_SIZE - 1));
     }
 
+    void flush_tlb() {
+        uint32_t cr3;
+        asm volatile(
+            "mov %%cr3, %0\n"
+            "mov %0, %%cr3\n"
+            : "=r"(cr3)
+            :
+            : "memory");
+    }
+
 }  // namespace VMM

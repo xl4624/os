@@ -8,12 +8,20 @@
 #include "interrupt.h"
 #include "keyboard.h"
 #include "multiboot.h"
+#include "paging.h"
 #include "pit.h"
 #include "pmm.h"
+#include "syscall.h"
 #include "test/ktest.h"
 #include "tss.h"
+#include "usermode.h"
 #include "vmm.h"
 #include "x86.h"
+
+// Hand-encoded user-mode test program (user/hello.S).
+// TODO: Replace with a proper build step that assembles user programs
+// separately and embeds the flat binary via objcopy.
+#include "../../user/hello.h"
 
 // Kernel stack symbol defined in arch/boot.S
 extern "C" char stack_top[];
@@ -29,104 +37,53 @@ extern "C" void kernel_init() {
     TSS::init();
     TSS::set_kernel_stack(reinterpret_cast<uint32_t>(stack_top));
     Interrupt::init();
+    Syscall::init();
     PIT::init();
     kHeap.init();
+}
+
+// TODO: Replace this ad-hoc loader with an ELF loader once we have a filesystem
+// and proper process creation (Milestone 4+).
+static void load_user_program() {
+    // --- Map user code page ---
+    paddr_t code_phys = kPmm.alloc();
+    assert(code_phys != 0);
+    VMM::map(USER_CODE_VA, code_phys, /*writeable=*/true, /*user=*/true);
+
+    // Copy the user program (instructions + message) into the user page.
+    auto *dest = reinterpret_cast<uint8_t *>(USER_CODE_VA);
+    memcpy(dest, kUserProgram, sizeof(kUserProgram));
+    memcpy(dest + kUserCodeLen, kUserMessage, kUserMessageLen);
+
+    printf("  user code at %p (phys %p), %u bytes\n",
+           reinterpret_cast<void *>(USER_CODE_VA),
+           reinterpret_cast<void *>(code_phys),
+           static_cast<unsigned>(sizeof(kUserProgram) + kUserMessageLen));
+
+    // --- Map user stack pages ---
+    // TODO: Stack guard page (unmap page below stack to catch overflow).
+    for (uint32_t i = 0; i < USER_STACK_PAGES; ++i) {
+        paddr_t stack_phys = kPmm.alloc();
+        assert(stack_phys != 0);
+        VMM::map(USER_STACK_VA + i * PAGE_SIZE, stack_phys,
+                 /*writeable=*/true, /*user=*/true);
+    }
+
+    printf("  user stack at %p-%p (%u pages)\n",
+           reinterpret_cast<void *>(USER_STACK_VA),
+           reinterpret_cast<void *>(USER_STACK_TOP), USER_STACK_PAGES);
 }
 
 extern "C" __attribute__((noreturn)) void kernel_main() {
 #ifdef KERNEL_TESTS
     KTest::run_all();  // runs all registered tests then exits QEMU
 #else
-    printf("Heap initialised: base=%p  initial=%u KiB  max=%u MiB\n",
-           reinterpret_cast<void *>(Heap::kVirtBase),
-           static_cast<unsigned>(Heap::kInitialPages * 4),
-           static_cast<unsigned>(Heap::kMaxSize / (1024 * 1024)));
+    printf("Entering usermode test...\n");
 
-    printf("Heap smoke test:\n");
+    load_user_program();
 
-    void *a = kmalloc(64);
-    assert(a != nullptr);
-    printf("  kmalloc(64)   -> %p\n", a);
-
-    unsigned char *b = static_cast<unsigned char *>(kcalloc(4, 16));
-    assert(b != nullptr);
-    int all_zero = 1;
-    for (int i = 0; i < 64; ++i) {
-        if (b[i] != 0) {
-            all_zero = 0;
-            break;
-        }
-    }
-    printf("  kcalloc(4,16) -> %p  zeroed=%s\n", static_cast<void *>(b),
-           all_zero ? "yes" : "no");
-
-    void *c = krealloc(a, 256);
-    assert(c != nullptr);
-    printf("  krealloc(a,256)-> %p\n", c);
-
-    kfree(b);
-    kfree(c);
-
-    void *d = kmalloc(64);
-    assert(d != nullptr);
-    printf("  kmalloc after free -> %p\n", d);
-    kfree(d);
-
-    printf("Heap smoke test PASSED\n");
-    kHeap.dump();
-
-    printf("\nVMM smoke test:\n");
-    {
-        // Map a fresh physical page into the kernel VA space just past the
-        // boot-mapped 8 MiB window and write through it.
-        static constexpr vaddr_t VA = 0xC0800000;
-        const paddr_t phys = kPmm.alloc();
-        assert(phys != 0);
-        VMM::map(VA, phys);
-
-        volatile uint32_t *p = reinterpret_cast<volatile uint32_t *>(VA);
-        *p = 0xCAFEBABE;
-
-        printf("  mapped virt=%p -> phys=%p\n", reinterpret_cast<void *>(VA),
-               reinterpret_cast<void *>(VMM::get_phys(VA)));
-        printf("  wrote 0xcafebabe, read back 0x%08x\n",
-               static_cast<unsigned>(*p));
-        assert(*p == 0xCAFEBABE);
-
-        VMM::unmap(VA);
-        assert(VMM::get_phys(VA) == 0);
-        kPmm.free(phys);
-        printf("  unmapped and freed -- OK\n");
-    }
-    printf("VMM smoke test PASSED\n");
-
-    printf("\nPIT smoke test:\n");
-    {
-        uint64_t t0 = PIT::get_ticks();
-        printf("  ticks before sleep: %u\n", static_cast<unsigned>(t0));
-        PIT::sleep_ms(500);
-        uint64_t t1 = PIT::get_ticks();
-        printf("  ticks after 500ms sleep: %u (delta=%u)\n",
-               static_cast<unsigned>(t1), static_cast<unsigned>(t1 - t0));
-        assert(t1 > t0);
-    }
-    printf("PIT smoke test PASSED\n");
-
-    printf("\nKeyboard command queue test:\n");
-    printf("  Disabling keyboard for 1 second...\n");
-    kKeyboard.send_command(PS2Command::DisableScanning);
-    PIT::sleep_ms(1000);
-    printf("  Re-enabling keyboard...\n");
-    kKeyboard.send_command(PS2Command::EnableScanning);
-    // Wait for the enable command to complete (ACK received)
-    while (!kKeyboard.is_command_queue_empty()) {
-        PIT::sleep_ms(10);
-    }
-    printf("  Test complete - try typing now!\n");
-
-    while (true) {
-        asm volatile("hlt");
-    }
+    printf("  jumping to ring 3...\n");
+    Usermode::jump(USER_CODE_VA, USER_STACK_TOP);
 #endif
     __builtin_unreachable();
 }

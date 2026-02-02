@@ -11,7 +11,7 @@
 .set CHECKSUM,    -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
 
 /*
-Multiboot header — must be within the first 8 KiB of the kernel binary.
+Multiboot header - must be within the first 8 KiB of the kernel binary.
 Placed in .multiboot section so the linker script can force it first.
 */
 .section .multiboot
@@ -34,7 +34,7 @@ mboot_info:
     .long 0
 
 /* ================================================================
-   Stack — 16 KiB in .bss (virtual addresses).
+   Stack - 16 KiB in .bss (virtual addresses).
    ================================================================ */
 .section .bss
 .align 16
@@ -44,7 +44,7 @@ stack_bottom:
 stack_top:
 
 /* ================================================================
-   Boot page tables — 3 pages in .bss (virtual addresses).
+   Boot page tables - 3 pages in .bss (virtual addresses).
    Boot code accesses via (symbol - KERNEL_VMA) to get physical addr.
    ================================================================ */
 .align 4096
@@ -57,7 +57,7 @@ boot_page_table1:
     .skip 4096
 
 /* ================================================================
-   Boot code — linked and loaded at physical addresses (in .boot).
+   Boot code - linked and loaded at physical addresses (in .boot).
    Runs with paging DISABLED.
    ================================================================ */
 .section .boot, "ax"
@@ -139,7 +139,7 @@ _start:
     jmp *%eax
 
 /* ================================================================
-   Higher-half entry point — in .text, linked at virtual addresses.
+   Higher-half entry point - in .text, linked at virtual addresses.
    Runs with paging ENABLED.
    ================================================================ */
 .section .text

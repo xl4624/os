@@ -119,6 +119,8 @@ void Terminal::put_entry_at(char c, uint8_t color, size_t row, size_t col) {
 }
 
 void Terminal::scroll() {
+    assert(row_ == VGA::HEIGHT
+           && "Terminal::scroll(): called when row_ != VGA::HEIGHT");
     for (size_t r = 1; r < VGA::HEIGHT; ++r) {
         for (size_t c = 0; c < VGA::WIDTH; ++c) {
             buffer_[to_index((r - 1), c)] = buffer_[to_index(r, c)];

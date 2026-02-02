@@ -140,6 +140,7 @@ void Heap::init() {
 }
 
 void Heap::dump() const {
+    assert(base_ != nullptr && "Heap::dump(): called before Heap::init()");
     printf("Heap dump [%p .. %p] (%u KiB):\n",
            reinterpret_cast<const void *>(base_),
            reinterpret_cast<const void *>(end_),
@@ -263,6 +264,11 @@ void *Heap::realloc(void *ptr, size_t size) {
 
     auto *hdr = reinterpret_cast<BlockHeader *>(reinterpret_cast<uint8_t *>(ptr)
                                                 - sizeof(BlockHeader));
+
+    assert(reinterpret_cast<uint8_t *>(hdr)
+               >= reinterpret_cast<uint8_t *>(base_)
+           && reinterpret_cast<uint8_t *>(ptr) < end_
+           && "Heap::realloc(): ptr outside heap bounds");
 
     if (static_cast<size_t>(hdr->size) >= align16(size)) {
         return ptr;

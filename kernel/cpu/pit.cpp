@@ -3,8 +3,6 @@
 #include <assert.h>
 #include <sys/io.h>
 
-#include "interrupt.h"
-
 static constexpr uint16_t PIT_CHANNEL0_DATA = 0x40;
 static constexpr uint16_t PIT_COMMAND = 0x43;
 
@@ -25,25 +23,22 @@ namespace {
     volatile uint64_t ticks = 0;
     bool initialized = false;
 
-    void pit_handler([[maybe_unused]] interrupt_frame *frame) {
-        ++ticks;
-    }
-
 }  // namespace
 
 namespace PIT {
 
     void init() {
-        assert(Interrupt::is_initialized()
-               && "PIT::init(): Interrupt must be initialized first");
         assert(!initialized && "PIT::init(): called more than once");
 
         outb(PIT_COMMAND, PIT_CMD_CHANNEL0_RATE);
         outb(PIT_CHANNEL0_DATA, static_cast<uint8_t>(PIT_DIVISOR & 0xFF));
         outb(PIT_CHANNEL0_DATA, static_cast<uint8_t>(PIT_DIVISOR >> 8));
 
-        Interrupt::register_handler(IRQ::Timer, pit_handler);
         initialized = true;
+    }
+
+    void tick() {
+        ++ticks;
     }
 
     uint64_t get_ticks() {

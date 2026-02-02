@@ -17,6 +17,9 @@ static constexpr uint8_t PS2_STATUS_OUTPUT_FULL = 0x01;
 
 // QEMU isa-debug-exit port (for automated testing)
 static constexpr uint16_t QEMU_DEBUG_EXIT_PORT = 0xF4;
+// isa-debug-exit computes QEMU exit status as (value << 1) | 1.
+// Value 0x00 → exit 1 (Makefile treats as success).
+// Value 0x01 → exit 3 (Makefile treats as failure).
 static constexpr uint8_t QEMU_EXIT_CODE_SUCCESS = 0x00;
 static constexpr uint8_t QEMU_EXIT_CODE_FAILURE = 0x01;
 

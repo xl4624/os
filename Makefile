@@ -52,6 +52,9 @@ ktest: install $(KTEST_ISO)
 		elif [ $$status -eq 3 ]; then \
 			echo "[FAILURE] Tests failed (exit code: $$status)"; \
 			result=1; \
+		elif [ $$status -eq 0 ]; then \
+			echo "[FAILURE] QEMU exited unexpectedly (exit code: $$status)"; \
+			result=1; \ \
 		else \
 			echo "[FAILURE] Unknown error (exit code: $$status)"; \
 			result=$$status; \
@@ -88,7 +91,7 @@ ktest-kernel:
 	$(MAKE) -C kernel KERNEL_TESTS=1
 
 # Link the test kernel binary
-$(KTEST_BIN): arch libc ktest-kernel arch/linker.ld
+$(KTEST_BIN): install arch libc ktest-kernel arch/linker.ld
 	$(CC) $(LDFLAGS) -o $@ \
 		$(CRTI) $(CRTBEGIN) arch/boot.o \
 		$$(find kernel -type f -name '*.o' | sort) \

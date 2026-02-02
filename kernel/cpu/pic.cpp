@@ -8,12 +8,12 @@ static constexpr uint16_t PIC1_DATA = 0x21;
 static constexpr uint16_t PIC2_CTRL = 0xA0;
 static constexpr uint16_t PIC2_DATA = 0xA1;
 
-static constexpr uint16_t ICW1_INIT = 0x10;
-static constexpr uint16_t ICW1_ICW4 = 0x01;
-static constexpr uint16_t ICW4_8086 = 0x01;
+static constexpr uint8_t ICW1_INIT = 0x10;
+static constexpr uint8_t ICW1_ICW4 = 0x01;
+static constexpr uint8_t ICW4_8086 = 0x01;
 
-static constexpr uint16_t PIC_EOI = 0x20;
-static constexpr uint16_t IRQ0 = 32;
+static constexpr uint8_t PIC_EOI = 0x20;
+static constexpr uint8_t IRQ0 = 32;
 
 namespace PIC {
     void init() {

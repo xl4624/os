@@ -73,7 +73,7 @@ bool PS2CommandQueue::process_byte(uint8_t data) {
                     return true;
                 }
 
-                entry.retry_count++;
+                ++entry.retry_count;
                 if (entry.retry_count > kMaxRetries) {
                     static_cast<void>(queue_.pop(entry));
                     state_ = PS2State::Idle;

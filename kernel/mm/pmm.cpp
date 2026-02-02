@@ -25,9 +25,8 @@ PhysicalMemoryManager::PhysicalMemoryManager() {
     const auto *info = reinterpret_cast<const multiboot_info_t *>(
         phys_to_virt(reinterpret_cast<paddr_t>(mboot_info)));
 
-    if (!(info->flags & MULTIBOOT_INFO_MEM_MAP)) {
-        panic("PMM: bootloader did not provide a memory map\n");
-    }
+    assert(info && (info->flags & MULTIBOOT_INFO_MEMORY)
+           && "PMM: bootloader did not provide basic memory info\n");
 
     const vaddr_t mmap_virt_end =
         phys_to_virt(static_cast<paddr_t>(info->mmap_addr) + info->mmap_length);

@@ -85,9 +85,7 @@ bool Heap::grow(size_t min_bytes) {
 
     for (size_t i = 0; i < pages_needed; ++i) {
         paddr_t phys = kPmm.alloc();
-        if (!phys) {
-            panic("Heap::grow: out of physical memory\n");
-        }
+        assert(phys && "Heap::grow: out of physical memory\n");
 
         VMM::map(static_cast<vaddr_t>(va), phys);
         va += PAGE_SIZE;
@@ -123,9 +121,7 @@ void Heap::init() {
 
     for (size_t i = 0; i < kInitialPages; ++i) {
         paddr_t phys = kPmm.alloc();
-        if (!phys) {
-            panic("Heap::init: out of physical memory\n");
-        }
+        assert(phys && "Heap::init: out of physical memory\n");
         vaddr_t va = kVirtBase + i * PAGE_SIZE;
         VMM::map(va, phys);
         end_ += PAGE_SIZE;
@@ -172,9 +168,7 @@ void Heap::dump() const {
 }
 
 void *Heap::alloc(size_t size) {
-    if (!base_) {
-        panic("kmalloc: heap not initialised\n");
-    }
+    assert(base_ && "kmalloc: heap not initialised\n");
     if (size == 0) {
         return nullptr;
     }

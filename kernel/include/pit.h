@@ -10,15 +10,15 @@
  * The input clock is 1.193182 MHz; the divisor (11932) is written as two
  * bytes (lo then hi) to the channel 0 data port (0x40).
  *
- * init() must be called after Interrupt::init() so that the IRQ 0 handler
- * can be registered. Interrupts must be enabled for sleep_ticks / sleep_ms
- * to make forward progress (they hlt-wait for each tick).
  */
 
 namespace PIT {
-    // Program channel 0 for periodic interrupts and register the IRQ 0
-    // handler. Must be called exactly once, after Interrupt::init().
+    // Program channel 0 for periodic interrupts.
+    // Does not install an IRQ handler; see Scheduler::init().
     void init();
+
+    // Increment the tick counter. Called from timer_entry.S dispatch.
+    void tick();
 
     // Return the total number of timer ticks since init().
     uint64_t get_ticks();

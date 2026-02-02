@@ -102,7 +102,7 @@ int vprintf(const char *__restrict__ format, va_list ap) {
         // process width
         int width = -1;
         if (*format >= '1' && *format <= '9') {
-            for (width = 0; *format >= '0' && *format <= '9'; format++) {
+            for (width = 0; *format >= '0' && *format <= '9'; ++format) {
                 width = 10 * width + *format - '0';
             }
         } else if (*format == '*') {

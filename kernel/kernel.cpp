@@ -78,12 +78,17 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
 #ifdef KERNEL_TESTS
     KTest::run_all();  // runs all registered tests then exits QEMU
 #else
-    printf("Entering usermode test...\n");
+    // User program test
+    // {
+    //     printf("Entering usermode test...\n");
+    //     load_user_program();
+    //     printf("  jumping to ring 3...\n");
+    //     Usermode::jump(USER_CODE_VA, USER_STACK_TOP);
+    // }
 
-    load_user_program();
-
-    printf("  jumping to ring 3...\n");
-    Usermode::jump(USER_CODE_VA, USER_STACK_TOP);
+    while (true) {
+        asm volatile("hlt");
+    }
 #endif
     __builtin_unreachable();
 }

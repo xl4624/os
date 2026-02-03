@@ -5,7 +5,7 @@ export SYSROOT := $(CURDIR)/sysroot
 # ==== Build Settings ====
 LDFLAGS := -T arch/linker.ld -ffreestanding -O2 -nostdlib
 LIBS    := -nostdlib -Llibc -lk -lgcc
-SUBDIRS := arch kernel libc
+SUBDIRS := arch kernel libc user
 
 # Disable built-in rules for kernel test files (they're built by kernel/Makefile)
 kernel/test/%.o: kernel/test/%.cpp
@@ -29,29 +29,29 @@ ISO        = myos.iso
 KTEST_BIN := myos-test.bin
 KTEST_ISO := myos-test.iso
 
-.PHONY: all run debug lldb clean check install arch kernel libc test clean-test ktest ktest-kernel
+.PHONY: all run debug lldb clean check install arch kernel libc user test ktest ktest-kernel
 
 all: $(BIN)
 
 run: $(ISO)
-	qemu-system-i386 -cdrom $(ISO) -no-reboot -no-shutdown
+	@qemu-system-i386 -cdrom $(ISO) -no-reboot -no-shutdown
 
 debug: $(ISO)
-	qemu-system-i386 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown
+	@qemu-system-i386 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown
 
 lldb: $(ISO) $(BIN)
-	qemu-system-i386 -cdrom $(ISO) -s -S -no-reboot -no-shutdown &
-	sleep 0.5
-	lldb $(BIN) \
+	@qemu-system-i386 -cdrom $(ISO) -s -S -no-reboot -no-shutdown &
+	@sleep 0.5
+	@lldb $(BIN) \
 		-o "protocol-server start MCP listen://localhost:59999" \
 		-o "gdb-remote localhost:1234"
 
 test:
-	$(MAKE) -C tests unit
+	@$(MAKE) -C tests unit
 
 ktest: install $(KTEST_ISO)
 	@echo "Running kernel tests in QEMU..."
-	qemu-system-i386 -no-reboot -cdrom $(KTEST_ISO) -device isa-debug-exit,iobase=0xf4,iosize=0x04; \
+	@qemu-system-i386 -no-reboot -cdrom $(KTEST_ISO) -device isa-debug-exit,iobase=0xf4,iosize=0x04; \
 		status=$$?; \
 		if [ $$status -eq 1 ]; then \
 			echo "[SUCCESS] All tests passed!"; \
@@ -69,37 +69,36 @@ ktest: install $(KTEST_ISO)
 		$(MAKE) -C kernel clean; \
 		exit $$result
 
-clean: clean-test
+clean:
 	@for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean; \
 	done
-	rm -f $(BIN) $(ISO) $(KTEST_BIN) $(KTEST_ISO)
-	rm -rf $(ISODIR) $(SYSROOT)
-
-clean-test:
-	$(MAKE) -C tests clean
+	@$(MAKE) -C tests clean
+	@rm -f $(BIN) $(ISO) $(KTEST_BIN) $(KTEST_ISO)
+	@rm -rf $(ISODIR) $(SYSROOT)
 
 install:
-	./install.sh
+	@./install.sh
 
 $(BIN): $(SUBDIRS) $(OBJS) arch/linker.ld
-	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)
+	@$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)
 	@grub-file --is-x86-multiboot $@ || { echo "NOT MULTIBOOT"; exit 1; }
 
-$(ISO): $(BIN)
-	mkdir -p $(ISODIR)/boot/grub
-	cp $< $(ISODIR)/boot/
-	cp grub.cfg $(ISODIR)/boot/grub/
-	grub-mkrescue -o $@ $(ISODIR)
+$(ISO): $(BIN) user
+	@mkdir -p $(ISODIR)/boot/grub
+	@cp $< $(ISODIR)/boot/
+	@cp user/hello.elf $(ISODIR)/boot/
+	@cp grub.cfg $(ISODIR)/boot/grub/
+	@grub-mkrescue -o $@ $(ISODIR)
 
 # Build kernel objects with tests enabled
 ktest-kernel:
-	$(MAKE) -C kernel clean
-	$(MAKE) -C kernel KERNEL_TESTS=1
+	@$(MAKE) -C kernel clean
+	@$(MAKE) -C kernel KERNEL_TESTS=1
 
 # Link the test kernel binary
 $(KTEST_BIN): install arch libc ktest-kernel arch/linker.ld
-	$(CC) $(LDFLAGS) -o $@ \
+	@$(CC) $(LDFLAGS) -o $@ \
 		$(CRTI) $(CRTBEGIN) arch/boot.o \
 		$$(find kernel -type f -name '*.o' | sort) \
 		$$(find libc   -type f -name '*.libk.o' | sort) \
@@ -107,13 +106,16 @@ $(KTEST_BIN): install arch libc ktest-kernel arch/linker.ld
 	@grub-file --is-x86-multiboot $@ || { echo "NOT MULTIBOOT"; exit 1; }
 
 $(KTEST_ISO): $(KTEST_BIN)
-	mkdir -p $(ISODIR)/boot/grub
-	cp $< $(ISODIR)/boot/myos.bin
-	cp grub.cfg $(ISODIR)/boot/grub/
-	grub-mkrescue -o $@ $(ISODIR)
+	@mkdir -p $(ISODIR)/boot/grub
+	@cp $< $(ISODIR)/boot/myos.bin
+	@cp grub.cfg $(ISODIR)/boot/grub/
+	@grub-mkrescue -o $@ $(ISODIR)
 
-$(SUBDIRS): install
-	$(MAKE) -C $@
+arch kernel libc: install
+	@$(MAKE) -C $@
+
+user:
+	@$(MAKE) -C $@
 
 print-sysroot:
 	@echo $(SYSROOT)

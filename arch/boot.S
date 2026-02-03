@@ -1,7 +1,11 @@
-/* Higher-half kernel boot code for i686.
-   GRUB loads the kernel at physical 2 MiB. This code sets up initial page
-   tables that identity-map and higher-half-map the first 8 MiB, enables
-   paging, then jumps to the kernel's virtual address in the higher half. */
+/*
+ * boot.S -- Higher-half kernel boot code for i686.
+ *
+ * GRUB loads the kernel at physical 2 MiB. This code sets up initial
+ * page tables that identity-map and higher-half-map the first 8 MiB,
+ * enables paging, then jumps to the kernel's virtual address in the
+ * higher half.
+ */
 
 .set KERNEL_VMA,  0xC0000000
 .set ALIGN,       1<<0             /* align loaded modules on page boundaries */

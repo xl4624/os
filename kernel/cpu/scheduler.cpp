@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "address_space.h"
+#include "elf.h"
 #include "gdt.h"
 #include "heap.h"
 #include "idt.h"
@@ -188,109 +189,6 @@ namespace Scheduler {
         return initialized;
     }
 
-    Process *create_process(const uint8_t *code, size_t code_len,
-                            const uint8_t *data, size_t data_len,
-                            vaddr_t entry) {
-        assert(initialized
-               && "Scheduler::create_process(): scheduler not initialized");
-
-        Process *p = alloc_process();
-        if (!p) {
-            return nullptr;
-        }
-
-        auto [pd_phys, pd_virt] = AddressSpace::create();
-        p->page_directory_phys = pd_phys;
-        p->page_directory = pd_virt;
-
-        const size_t total_code = code_len + data_len;
-        const size_t code_pages = (total_code + PAGE_SIZE - 1) / PAGE_SIZE;
-        for (size_t i = 0; i < code_pages; ++i) {
-            paddr_t phys = kPmm.alloc();
-            assert(phys != 0);
-            AddressSpace::map(pd_virt, entry + i * PAGE_SIZE, phys,
-                              /*writeable=*/true, /*user=*/true);
-
-            // Copy code/data into the page via the kernel's identity mapping.
-            auto *dest = reinterpret_cast<uint8_t *>(phys_to_virt(phys));
-            const size_t page_offset = i * PAGE_SIZE;
-            size_t to_copy = PAGE_SIZE;
-            if (page_offset + to_copy > total_code) {
-                to_copy = total_code - page_offset;
-            }
-
-            size_t copied = 0;
-            if (page_offset < code_len) {
-                size_t from_code = code_len - page_offset;
-                if (from_code > to_copy) {
-                    from_code = to_copy;
-                }
-                memcpy(dest, code + page_offset, from_code);
-                copied = from_code;
-            }
-            if (copied < to_copy && data && data_len > 0) {
-                size_t data_offset = (page_offset + copied > code_len)
-                                         ? page_offset + copied - code_len
-                                         : 0;
-                size_t from_data = to_copy - copied;
-                if (from_data > data_len - data_offset) {
-                    from_data = data_len - data_offset;
-                }
-                memcpy(dest + copied, data + data_offset, from_data);
-                copied += from_data;
-            }
-            if (copied < PAGE_SIZE) {
-                memset(dest + copied, 0, PAGE_SIZE - copied);
-            }
-        }
-
-        for (uint32_t i = 0; i < kUserStackPages; ++i) {
-            paddr_t phys = kPmm.alloc();
-            assert(phys != 0);
-            AddressSpace::map(pd_virt, kUserStackVA + i * PAGE_SIZE, phys,
-                              /*writeable=*/true, /*user=*/true);
-        }
-
-        // Allocate kernel stack for when this process makes system calls.
-        p->kernel_stack =
-            reinterpret_cast<uint8_t *>(kmalloc(kKernelStackSize));
-        assert(p->kernel_stack);
-        memset(p->kernel_stack, 0, kKernelStackSize);
-
-        // Set up the initial register state. This TrapFrame is what we'll
-        // restore with iret to switch into user mode for the first time.
-        auto *kstack_top =
-            reinterpret_cast<uint32_t *>(p->kernel_stack + kKernelStackSize);
-        auto *frame = reinterpret_cast<TrapFrame *>(
-            reinterpret_cast<uintptr_t>(kstack_top) - sizeof(TrapFrame));
-
-        frame->eip = entry;
-        frame->cs = GDT::USER_CODE_SELECTOR;
-        frame->eflags = 0x202;  // IF set, reserved bit 1 set
-        frame->user_esp = kUserStackTop;
-        frame->user_ss = GDT::USER_DATA_SELECTOR;
-        frame->ds = GDT::USER_DATA_SELECTOR;
-        frame->es = GDT::USER_DATA_SELECTOR;
-        frame->fs = GDT::USER_DATA_SELECTOR;
-        frame->gs = GDT::USER_DATA_SELECTOR;
-        frame->eax = 0;
-        frame->ebx = 0;
-        frame->ecx = 0;
-        frame->edx = 0;
-        frame->esi = 0;
-        frame->edi = 0;
-        frame->ebp = 0;
-        frame->esp_dummy = 0;
-
-        p->kernel_esp = reinterpret_cast<uint32_t>(frame);
-
-        enqueue_ready(p);
-
-        printf("Scheduler: created process %u (entry=0x%08x)\n", p->pid,
-               static_cast<unsigned>(entry));
-        return p;
-    }
-
     uint32_t schedule(uint32_t esp) {
         // start() hasn't been called yet, so there's nothing to schedule.
         // Keep running on the initial kernel stack.
@@ -359,6 +257,80 @@ namespace Scheduler {
             PIT::get_ticks() + (static_cast<uint64_t>(ms) + 9) / 10;
         enqueue_blocked(current_process);
         // The schedule() call will switch away from us.
+    }
+
+    Process *create_process(const uint8_t *elf_data, size_t elf_len) {
+        assert(initialized
+               && "Scheduler::create_process(): scheduler not "
+                  "initialized");
+
+        Process *p = alloc_process();
+        if (!p) {
+            printf("Scheduler: failed to allocate process\n");
+            return nullptr;
+        }
+
+        auto [pd_phys, pd_virt] = AddressSpace::create();
+        p->page_directory_phys = pd_phys;
+        p->page_directory = pd_virt;
+
+        vaddr_t entry = 0;
+        if (!Elf::load(elf_data, elf_len, pd_virt, entry)) {
+            printf("Scheduler: failed to load ELF for process %u\n", p->pid);
+            AddressSpace::destroy(pd_virt, pd_phys);
+            p->state = ProcessState::Zombie;
+            return nullptr;
+        }
+
+        // Allocate user stack pages.
+        for (uint32_t i = 0; i < kUserStackPages; ++i) {
+            paddr_t phys = kPmm.alloc();
+            assert(phys != 0
+                   && "Scheduler::create_process(): out of physical memory "
+                      "for user stack");
+            AddressSpace::map(pd_virt, kUserStackVA + i * PAGE_SIZE, phys,
+                              /*writeable=*/true, /*user=*/true);
+        }
+
+        // Allocate kernel stack for system calls and interrupts.
+        p->kernel_stack =
+            reinterpret_cast<uint8_t *>(kmalloc(kKernelStackSize));
+        assert(p->kernel_stack
+               && "Scheduler::create_process(): failed to allocate kernel "
+                  "stack");
+        memset(p->kernel_stack, 0, kKernelStackSize);
+
+        // Set up initial TrapFrame for iret into user mode.
+        auto *kstack_top =
+            reinterpret_cast<uint32_t *>(p->kernel_stack + kKernelStackSize);
+        auto *frame = reinterpret_cast<TrapFrame *>(
+            reinterpret_cast<uintptr_t>(kstack_top) - sizeof(TrapFrame));
+
+        frame->eip = entry;
+        frame->cs = GDT::USER_CODE_SELECTOR;
+        frame->eflags = 0x202;  // IF set, reserved bit 1 set
+        frame->user_esp = kUserStackTop;
+        frame->user_ss = GDT::USER_DATA_SELECTOR;
+        frame->ds = GDT::USER_DATA_SELECTOR;
+        frame->es = GDT::USER_DATA_SELECTOR;
+        frame->fs = GDT::USER_DATA_SELECTOR;
+        frame->gs = GDT::USER_DATA_SELECTOR;
+        frame->eax = 0;
+        frame->ebx = 0;
+        frame->ecx = 0;
+        frame->edx = 0;
+        frame->esi = 0;
+        frame->edi = 0;
+        frame->ebp = 0;
+        frame->esp_dummy = 0;
+
+        p->kernel_esp = reinterpret_cast<uint32_t>(frame);
+
+        enqueue_ready(p);
+
+        printf("Scheduler: created process %u from ELF (entry=0x%08x)\n",
+               p->pid, static_cast<unsigned>(entry));
+        return p;
     }
 
     Process *current() {

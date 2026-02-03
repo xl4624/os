@@ -1,4 +1,7 @@
+#include <string.h>
+
 #include "address_space.h"
+#include "elf.h"
 #include "ktest.h"
 #include "paging.h"
 #include "pmm.h"
@@ -10,7 +13,7 @@ TEST(address_space, create_and_destroy) {
     ASSERT_NOT_NULL(virt);
     ASSERT_NE(phys, 0u);
 
-    // Kernel PDEs (768–1023) should be copied from boot_page_directory.
+    // Kernel PDEs (768-1023) should be copied from boot_page_directory.
     for (uint32_t i = AddressSpace::kKernelPdeStart; i < PAGES_PER_TABLE; ++i) {
         ASSERT_EQ(virt->entry[i].present, boot_page_directory.entry[i].present);
         if (virt->entry[i].present) {
@@ -18,7 +21,7 @@ TEST(address_space, create_and_destroy) {
         }
     }
 
-    // User PDEs (0–767) should be zeroed.
+    // User PDEs (0-767) should be zeroed.
     for (uint32_t i = 0; i < AddressSpace::kKernelPdeStart; ++i) {
         ASSERT_EQ(virt->entry[i].present, 0u);
     }
@@ -47,8 +50,50 @@ TEST(scheduler, current_not_null) {
     ASSERT_EQ(p->pid, 0u);  // idle process has PID 0
 }
 
+namespace {
+
+// Build a minimal valid ELF32 i386 executable in a buffer.
+// Contains a single PT_LOAD segment with no file data (just BSS).
+struct TestElf {
+    Elf::Header hdr;
+    Elf::ProgramHeader phdr;
+};
+
+void make_test_elf(TestElf &elf, uint32_t entry) {
+    memset(&elf, 0, sizeof(elf));
+
+    elf.hdr.e_ident[Elf::kEiMag0] = Elf::kElfMag0;
+    elf.hdr.e_ident[Elf::kEiMag1] = Elf::kElfMag1;
+    elf.hdr.e_ident[Elf::kEiMag2] = Elf::kElfMag2;
+    elf.hdr.e_ident[Elf::kEiMag3] = Elf::kElfMag3;
+    elf.hdr.e_ident[Elf::kEiClass] = Elf::kElfClass32;
+    elf.hdr.e_ident[Elf::kEiData] = Elf::kElfData2Lsb;
+    elf.hdr.e_type = Elf::kEtExec;
+    elf.hdr.e_machine = Elf::kEm386;
+    elf.hdr.e_version = 1;
+    elf.hdr.e_entry = entry;
+    elf.hdr.e_phoff = sizeof(Elf::Header);
+    elf.hdr.e_phentsize = sizeof(Elf::ProgramHeader);
+    elf.hdr.e_phnum = 1;
+    elf.hdr.e_ehsize = sizeof(Elf::Header);
+
+    elf.phdr.p_type = Elf::kPtLoad;
+    elf.phdr.p_offset = 0;
+    elf.phdr.p_vaddr = entry & ~(PAGE_SIZE - 1);
+    elf.phdr.p_filesz = 0;
+    elf.phdr.p_memsz = PAGE_SIZE;
+    elf.phdr.p_flags = Elf::kPfR | Elf::kPfX;
+    elf.phdr.p_align = PAGE_SIZE;
+}
+
+}  // namespace
+
 TEST(scheduler, create_process) {
-    Process *p = Scheduler::create_process(nullptr, 0, nullptr, 0, 0x00800000);
+    TestElf elf;
+    make_test_elf(elf, 0x00400000);
+
+    Process *p = Scheduler::create_process(
+        reinterpret_cast<const uint8_t *>(&elf), sizeof(elf));
     ASSERT_NOT_NULL(p);
     ASSERT_EQ(p->pid, 1u);  // first user process
     ASSERT_EQ(p->state, ProcessState::Ready);
@@ -57,9 +102,13 @@ TEST(scheduler, create_process) {
 }
 
 TEST(scheduler, create_multiple_processes) {
-    Process *p1 = Scheduler::create_process(nullptr, 0, nullptr, 0, 0x00800000);
-    Process *p2 = Scheduler::create_process(nullptr, 0, nullptr, 0, 0x00800000);
-    Process *p3 = Scheduler::create_process(nullptr, 0, nullptr, 0, 0x00800000);
+    TestElf elf;
+    make_test_elf(elf, 0x00400000);
+    const auto *data = reinterpret_cast<const uint8_t *>(&elf);
+
+    Process *p1 = Scheduler::create_process(data, sizeof(elf));
+    Process *p2 = Scheduler::create_process(data, sizeof(elf));
+    Process *p3 = Scheduler::create_process(data, sizeof(elf));
 
     ASSERT_NOT_NULL(p1);
     ASSERT_NOT_NULL(p2);

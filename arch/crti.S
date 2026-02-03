@@ -1,3 +1,11 @@
+/*
+ * crti.S -- C runtime initialization prologue.
+ *
+ * Provides the opening halves of _init and _fini. The linker places
+ * crtbegin.o's .init/.fini sections between crti.o and crtn.o, so
+ * global constructors and destructors are called in the right order.
+ */
+
 .section .init
 .global _init
 _init:

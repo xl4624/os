@@ -29,7 +29,7 @@ ISO        = myos.iso
 KTEST_BIN := myos-test.bin
 KTEST_ISO := myos-test.iso
 
-.PHONY: all run debug clean check install arch kernel libc test clean-test ktest ktest-kernel
+.PHONY: all run debug lldb clean check install arch kernel libc test clean-test ktest ktest-kernel
 
 all: $(BIN)
 
@@ -38,6 +38,13 @@ run: $(ISO)
 
 debug: $(ISO)
 	qemu-system-i386 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown
+
+lldb: $(ISO) $(BIN)
+	qemu-system-i386 -cdrom $(ISO) -s -S -no-reboot -no-shutdown &
+	sleep 0.5
+	lldb $(BIN) \
+		-o "protocol-server start MCP listen://localhost:59999" \
+		-o "gdb-remote localhost:1234"
 
 test:
 	$(MAKE) -C tests unit

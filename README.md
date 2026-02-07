@@ -3,10 +3,14 @@
 1. Setup the i868-elf Cross Compiler
     * Follow the [GCC Cross-Compiler](https://wiki.osdev.org/GCC_Cross-Compiler) guide
     * Should have `i686-elf-gcc`, `i686-elf-as`, etc. after
-2. Install dependencies (follow OSDev guide, but here's the list I remember)
-    * `xoriso`
-    * `grub`
-    * `qemu`
+2. Install dependencies:
+    * `i686-elf` cross-compiler toolchain (gcc, g++, as, ld, ar)
+    * `xorriso` (for ISO creation)
+    * `grub` (grub-file, grub-mkrescue)
+    * `qemu-system-i386` (for running/debugging)
+    * `lldb` (optional, for debugging with `make lldb`)
+    * `gcc`/`g++` (host compilers for unit tests)
+    * `make`
 3. To setup the project you can:
     * Build kernel binary and bootable ISO:
     ```bash

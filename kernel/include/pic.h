@@ -15,6 +15,7 @@
  */
 
 namespace PIC {
+
     // Remap both PICs so IRQs 0–15 arrive on vectors 32–47, then mask all
     // IRQ lines. Must be called before enabling interrupts.
     void init();
@@ -31,4 +32,5 @@ namespace PIC {
 
     // Mask all IRQ lines on both PICs (write 0xFF to both data ports).
     void disable();
+
 }  // namespace PIC

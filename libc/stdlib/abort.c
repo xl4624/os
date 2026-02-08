@@ -1,16 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "interrupt.h"
-#include "panic.h"
+#if defined(__is_libk)
+    #include "interrupt.h"
+    #include "panic.h"
+#elif defined(__is_libc)
+    #include <unistd.h>
+#endif
 
 __attribute__((noreturn)) void abort(void) {
 #if defined(__is_libk)
     panic("kernel: abort()\n");
-#else
-    // TODO: Terminate the process using SIGABRT
+#elif defined(__is_libc)
     printf("abort()\n");
-    halt_and_catch_fire();
+    _exit(134);
 #endif
     __builtin_unreachable();
 }

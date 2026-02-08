@@ -1,7 +1,9 @@
 include ../config.mk
 
-CFLAGS  := -ffreestanding -O2 -g -Wall -Wextra -nostdlib -mgeneral-regs-only
-LDFLAGS := -T link.ld -nostdlib
+CFLAGS  := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include \
+           -ffreestanding -O2 -g -Wall -Wextra -nostdlib -mgeneral-regs-only
+LDFLAGS := -T link.ld -nostdlib --sysroot=$(SYSROOT)
+LIBS    := -L$(SYSROOT)/usr/lib -lc -lgcc
 
 PROGS := $(BUILDDIR)/user/hello.elf
 
@@ -11,13 +13,13 @@ all: $(PROGS)
 
 $(BUILDDIR)/user/hello.elf: $(BUILDDIR)/user/crt0.o $(BUILDDIR)/user/hello.o link.ld
 	@mkdir -p $(dir $@)
-	@$(CC) $(LDFLAGS) -o $@ $(BUILDDIR)/user/crt0.o $(BUILDDIR)/user/hello.o -lgcc
+	@$(CC) $(LDFLAGS) -o $@ $(BUILDDIR)/user/crt0.o $(BUILDDIR)/user/hello.o $(LIBS)
 
 $(BUILDDIR)/user/crt0.o: crt0.S
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILDDIR)/user/%.o: %.c syscall.h
+$(BUILDDIR)/user/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 

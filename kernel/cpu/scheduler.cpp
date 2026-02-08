@@ -275,12 +275,14 @@ namespace Scheduler {
         p->page_directory = pd_virt;
 
         vaddr_t entry = 0;
-        if (!Elf::load(elf_data, elf_len, pd_virt, entry)) {
+        vaddr_t brk = 0;
+        if (!Elf::load(elf_data, elf_len, pd_virt, entry, brk)) {
             printf("Scheduler: failed to load ELF for process %u\n", p->pid);
             AddressSpace::destroy(pd_virt, pd_phys);
             p->state = ProcessState::Zombie;
             return nullptr;
         }
+        p->heap_break = brk;
 
         // Allocate user stack pages.
         for (uint32_t i = 0; i < kUserStackPages; ++i) {

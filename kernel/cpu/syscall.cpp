@@ -19,16 +19,24 @@ static constexpr uint32_t SYSCALL_VECTOR = 0x80;
 // ===========================================================================
 
 // Validate that a user pointer range [ptr, ptr+len) is entirely below the
-// kernel virtual base. This prevents user code from tricking the kernel into
-// reading/writing kernel memory.
-// TODO: Also verify the pages are actually mapped and user-accessible (walk the
-// page tables) to prevent faults inside the kernel.
-static bool validate_user_buffer(uint32_t ptr, uint32_t len) {
+// kernel virtual base and that every page in the range is present and
+// user-accessible. writeable additionally requires each PTE to have rw=1.
+static bool validate_user_buffer(uint32_t ptr, uint32_t len, bool writeable) {
     if (len == 0) {
         return true;
     }
     // Overflow check and kernel boundary check.
-    return ptr + len > ptr && ptr + len <= KERNEL_VMA;
+    if (ptr + len <= ptr || ptr + len > KERNEL_VMA) {
+        return false;
+    }
+    const PageTable *pd = Scheduler::current()->page_directory;
+    const uint32_t page_mask = PAGE_SIZE - 1;
+    for (vaddr_t page = ptr & ~page_mask; page < ptr + len; page += PAGE_SIZE) {
+        if (!AddressSpace::is_user_mapped(pd, page, writeable)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // SYS_WRITE(fd=ebx, buf=ecx, count=edx)
@@ -43,7 +51,7 @@ static int32_t sys_write(TrapFrame *regs) {
         return -1;
     }
 
-    if (!validate_user_buffer(buf, count)) {
+    if (!validate_user_buffer(buf, count, /*writeable=*/false)) {
         return -1;
     }
 
@@ -67,7 +75,7 @@ static int32_t sys_read(TrapFrame *regs) {
         return -1;
     }
 
-    if (!validate_user_buffer(buf, count)) {
+    if (!validate_user_buffer(buf, count, /*writeable=*/true)) {
         return -1;
     }
 

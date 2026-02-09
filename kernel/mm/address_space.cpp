@@ -108,6 +108,23 @@ namespace AddressSpace {
         asm volatile("mov %0, %%cr3" ::"r"(pd_phys) : "memory");
     }
 
+    bool is_user_mapped(const PageTable *pd, vaddr_t va, bool writeable) {
+        const PageEntry &pde = pd->entry[pd_index(va)];
+        if (!pde.present || !pde.user) {
+            return false;
+        }
+        const auto *pt = reinterpret_cast<const PageTable *>(
+            phys_to_virt(frame_to_phys(pde.frame)));
+        const PageEntry &pte = pt->entry[pt_index(va)];
+        if (!pte.present || !pte.user) {
+            return false;
+        }
+        if (writeable && !pte.rw) {
+            return false;
+        }
+        return true;
+    }
+
     void destroy(PageTable *pd, paddr_t pd_phys) {
         // Free all user-space page tables and their mapped pages.
         for (uint32_t pdi = 0; pdi < kKernelPdeStart; ++pdi) {

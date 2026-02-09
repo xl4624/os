@@ -50,4 +50,8 @@ namespace AddressSpace {
     // then free the page directory page itself.
     void destroy(PageTable *pd, paddr_t pd_phys);
 
+    // Returns true if the page containing va is present in pd and is
+    // user-accessible. If writeable is true, also requires the PTE rw bit.
+    bool is_user_mapped(const PageTable *pd, vaddr_t va, bool writeable);
+
 }  // namespace AddressSpace

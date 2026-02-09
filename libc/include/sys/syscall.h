@@ -13,6 +13,9 @@
 #define SYS_WRITE 2
 #define SYS_SLEEP 3
 #define SYS_SBRK 4
-#define SYS_MAX 5
+#define SYS_SET_CURSOR 5
+#define SYS_SET_COLOR 6
+#define SYS_CLEAR 7
+#define SYS_MAX 8
 
 #endif

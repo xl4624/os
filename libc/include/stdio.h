@@ -10,6 +10,7 @@ __BEGIN_DECLS
 
 int vprintf(const char *__restrict__ format, va_list ap);
 int printf(const char *__restrict__ format, ...);
+int getchar(void);
 int putchar(int c);
 int puts(const char *s);
 

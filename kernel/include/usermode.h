@@ -2,9 +2,6 @@
 
 #include <stdint.h>
 
-// TODO: Once we have process switching, this should set up per-process page
-// directories and update TSS.esp0 before each transition.
-
 namespace Usermode {
 
     // Transition from ring 0 to ring 3 using the iret trick.

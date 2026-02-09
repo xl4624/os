@@ -13,7 +13,6 @@ void __assert_fail(const char *__assertion, const char *__file,
     panic("%s:%d: %s: Assertion `%s' failed.\n", __file, __line, __function,
           __assertion);
 #else
-    // TODO: Terminate the process using SIGABRT
     printf("Assertion failed: %s, file %s, line %u, function %s\n", __assertion,
            __file, __line, __function);
     abort();

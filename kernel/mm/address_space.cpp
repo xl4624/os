@@ -79,6 +79,25 @@ namespace AddressSpace {
         pt->entry[pt_index(virt)] = PageEntry(phys, writeable, user);
     }
 
+    void unmap(PageTable *pd, vaddr_t virt) {
+        const uint32_t pdi = pd_index(virt);
+        PageEntry &pde = pd->entry[pdi];
+        if (!pde.present) {
+            return;
+        }
+
+        const paddr_t pt_phys = frame_to_phys(pde.frame);
+        auto *pt = reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
+        PageEntry &pte = pt->entry[pt_index(virt)];
+        if (!pte.present) {
+            return;
+        }
+
+        kPmm.free(frame_to_phys(pte.frame));
+        __builtin_memset(&pte, 0, sizeof(pte));
+        asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
+    }
+
     void sync_kernel_mappings(PageTable *pd) {
         memcpy(&pd->entry[kKernelPdeStart],
                &boot_page_directory.entry[kKernelPdeStart],

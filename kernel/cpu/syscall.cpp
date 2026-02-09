@@ -117,10 +117,9 @@ static int32_t sys_sbrk(TrapFrame *regs) {
         for (vaddr_t va = old_page; va < new_page; va += PAGE_SIZE) {
             paddr_t phys = kPmm.alloc();
             if (phys == 0) {
-                // TODO: unmap and free here.
-
-                // for (vaddr_t undo = old_page; undo < va; undo += PAGE_SIZE)
-                // {}
+                for (vaddr_t undo = old_page; undo < va; undo += PAGE_SIZE) {
+                    AddressSpace::unmap(proc->page_directory, undo);
+                }
                 return -1;
             }
             AddressSpace::map(proc->page_directory, va, phys,
@@ -134,6 +133,12 @@ static int32_t sys_sbrk(TrapFrame *regs) {
 
     proc->heap_break = new_break;
     return static_cast<int32_t>(old_break);
+}
+
+// SYS_GETPID()
+// Returns the PID of the calling process.
+static int32_t sys_getpid([[maybe_unused]] TrapFrame *regs) {
+    return static_cast<int32_t>(Scheduler::current()->pid);
 }
 
 // SYS_SET_CURSOR(row=ebx, col=ecx)
@@ -172,6 +177,7 @@ static syscall_fn syscall_table[SYS_MAX] = {
     sys_set_cursor,  // 5
     sys_set_color,   // 6
     sys_clear,       // 7
+    sys_getpid,      // 8
 };
 
 __BEGIN_DECLS

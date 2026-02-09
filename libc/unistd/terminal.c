@@ -11,8 +11,7 @@ void set_color(unsigned char color) {
     (void)color;
 }
 
-void clear_screen(void) {
-}
+void clear_screen(void) {}
 
 #elif defined(__is_libc)
 

@@ -34,6 +34,10 @@ namespace AddressSpace {
     void map(PageTable *pd, vaddr_t virt, paddr_t phys, bool writeable,
              bool user);
 
+    // Unmap a single page from a page directory, freeing its physical frame.
+    // Invalidates the TLB entry for `virt` via invlpg. No-op if not mapped.
+    void unmap(PageTable *pd, vaddr_t virt);
+
     // Copy current kernel PDE entries (768–1023) from boot_page_directory
     // into the given page directory. Call before switching to this address
     // space to pick up any new kernel mappings (e.g. heap growth).

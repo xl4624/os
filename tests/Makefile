@@ -15,7 +15,8 @@ MAIN_OBJ   := $(BUILDDIR)/test/main.o
 
 # libc source files that work on host (exclude kernel-dependent ones)
 LIBC_SRCS := $(shell find ../libc/string -name '*.c') \
-             ../libc/stdlib/itoa.c
+             ../libc/stdlib/itoa.c \
+             ../libc/stdlib/rand.c
 LIBC_OBJS := $(patsubst ../libc/%.c,$(BUILDDIR)/test/libc/%.o,$(LIBC_SRCS))
 
 ALL_OBJS := $(UNIT_OBJS) $(MAIN_OBJ) $(LIBC_OBJS)

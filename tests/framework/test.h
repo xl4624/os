@@ -11,7 +11,7 @@ struct TestCase {
     int line;
 };
 
-static constexpr int kMaxTests = 128;
+static constexpr int kMaxTests = 256;
 
 // The list of registered test cases.
 extern TestCase kTests[kMaxTests];

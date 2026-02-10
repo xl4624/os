@@ -48,9 +48,13 @@ lldb: $(ISO) $(BIN)
 test:
 	@$(MAKE) -C tests unit
 
+KTEST_LOG := $(KTEST_BUILDDIR)/ktest.log
+
 ktest: install $(KTEST_ISO)
 	@echo "Running kernel tests in QEMU..."
-	@qemu-system-i386 -no-reboot -cdrom $(KTEST_ISO) -device isa-debug-exit,iobase=0xf4,iosize=0x04; \
+	@qemu-system-i386 -no-reboot -display none -cdrom $(KTEST_ISO) \
+		-device isa-debug-exit,iobase=0xf4,iosize=0x04 \
+		-debugcon file:$(KTEST_LOG); \
 		status=$$?; \
 		if [ $$status -eq 1 ]; then \
 			echo "[SUCCESS] All tests passed!"; \
@@ -65,6 +69,7 @@ ktest: install $(KTEST_ISO)
 			echo "[FAILURE] Unknown error (exit code: $$status)"; \
 			result=$$status; \
 		fi; \
+		cat $(KTEST_LOG); \
 		exit $$result
 
 clean:
@@ -101,7 +106,7 @@ $(KTEST_BIN): install arch libc ktest-kernel arch/linker.ld
 $(KTEST_ISO): $(KTEST_BIN)
 	@mkdir -p $(KTEST_BUILDDIR)/isodir/boot/grub
 	@cp $< $(KTEST_BUILDDIR)/isodir/boot/myos.bin
-	@cp grub.cfg $(KTEST_BUILDDIR)/isodir/boot/grub/
+	@cp grub-test.cfg $(KTEST_BUILDDIR)/isodir/boot/grub/grub.cfg
 	@grub-mkrescue -o $@ $(KTEST_BUILDDIR)/isodir
 
 arch kernel libc: install

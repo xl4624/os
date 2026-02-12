@@ -1,6 +1,10 @@
 #include "ktest.h"
 #include "pit.h"
 
+// ---------------------------------------------------------------------------
+// PIT::get_ticks
+// ---------------------------------------------------------------------------
+
 TEST(pit, ticks_advance) {
     uint64_t t0 = PIT::get_ticks();
     // Wait for at least one timer interrupt via hlt.
@@ -8,6 +12,10 @@ TEST(pit, ticks_advance) {
     uint64_t t1 = PIT::get_ticks();
     ASSERT(t1 > t0);
 }
+
+// ---------------------------------------------------------------------------
+// PIT::sleep_ms
+// ---------------------------------------------------------------------------
 
 TEST(pit, sleep_ms_waits) {
     uint64_t t0 = PIT::get_ticks();

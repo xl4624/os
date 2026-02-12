@@ -52,3 +52,40 @@ TEST(rand, sequence_not_constant) {
     }
     ASSERT_TRUE(found_different);
 }
+
+// Seed 0 must not produce a stuck sequence (all-zero or all-same output).
+TEST(rand, seed_zero_produces_varied_sequence) {
+    srand(0);
+    int first = rand();
+    bool found_different = false;
+    for (int i = 0; i < 32; ++i) {
+        if (rand() != first) {
+            found_different = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(found_different);
+}
+
+// 1000 consecutive calls must all stay within [0, RAND_MAX].
+TEST(rand, large_sample_stays_in_bounds) {
+    srand(42);
+    for (int i = 0; i < 1000; ++i) {
+        int v = rand();
+        ASSERT_TRUE(v >= 0);
+        ASSERT_TRUE(v <= RAND_MAX);
+    }
+}
+
+// Reseeding with the same value must reproduce an identical sequence.
+TEST(rand, reseed_reproduces_sequence) {
+    int vals[5];
+    srand(99999);
+    for (int i = 0; i < 5; ++i) {
+        vals[i] = rand();
+    }
+    srand(99999);
+    for (int i = 0; i < 5; ++i) {
+        ASSERT_EQ(rand(), vals[i]);
+    }
+}

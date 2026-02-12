@@ -91,3 +91,39 @@ TEST(stdlib, itoa_base_36) {
     itoa(35, buf, 36);
     ASSERT_STR_EQ(buf, "z");
 }
+
+// Negative values in non-decimal bases get a '-' prefix with the magnitude
+// converted in the given base.
+TEST(stdlib, itoa_negative_in_hex) {
+    char buf[20];
+    itoa(-255, buf, 16);
+    ASSERT_STR_EQ(buf, "-ff");
+    itoa(-1, buf, 16);
+    ASSERT_STR_EQ(buf, "-1");
+}
+
+TEST(stdlib, itoa_negative_in_binary) {
+    char buf[20];
+    itoa(-10, buf, 2);
+    ASSERT_STR_EQ(buf, "-1010");
+}
+
+TEST(stdlib, itoa_all_hex_letters) {
+    char buf[20];
+    itoa(10, buf, 16);
+    ASSERT_STR_EQ(buf, "a");
+    itoa(11, buf, 16);
+    ASSERT_STR_EQ(buf, "b");
+    itoa(12, buf, 16);
+    ASSERT_STR_EQ(buf, "c");
+    itoa(13, buf, 16);
+    ASSERT_STR_EQ(buf, "d");
+    itoa(14, buf, 16);
+    ASSERT_STR_EQ(buf, "e");
+    itoa(15, buf, 16);
+    ASSERT_STR_EQ(buf, "f");
+}
+
+TEST(stdlib, abs_int_max) {
+    ASSERT_EQ(abs(2147483647), 2147483647);
+}

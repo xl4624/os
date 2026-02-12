@@ -14,7 +14,7 @@ static uint8_t vga_color_at(size_t row, size_t col) {
 }
 
 // ---------------------------------------------------------------------------
-// Character output
+// terminal_putchar
 // ---------------------------------------------------------------------------
 
 TEST(tty, putchar_appears_in_buffer) {
@@ -32,10 +32,6 @@ TEST(tty, multiple_chars_fill_columns) {
     ASSERT_EQ(vga_char_at(0, 1), 'i');
 }
 
-// ---------------------------------------------------------------------------
-// Newline
-// ---------------------------------------------------------------------------
-
 TEST(tty, newline_advances_row) {
     terminal_clear();
     terminal_putchar('\n');
@@ -43,10 +39,6 @@ TEST(tty, newline_advances_row) {
     // '\n' resets col to 0 and increments row to 1.
     ASSERT_EQ(vga_char_at(1, 0), 'X');
 }
-
-// ---------------------------------------------------------------------------
-// Backspace
-// ---------------------------------------------------------------------------
 
 TEST(tty, backspace_erases_last_char) {
     terminal_clear();
@@ -56,32 +48,33 @@ TEST(tty, backspace_erases_last_char) {
     ASSERT_EQ(vga_char_at(0, 0), 0);
 }
 
-// ---------------------------------------------------------------------------
-// Tab
-// ---------------------------------------------------------------------------
-
-TEST(tty, tab_advances_cursor) {
+// A tab advances the cursor to the next TAB_WIDTH (4) boundary.
+// From col 0: 4 spaces -> cursor lands at col 4.
+// From col 1: 3 spaces -> cursor lands at col 4.
+// From col 4: 4 spaces -> cursor lands at col 8.
+TEST(tty, tab_advances_to_next_tab_stop) {
     terminal_clear();
-    // Tab from col 0 writes spaces and advances the cursor past col 0.
-    // Verify the next character lands after the spaces.
     terminal_putchar('\t');
-    size_t tab_col = 0;
-    // Find where the cursor ended up by looking for the first non-space
-    // after we write a marker.
-    terminal_putchar('T');
-    for (size_t c = 0; c < VGA::WIDTH; ++c) {
-        if (vga_char_at(0, c) == 'T') {
-            tab_col = c;
-            break;
-        }
-    }
-    // Tab should advance past col 0.
-    ASSERT_TRUE(tab_col > 0);
-    ASSERT_EQ(vga_char_at(0, tab_col), 'T');
+    terminal_putchar('A');
+    ASSERT_EQ(vga_char_at(0, 4), 'A');
+
+    // From col 1: one char then tab should land at col 4.
+    terminal_clear();
+    terminal_putchar('X');           // col 1
+    terminal_putchar('\t');          // 3 spaces -> col 4
+    terminal_putchar('B');
+    ASSERT_EQ(vga_char_at(0, 4), 'B');
+
+    // From col 4: tab should land at col 8.
+    terminal_clear();
+    terminal_set_position(0, 4);
+    terminal_putchar('\t');
+    terminal_putchar('C');
+    ASSERT_EQ(vga_char_at(0, 8), 'C');
 }
 
 // ---------------------------------------------------------------------------
-// Color
+// terminal_set_color
 // ---------------------------------------------------------------------------
 
 TEST(tty, set_color_changes_attribute) {
@@ -95,7 +88,7 @@ TEST(tty, set_color_changes_attribute) {
 }
 
 // ---------------------------------------------------------------------------
-// Clear
+// terminal_clear
 // ---------------------------------------------------------------------------
 
 TEST(tty, clear_resets_to_origin) {
@@ -109,7 +102,7 @@ TEST(tty, clear_resets_to_origin) {
 }
 
 // ---------------------------------------------------------------------------
-// set_position
+// terminal_set_position
 // ---------------------------------------------------------------------------
 
 TEST(tty, set_position_moves_cursor) {
@@ -126,4 +119,72 @@ TEST(tty, set_position_clamps_out_of_range) {
     terminal_set_position(999, 0);
     terminal_putchar('C');
     ASSERT_EQ(vga_char_at(VGA::HEIGHT - 1, 0), 'C');
+}
+
+TEST(tty, set_position_col_clamps_out_of_range) {
+    terminal_clear();
+    // Col >= WIDTH is clamped to WIDTH-1.
+    terminal_set_position(0, 999);
+    terminal_putchar('D');
+    ASSERT_EQ(vga_char_at(0, VGA::WIDTH - 1), 'D');
+}
+
+TEST(tty, line_wrap_at_right_edge) {
+    terminal_clear();
+    // Write exactly WIDTH characters to fill the first row.
+    for (size_t i = 0; i < VGA::WIDTH; ++i) {
+        terminal_putchar('A');
+    }
+    // The next character must wrap to the start of row 1.
+    terminal_putchar('B');
+    ASSERT_EQ(vga_char_at(1, 0), 'B');
+}
+
+TEST(tty, scroll_on_overflow) {
+    terminal_clear();
+    // Leave a marker at row 0 col 0.
+    terminal_putchar('S');
+    // VGA::HEIGHT newlines from row 0 advance through every row and trigger
+    // one scroll, which shifts all rows up by one and clears the last row.
+    for (size_t i = 0; i < VGA::HEIGHT; ++i) {
+        terminal_putchar('\n');
+    }
+    // The 'S' that was at row 0 should have scrolled off; row 0 is now blank.
+    ASSERT_EQ(vga_char_at(0, 0), 0);
+}
+
+TEST(tty, color_persists_across_newline) {
+    terminal_clear();
+    const uint8_t color =
+        VGA::entry_color(VGA::Color::Green, VGA::Color::Black);
+    terminal_set_color(color);
+    terminal_putchar('A');
+    terminal_putchar('\n');
+    terminal_putchar('B');
+    // Both characters must carry the color set before the newline.
+    ASSERT_EQ(vga_color_at(0, 0), color);
+    ASSERT_EQ(vga_color_at(1, 0), color);
+}
+
+TEST(tty, backspace_at_col_zero_goes_to_previous_row) {
+    terminal_clear();
+    terminal_putchar('\n');  // advance to row 1, col 0
+    // Backspace at col 0 of a non-zero row should retreat to the previous row.
+    // The previous row (0) is blank, so the cursor lands at (0, 0).
+    terminal_putchar('\b');
+    terminal_putchar('R');
+    ASSERT_EQ(vga_char_at(0, 0), 'R');
+}
+
+TEST(tty, clear_zeroes_all_cells) {
+    // Dirty the first row, then clear.
+    for (size_t c = 0; c < VGA::WIDTH; ++c) {
+        terminal_putchar('X');
+    }
+    terminal_clear();
+    for (size_t r = 0; r < VGA::HEIGHT; ++r) {
+        for (size_t c = 0; c < VGA::WIDTH; ++c) {
+            ASSERT_EQ(vga_char_at(r, c), 0);
+        }
+    }
 }

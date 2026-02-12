@@ -471,3 +471,68 @@ TEST(string, strcspn_immediate_match) {
 TEST(string, strcspn_empty_string) {
     ASSERT_EQ(strcspn("", "abc"), 0);
 }
+
+// strchr must return the FIRST occurrence, not any later one.
+TEST(string, strchr_repeated_char_returns_first) {
+    const char *str = "aabba";
+    ASSERT(strchr(str, 'a') == str);      // first 'a' at index 0
+    ASSERT(strchr(str, 'b') == str + 2);  // first 'b' at index 2
+}
+
+// strcmp is case-sensitive: 'a' (97) > 'A' (65) in ASCII.
+TEST(string, strcmp_case_sensitive) {
+    ASSERT_NE(strcmp("abc", "ABC"), 0);
+    ASSERT(strcmp("abc", "ABC") > 0);
+    ASSERT(strcmp("A", "a") < 0);
+}
+
+// memcmp uses unsigned byte comparison; bytes with values > 127 must order
+// as larger than bytes with values < 128.
+TEST(string, memcmp_unsigned_byte_comparison) {
+    const unsigned char big[] = {0xFF};
+    const unsigned char small[] = {0x01};
+    ASSERT(memcmp(big, small, 1) > 0);
+    ASSERT(memcmp(small, big, 1) < 0);
+    // 0x80 (128) must compare greater than 0x7F (127).
+    const unsigned char a[] = {0x80};
+    const unsigned char b[] = {0x7F};
+    ASSERT(memcmp(a, b, 1) > 0);
+}
+
+// strtok must skip leading delimiters.
+TEST(string, strtok_leading_delimiters) {
+    char buf[] = ",,,hello,world";
+    char *token = strtok(buf, ",");
+    ASSERT(token != nullptr);
+    ASSERT_STR_EQ(token, "hello");
+    token = strtok(nullptr, ",");
+    ASSERT_STR_EQ(token, "world");
+    token = strtok(nullptr, ",");
+    ASSERT(token == nullptr);
+}
+
+// strstr with an empty haystack and a non-empty needle returns null.
+TEST(string, strstr_empty_haystack) {
+    ASSERT(strstr("", "a") == nullptr);
+    ASSERT(strstr("", "abc") == nullptr);
+}
+
+// strspn with an empty accept set must return 0 for any string.
+TEST(string, strspn_empty_accept_set) {
+    ASSERT_EQ(strspn("hello", ""), 0u);
+    ASSERT_EQ(strspn("", ""), 0u);
+}
+
+// strcspn with an empty reject set: no character is rejected, so the entire
+// string qualifies and the return value equals strlen(s).
+TEST(string, strcspn_empty_reject_set) {
+    ASSERT_EQ(strcspn("hello", ""), 5u);
+    ASSERT_EQ(strcspn("", ""), 0u);
+}
+
+// memchr must return a pointer to the FIRST occurrence.
+TEST(string, memchr_multiple_occurrences_returns_first) {
+    char buf[] = "abcabc";
+    ASSERT(memchr(buf, 'a', 6) == buf);
+    ASSERT(memchr(buf, 'b', 6) == buf + 1);
+}

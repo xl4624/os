@@ -8,6 +8,10 @@
 #include "process.h"
 #include "scheduler.h"
 
+// ---------------------------------------------------------------------------
+// AddressSpace
+// ---------------------------------------------------------------------------
+
 TEST(address_space, create_and_destroy) {
     auto [phys, virt] = AddressSpace::create();
     ASSERT_NOT_NULL(virt);
@@ -43,6 +47,10 @@ TEST(address_space, map_user_page) {
 
     AddressSpace::destroy(pd, pd_phys);
 }
+
+// ---------------------------------------------------------------------------
+// Scheduler
+// ---------------------------------------------------------------------------
 
 TEST(scheduler, current_not_null) {
     Process *p = Scheduler::current();

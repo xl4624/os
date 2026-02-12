@@ -50,7 +50,8 @@ void Terminal::put_char(char c) {
         put_entry_at(0, color_, row_, col_);
         update_cursor();
     } else if (c == '\t') {
-        for (size_t i = 0; i < TAB_WIDTH - (col_ % TAB_WIDTH); ++i) {
+        const size_t spaces = TAB_WIDTH - (col_ % TAB_WIDTH);
+        for (size_t i = 0; i < spaces; ++i) {
             put_char(' ');
         }
     } else {

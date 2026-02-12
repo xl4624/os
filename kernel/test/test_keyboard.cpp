@@ -1,6 +1,10 @@
 #include "keyboard.h"
 #include "ktest.h"
 
+// ---------------------------------------------------------------------------
+// Key::from_scancode
+// ---------------------------------------------------------------------------
+
 TEST(keyboard, from_scancode_unknown_at_zero) {
     Key k = Key::from_scancode(0x00);
     ASSERT_EQ(k, Key::Unknown);
@@ -108,6 +112,10 @@ TEST(keyboard, from_scancode_out_of_range_returns_unknown) {
     ASSERT_EQ(Key::from_scancode(0xFF), Key::Unknown);
 }
 
+// ---------------------------------------------------------------------------
+// Key::from_extended_scancode
+// ---------------------------------------------------------------------------
+
 TEST(keyboard, from_extended_scancode_arrows) {
     ASSERT_EQ(Key::from_extended_scancode(0x48), Key::Up);
     ASSERT_EQ(Key::from_extended_scancode(0x50), Key::Down);
@@ -120,6 +128,10 @@ TEST(keyboard, from_extended_scancode_unknown) {
     ASSERT_EQ(Key::from_extended_scancode(0x1C), Key::Unknown);  // numpad Enter
     ASSERT_EQ(Key::from_extended_scancode(0xFF), Key::Unknown);
 }
+
+// ---------------------------------------------------------------------------
+// Key::ascii
+// ---------------------------------------------------------------------------
 
 TEST(keyboard, ascii_lowercase_letters) {
     for (uint8_t sc = 0x10; sc <= 0x19; sc++) {  // Q-P row
@@ -236,6 +248,10 @@ TEST(keyboard, ascii_unknown_returns_zero) {
     ASSERT_EQ(Key(Key::Unknown).ascii(true), '\0');
 }
 
+// ---------------------------------------------------------------------------
+// Key::is_modifier
+// ---------------------------------------------------------------------------
+
 TEST(keyboard, is_modifier_true_for_modifiers) {
     ASSERT_TRUE(Key(Key::LeftShift).is_modifier());
     ASSERT_TRUE(Key(Key::RightShift).is_modifier());
@@ -261,6 +277,10 @@ TEST(keyboard, is_modifier_false_for_function_and_nav_keys) {
     ASSERT_FALSE(Key(Key::Esc).is_modifier());
     ASSERT_FALSE(Key(Key::Unknown).is_modifier());
 }
+
+// ---------------------------------------------------------------------------
+// KeyboardDriver::scancode_to_event
+// ---------------------------------------------------------------------------
 
 TEST(keyboard, scancode_to_event_key_press) {
     // 0x1E = A make-code (press).
@@ -354,6 +374,10 @@ TEST(keyboard, modifier_key_press_has_no_ascii) {
     ASSERT_EQ(ev.ascii, '\0');
     kKeyboard.scancode_to_event(0xAA);  // release
 }
+
+// ---------------------------------------------------------------------------
+// KeyboardDriver::flush_command_queue
+// ---------------------------------------------------------------------------
 
 TEST(keyboard, queue_empty_after_flush) {
     kKeyboard.flush_command_queue();

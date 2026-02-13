@@ -7,6 +7,7 @@
 #include "heap.h"
 #include "interrupt.h"
 #include "keyboard.h"
+#include "modules.h"
 #include "multiboot.h"
 #include "paging.h"
 #include "pit.h"
@@ -48,16 +49,14 @@ __attribute__((noreturn)) void kernel_main() {
     // Load user programs from multiboot modules.
     const auto *info = reinterpret_cast<const multiboot_info_t *>(
         phys_to_virt(reinterpret_cast<paddr_t>(mboot_info)));
-    if ((info->flags & MULTIBOOT_INFO_MODS) && info->mods_count > 0) {
-        const auto *mods = reinterpret_cast<const multiboot_module_t *>(
-            phys_to_virt(info->mods_addr));
-        for (uint32_t i = 0; i < info->mods_count; ++i) {
-            const auto *data = reinterpret_cast<const uint8_t *>(
-                phys_to_virt(mods[i].mod_start));
-            const size_t len = mods[i].mod_end - mods[i].mod_start;
-            printf("Loading module %u (%u bytes)...\n", i,
-                   static_cast<unsigned>(len));
-            Scheduler::create_process(data, len);
+    Modules::init(info);
+
+    if (Modules::count() > 0) {
+        for (uint32_t i = 0; i < Modules::count(); ++i) {
+            const Module *mod = Modules::get(i);
+            printf("Loading module \"%s\" (%u bytes)...\n", mod->name,
+                   static_cast<unsigned>(mod->len));
+            Scheduler::create_process(mod->data, mod->len);
         }
     } else {
         printf("No multiboot modules found.\n");

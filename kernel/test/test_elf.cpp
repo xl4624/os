@@ -28,23 +28,23 @@ namespace {
         elf.hdr.e_ident[Elf::kEiMag2] = Elf::kElfMag2;
         elf.hdr.e_ident[Elf::kEiMag3] = Elf::kElfMag3;
         elf.hdr.e_ident[Elf::kEiClass] = Elf::kElfClass32;
-        elf.hdr.e_ident[Elf::kEiData]  = Elf::kElfData2Lsb;
-        elf.hdr.e_type       = Elf::kEtExec;
-        elf.hdr.e_machine    = Elf::kEm386;
-        elf.hdr.e_version    = 1;
-        elf.hdr.e_entry      = entry;
-        elf.hdr.e_phoff      = sizeof(Elf::Header);
-        elf.hdr.e_phentsize  = sizeof(Elf::ProgramHeader);
-        elf.hdr.e_phnum      = 1;
-        elf.hdr.e_ehsize     = sizeof(Elf::Header);
+        elf.hdr.e_ident[Elf::kEiData] = Elf::kElfData2Lsb;
+        elf.hdr.e_type = Elf::kEtExec;
+        elf.hdr.e_machine = Elf::kEm386;
+        elf.hdr.e_version = 1;
+        elf.hdr.e_entry = entry;
+        elf.hdr.e_phoff = sizeof(Elf::Header);
+        elf.hdr.e_phentsize = sizeof(Elf::ProgramHeader);
+        elf.hdr.e_phnum = 1;
+        elf.hdr.e_ehsize = sizeof(Elf::Header);
 
-        elf.phdr.p_type   = Elf::kPtLoad;
+        elf.phdr.p_type = Elf::kPtLoad;
         elf.phdr.p_offset = 0;
-        elf.phdr.p_vaddr  = entry & ~(PAGE_SIZE - 1);
+        elf.phdr.p_vaddr = entry & ~(PAGE_SIZE - 1);
         elf.phdr.p_filesz = 0;
-        elf.phdr.p_memsz  = PAGE_SIZE;
-        elf.phdr.p_flags  = Elf::kPfR | Elf::kPfX;
-        elf.phdr.p_align  = PAGE_SIZE;
+        elf.phdr.p_memsz = PAGE_SIZE;
+        elf.phdr.p_flags = Elf::kPfR | Elf::kPfX;
+        elf.phdr.p_align = PAGE_SIZE;
     }
 
     void make_two_seg_elf(TwoSegElf &elf, uint32_t entry = 0x00400000,
@@ -56,31 +56,31 @@ namespace {
         elf.hdr.e_ident[Elf::kEiMag2] = Elf::kElfMag2;
         elf.hdr.e_ident[Elf::kEiMag3] = Elf::kElfMag3;
         elf.hdr.e_ident[Elf::kEiClass] = Elf::kElfClass32;
-        elf.hdr.e_ident[Elf::kEiData]  = Elf::kElfData2Lsb;
-        elf.hdr.e_type       = Elf::kEtExec;
-        elf.hdr.e_machine    = Elf::kEm386;
-        elf.hdr.e_version    = 1;
-        elf.hdr.e_entry      = entry;
-        elf.hdr.e_phoff      = sizeof(Elf::Header);
-        elf.hdr.e_phentsize  = sizeof(Elf::ProgramHeader);
-        elf.hdr.e_phnum      = 2;
-        elf.hdr.e_ehsize     = sizeof(Elf::Header);
+        elf.hdr.e_ident[Elf::kEiData] = Elf::kElfData2Lsb;
+        elf.hdr.e_type = Elf::kEtExec;
+        elf.hdr.e_machine = Elf::kEm386;
+        elf.hdr.e_version = 1;
+        elf.hdr.e_entry = entry;
+        elf.hdr.e_phoff = sizeof(Elf::Header);
+        elf.hdr.e_phentsize = sizeof(Elf::ProgramHeader);
+        elf.hdr.e_phnum = 2;
+        elf.hdr.e_ehsize = sizeof(Elf::Header);
 
-        elf.phdr[0].p_type   = Elf::kPtLoad;
+        elf.phdr[0].p_type = Elf::kPtLoad;
         elf.phdr[0].p_offset = 0;
-        elf.phdr[0].p_vaddr  = entry & ~(PAGE_SIZE - 1);
+        elf.phdr[0].p_vaddr = entry & ~(PAGE_SIZE - 1);
         elf.phdr[0].p_filesz = 0;
-        elf.phdr[0].p_memsz  = PAGE_SIZE;
-        elf.phdr[0].p_flags  = Elf::kPfR | Elf::kPfX;
-        elf.phdr[0].p_align  = PAGE_SIZE;
+        elf.phdr[0].p_memsz = PAGE_SIZE;
+        elf.phdr[0].p_flags = Elf::kPfR | Elf::kPfX;
+        elf.phdr[0].p_align = PAGE_SIZE;
 
-        elf.phdr[1].p_type   = Elf::kPtLoad;
+        elf.phdr[1].p_type = Elf::kPtLoad;
         elf.phdr[1].p_offset = 0;
-        elf.phdr[1].p_vaddr  = vaddr2;
+        elf.phdr[1].p_vaddr = vaddr2;
         elf.phdr[1].p_filesz = 0;
-        elf.phdr[1].p_memsz  = PAGE_SIZE;
-        elf.phdr[1].p_flags  = Elf::kPfR | Elf::kPfW;
-        elf.phdr[1].p_align  = PAGE_SIZE;
+        elf.phdr[1].p_memsz = PAGE_SIZE;
+        elf.phdr[1].p_flags = Elf::kPfR | Elf::kPfW;
+        elf.phdr[1].p_align = PAGE_SIZE;
     }
 
 }  // namespace
@@ -98,48 +98,55 @@ TEST(elf, validate_rejects_bad_magic) {
     TestElf elf;
     make_valid_elf(elf);
     elf.hdr.e_ident[Elf::kEiMag0] = 0x00;
-    ASSERT_FALSE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
+    ASSERT_FALSE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 TEST(elf, validate_rejects_non_32bit) {
     TestElf elf;
     make_valid_elf(elf);
     elf.hdr.e_ident[Elf::kEiClass] = 2;  // ELFCLASS64
-    ASSERT_FALSE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
+    ASSERT_FALSE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 TEST(elf, validate_rejects_big_endian) {
     TestElf elf;
     make_valid_elf(elf);
     elf.hdr.e_ident[Elf::kEiData] = 2;  // ELFDATA2MSB
-    ASSERT_FALSE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
+    ASSERT_FALSE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 TEST(elf, validate_rejects_non_executable) {
     TestElf elf;
     make_valid_elf(elf);
     elf.hdr.e_type = 3;  // ET_DYN
-    ASSERT_FALSE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
+    ASSERT_FALSE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 TEST(elf, validate_rejects_non_i386) {
     TestElf elf;
     make_valid_elf(elf);
     elf.hdr.e_machine = 62;  // EM_X86_64
-    ASSERT_FALSE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
+    ASSERT_FALSE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 TEST(elf, validate_rejects_no_program_headers) {
     TestElf elf;
     make_valid_elf(elf);
     elf.hdr.e_phnum = 0;
-    ASSERT_FALSE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
+    ASSERT_FALSE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 TEST(elf, validate_accepts_valid_elf) {
     TestElf elf;
     make_valid_elf(elf);
-    ASSERT_TRUE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
+    ASSERT_TRUE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +192,8 @@ TEST(elf, load_segment_is_user_mapped) {
     ASSERT_TRUE(Elf::load(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf),
                           pd, entry, brk));
     // The segment starting at 0x00400000 must be user-accessible.
-    ASSERT_TRUE(AddressSpace::is_user_mapped(pd, 0x00400000, /*writeable=*/false));
+    ASSERT_TRUE(
+        AddressSpace::is_user_mapped(pd, 0x00400000, /*writeable=*/false));
     AddressSpace::destroy(pd, pd_phys);
 }
 
@@ -208,8 +216,8 @@ TEST(elf, validate_rejects_phdrs_out_of_bounds) {
     TestElf elf;
     make_valid_elf(elf);
     elf.hdr.e_phnum = 2;
-    ASSERT_FALSE(Elf::validate(reinterpret_cast<const uint8_t *>(&elf),
-                               sizeof(elf)));
+    ASSERT_FALSE(
+        Elf::validate(reinterpret_cast<const uint8_t *>(&elf), sizeof(elf)));
 }
 
 // A segment with p_filesz > 0 whose file data extends past the ELF buffer
@@ -262,7 +270,8 @@ TEST(elf, load_two_segments_both_mapped) {
     AddressSpace::destroy(pd, pd_phys);
 }
 
-// brk must be past the end of the highest-address segment (0x00500000 + PAGE_SIZE).
+// brk must be past the end of the highest-address segment (0x00500000 +
+// PAGE_SIZE).
 TEST(elf, load_two_segments_brk_past_both) {
     TwoSegElf elf;
     make_two_seg_elf(elf, 0x00400000, 0x00500000);

@@ -60,8 +60,8 @@ TEST(tty, tab_advances_to_next_tab_stop) {
 
     // From col 1: one char then tab should land at col 4.
     terminal_clear();
-    terminal_putchar('X');           // col 1
-    terminal_putchar('\t');          // 3 spaces -> col 4
+    terminal_putchar('X');   // col 1
+    terminal_putchar('\t');  // 3 spaces -> col 4
     terminal_putchar('B');
     ASSERT_EQ(vga_char_at(0, 4), 'B');
 
@@ -79,8 +79,7 @@ TEST(tty, tab_advances_to_next_tab_stop) {
 
 TEST(tty, set_color_changes_attribute) {
     terminal_clear();
-    const uint8_t color =
-        VGA::entry_color(VGA::Color::Red, VGA::Color::Blue);
+    const uint8_t color = VGA::entry_color(VGA::Color::Red, VGA::Color::Blue);
     terminal_set_color(color);
     terminal_putchar('Z');
     ASSERT_EQ(vga_char_at(0, 0), 'Z');

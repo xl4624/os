@@ -57,14 +57,15 @@ static const char flag_chars[] = "#0- +";
 #define FLAG_ALT2        (1 << 8)
 // clang-format on
 
-static char *fill_numbuf(char *numbuf_end, unsigned long val, int base) {
+static char *fill_numbuf(char *numbuf_end, unsigned long val,
+                         unsigned int base) {
     static const char upper_digits[] = "0123456789ABCDEF";
     static const char lower_digits[] = "0123456789abcdef";
 
     const char *digits = upper_digits;
-    if (base < 0) {
+    if ((int)base < 0) {
         digits = lower_digits;
-        base = -base;
+        base = (unsigned int)(-(int)base);
     }
 
     *--numbuf_end = '\0';
@@ -143,7 +144,7 @@ int vprintf(const char *__restrict__ format, va_list ap) {
             case 'i':
                 long x = length ? va_arg(ap, long) : va_arg(ap, int);
                 int negative = x < 0 ? FLAG_NEGATIVE : 0;
-                num = negative ? -x : x;
+                num = negative ? (unsigned long)(-x) : (unsigned long)x;
                 flags |= FLAG_NUMERIC | FLAG_SIGNED | negative;
                 break;
             case 'u':
@@ -162,7 +163,7 @@ int vprintf(const char *__restrict__ format, va_list ap) {
             case 'c':
                 data = numbuf;
                 // char always promoted to int in varargs
-                numbuf[0] = va_arg(ap, int);
+                numbuf[0] = (char)va_arg(ap, int);
                 numbuf[1] = '\0';
                 break;
             default:
@@ -175,7 +176,7 @@ int vprintf(const char *__restrict__ format, va_list ap) {
         }
 
         if (flags & FLAG_NUMERIC) {
-            data = fill_numbuf(numbuf + NUMBUF_SIZE, num, base);
+            data = fill_numbuf(numbuf + NUMBUF_SIZE, num, (unsigned int)base);
         }
 
         const char *prefix = "";
@@ -195,11 +196,11 @@ int vprintf(const char *__restrict__ format, va_list ap) {
 
         int len;
         if (precision >= 0 && !(flags & FLAG_NUMERIC)) {
-            len = strnlen(data, precision);
+            len = (int)strnlen(data, (size_t)precision);
         } else if (precision == 0 && num == 0) {
             len = 0;
         } else {
-            len = strlen(data);
+            len = (int)strlen(data);
         }
         int zeros;
         if ((flags & FLAG_NUMERIC) && precision >= 0) {
@@ -207,11 +208,11 @@ int vprintf(const char *__restrict__ format, va_list ap) {
         } else if ((flags & FLAG_NUMERIC) && (flags & FLAG_ZERO)
                    && !(flags & FLAG_LEFTJUSTIFY)
                    && len + (int)strlen(prefix) < width) {
-            zeros = width - len - strlen(prefix);
+            zeros = width - len - (int)strlen(prefix);
         } else {
             zeros = 0;
         }
-        width -= len + zeros + strlen(prefix);
+        width -= len + zeros + (int)strlen(prefix);
         for (; !(flags & FLAG_LEFTJUSTIFY) && width > 0; --width) {
             putchar(' ');
             count++;

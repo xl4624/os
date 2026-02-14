@@ -12,7 +12,7 @@ char *strchr(const char *s, int c) {
 }
 
 char *strrchr(const char *s, int c) {
-    const char ch = c;
+    const char ch = (char)c;
 
     // if we are searching for '\0', just return a pointer to end of string
     if (ch == '\0') {

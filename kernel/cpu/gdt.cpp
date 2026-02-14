@@ -10,13 +10,14 @@ namespace GDT {
     static constexpr Entry create_gdt_entry(size_t base, uint32_t limit,
                                             uint8_t access, uint8_t flags) {
         return {
-            .limit_low = static_cast<uint16_t>(limit & 0xFFFF),
-            .base_low = static_cast<uint16_t>(base & 0xFFFF),
-            .base_mid = static_cast<uint8_t>((base >> 16) & 0xFF),
-            .access = access,
-            .granularity = static_cast<uint8_t>(((limit >> 16) & 0x0F)
-                                                | ((flags << 4) & 0xF0)),
-            .base_high = static_cast<uint8_t>((base >> 24) & 0xFF),
+            /*.limit_low=*/static_cast<uint16_t>(limit & 0xFFFF),
+            /*.base_low=*/static_cast<uint16_t>(base & 0xFFFF),
+            /*.base_mid=*/static_cast<uint8_t>((base >> 16) & 0xFF),
+            /*.access=*/access,
+            /*.granularity=*/
+            static_cast<uint8_t>(((limit >> 16) & 0x0F)
+                                 | ((flags << 4) & 0xF0)),
+            /*.base_high=*/static_cast<uint8_t>((base >> 24) & 0xFF),
         };
     }
 

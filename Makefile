@@ -23,7 +23,7 @@ BIN := myos.bin
 ISODIR = isodir
 ISO = myos.iso
 
-.PHONY: all run debug clean check install arch kernel libc
+.PHONY: all run debug clean check install arch kernel libc test clean-test
 
 all: $(BIN)
 
@@ -33,12 +33,18 @@ run: $(ISO)
 debug: $(ISO)
 	qemu-system-i386 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown
 
-clean:
+test:
+	$(MAKE) -C tests unit
+
+clean: clean-test
 	@for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean; \
 	done
 	rm -f $(BIN) $(ISO)
 	rm -rf $(ISODIR) $(SYSROOT)
+
+clean-test:
+	$(MAKE) -C tests clean
 
 install:
 	python install.py

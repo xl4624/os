@@ -85,7 +85,7 @@ namespace GDT {
     } __attribute__((packed));
 
     struct Descriptor {
-        uint16_t size;    // Size of GDT in bytes - 1: (8 * entry) - 1
+        uint16_t size;     // Size of GDT in bytes - 1: (8 * entry) - 1
         uintptr_t offset;  // GDT linear address
     } __attribute__((packed));
 

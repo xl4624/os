@@ -12,6 +12,16 @@ constexpr uint32_t PAGES_PER_TABLE = 1U << PAGE_TABLE_BITS;
 using paddr_t = uintptr_t;
 using vaddr_t = uintptr_t;
 
+constexpr vaddr_t KERNEL_VMA = 0xC0000000;
+
+[[nodiscard]] constexpr paddr_t virt_to_phys(vaddr_t vaddr) {
+    return vaddr - KERNEL_VMA;
+}
+
+[[nodiscard]] constexpr vaddr_t phys_to_virt(paddr_t paddr) {
+    return paddr + KERNEL_VMA;
+}
+
 struct PageEntry {
     uint32_t present : 1;
     uint32_t rw : 1;
@@ -46,7 +56,4 @@ struct PageTable {
     PageEntry entry[PAGES_PER_TABLE];
 } __attribute__((aligned(PAGE_SIZE)));
 
-void paging_init();
-
-extern PageTable page_directory;
-extern PageTable page_tables[PAGES_PER_TABLE];
+extern "C" PageTable boot_page_directory;

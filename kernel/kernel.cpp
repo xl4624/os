@@ -5,7 +5,6 @@
 #include "gdt.hpp"
 #include "interrupt.hpp"
 #include "multiboot.h"
-#include "paging.hpp"
 #include "x86.hpp"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
@@ -24,7 +23,6 @@ extern "C" void kernel_init() {
     assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
     GDT::init();
     interrupt_init();
-    paging_init();
 }
 
 extern "C" __attribute__((noreturn)) void kernel_main() {

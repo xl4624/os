@@ -28,10 +28,10 @@ ISO = myos.iso
 all: $(BIN)
 
 run: $(ISO)
-	qemu-system-i386 -cdrom $(ISO) -monitor stdio
+	qemu-system-i386 -cdrom $(ISO) -no-reboot -no-shutdown
 
 debug: $(ISO)
-	qemu-system-i386 -s -S -cdrom $(ISO) -monitor stdio
+	qemu-system-i386 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown
 
 clean:
 	@for dir in $(SUBDIRS); do \

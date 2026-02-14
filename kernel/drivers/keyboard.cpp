@@ -7,11 +7,53 @@
 
 // TODO: https://wiki.osdev.org/PS/2_Keyboard#Command_Queue_and_State_Machine
 
+namespace {
+    constexpr uint16_t KEYBOARD_DATA_PORT = 0x60;
+    constexpr uint8_t SCANCODE_EXTENDED = 0xE0;
+    constexpr uint8_t SCANCODE_RELEASE_BIT = 0x80;
+
+    constexpr uint8_t EXT_ARROW_UP = 0x48;
+    constexpr uint8_t EXT_ARROW_DOWN = 0x50;
+    constexpr uint8_t EXT_ARROW_LEFT = 0x4B;
+    constexpr uint8_t EXT_ARROW_RIGHT = 0x4D;
+
+    constexpr size_t SCANCODE_TABLE_SIZE = 69;
+    constexpr Key scancode_to_key[] = {
+        Key::Unknown,  // (0x00)
+        Key::Esc,       Key::Num1,        Key::Num2,
+        Key::Num3,      Key::Num4,        Key::Num5,
+        Key::Num6,      Key::Num7,        Key::Num8,
+        Key::Num9,      Key::Num0,        Key::Minus,
+        Key::Equals,    Key::Backspace,   Key::Tab,
+        Key::Q,         Key::W,           Key::E,
+        Key::R,         Key::T,           Key::Y,
+        Key::U,         Key::I,           Key::O,
+        Key::P,         Key::LeftBracket, Key::RightBracket,
+        Key::Enter,     Key::LeftCtrl,    Key::A,
+        Key::S,         Key::D,           Key::F,
+        Key::G,         Key::H,           Key::J,
+        Key::K,         Key::L,           Key::Semicolon,
+        Key::Quote,     Key::Backtick,    Key::LeftShift,
+        Key::Backslash, Key::Z,           Key::X,
+        Key::C,         Key::V,           Key::B,
+        Key::N,         Key::M,           Key::Comma,
+        Key::Period,    Key::Slash,       Key::RightShift,
+        Key::Unknown,  // (keypad) *
+        Key::LeftAlt,   Key::Space,       Key::CapsLock,
+        Key::F1,        Key::F2,          Key::F3,
+        Key::F4,        Key::F5,          Key::F6,
+        Key::F7,        Key::F8,          Key::F9,
+        Key::F10,
+    };
+
+    static_assert(sizeof(scancode_to_key) / sizeof(Key) == SCANCODE_TABLE_SIZE,
+                  "scancode_to_key array size must match SCANCODE_TABLE_SIZE");
+}  // namespace
+
 KeyboardDriver keyboard;
 
-void keyboard_handler(interrupt_frame *frame) {
-    (void)frame;
-    uint8_t scancode = inb(0x60);
+void keyboard_handler([[maybe_unused]] interrupt_frame *frame) {
+    uint8_t scancode = inb(KEYBOARD_DATA_PORT);
     keyboard.process_scancode(scancode);
 }
 
@@ -20,7 +62,7 @@ KeyboardDriver::KeyboardDriver() {
 }
 
 void KeyboardDriver::process_scancode(uint8_t scancode) {
-    if (scancode == 0xE0) {
+    if (scancode == SCANCODE_EXTENDED) {
         extended_scancode_ = true;
         return;
     }
@@ -28,8 +70,8 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
     KeyEvent event;
 
     // Check if a key is pressed
-    event.pressed = !(scancode & 0x80);
-    scancode &= ~(0x80);
+    event.pressed = !(scancode & SCANCODE_RELEASE_BIT);
+    scancode &= ~SCANCODE_RELEASE_BIT;
 
     // Get the Key enum from lookup table
     if (extended_scancode_) {
@@ -64,10 +106,10 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
 
 Key KeyboardDriver::lookup_extended(uint8_t scancode) {
     switch (scancode) {
-        case 0x48: return Key::Up;
-        case 0x50: return Key::Down;
-        case 0x4B: return Key::Left;
-        case 0x4D: return Key::Right;
+        case EXT_ARROW_UP: return Key::Up;
+        case EXT_ARROW_DOWN: return Key::Down;
+        case EXT_ARROW_LEFT: return Key::Left;
+        case EXT_ARROW_RIGHT: return Key::Right;
         default: return Key::Unknown;
     }
 }
@@ -139,32 +181,3 @@ char KeyboardDriver::lookup_ascii(Key key) const {
         default: return 0;  // Non-printable or unknown key
     }
 }
-
-// NOTE: Keep SCANCODE_TABLE_SIZE in sync with scancode_to_key array size.
-const Key KeyboardDriver::scancode_to_key[] = {
-    Key::Unknown,  // (0x00)
-    Key::Esc,       Key::Num1,        Key::Num2,
-    Key::Num3,      Key::Num4,        Key::Num5,
-    Key::Num6,      Key::Num7,        Key::Num8,
-    Key::Num9,      Key::Num0,        Key::Minus,
-    Key::Equals,    Key::Backspace,   Key::Tab,
-    Key::Q,         Key::W,           Key::E,
-    Key::R,         Key::T,           Key::Y,
-    Key::U,         Key::I,           Key::O,
-    Key::P,         Key::LeftBracket, Key::RightBracket,
-    Key::Enter,     Key::LeftCtrl,    Key::A,
-    Key::S,         Key::D,           Key::F,
-    Key::G,         Key::H,           Key::J,
-    Key::K,         Key::L,           Key::Semicolon,
-    Key::Quote,     Key::Backtick,    Key::LeftShift,
-    Key::Backslash, Key::Z,           Key::X,
-    Key::C,         Key::V,           Key::B,
-    Key::N,         Key::M,           Key::Comma,
-    Key::Period,    Key::Slash,       Key::RightShift,
-    Key::Unknown,  // (keypad) *
-    Key::LeftAlt,   Key::Space,       Key::CapsLock,
-    Key::F1,        Key::F2,          Key::F3,
-    Key::F4,        Key::F5,          Key::F6,
-    Key::F7,        Key::F8,          Key::F9,
-    Key::F10,
-};

@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "gdt.hpp"
+
 /*
  * ==========================================
  *      Interrupt Descriptor Table (IDT)
@@ -54,7 +56,7 @@ namespace IDT {
         Entry() = default;
         constexpr Entry(uintptr_t handler, Gate gate, Ring ring)
             : offset_low(static_cast<uint16_t>(handler & 0xFFFF)),
-              segment(static_cast<uint16_t>(0x08)),  // TODO: GDT::KernelCode
+              segment(GDT::KERNEL_CODE_SELECTOR),
               reserved(0),
               attributes(gate, ring),
               offset_high(static_cast<uint16_t>((handler >> 16) & 0xFFFF)) {}

@@ -42,7 +42,7 @@ struct IRQWrapper {
     static __attribute__((interrupt)) void handle(interrupt_frame *frame) {
         if (irq_handlers[N])
             irq_handlers[N](frame);
-        PIC::sendEOI(N);
+        PIC::send_eoi(N);
     }
 };
 
@@ -58,6 +58,11 @@ using ISRTable = HandlerArray<ISRWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
 
 using IRQTable = HandlerArray<IRQWrapper, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
                               12, 13, 14, 15>;
+
+static_assert(sizeof(ISRTable::handlers) / sizeof(ISRTable::handlers[0]) == 32,
+              "ISR table must have 32 entries");
+static_assert(sizeof(IRQTable::handlers) / sizeof(IRQTable::handlers[0]) == 16,
+              "IRQ table must have 16 entries");
 
 void interrupt_init() {
     IDT::init();

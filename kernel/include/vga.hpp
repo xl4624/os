@@ -29,11 +29,11 @@ namespace VGA {
         White = 15,
     };
 
-    inline uint8_t entry_color(Color fg, Color bg) {
+    constexpr uint8_t entry_color(Color fg, Color bg) {
         return static_cast<uint8_t>(fg) | (static_cast<uint8_t>(bg) << 4);
     }
 
-    inline uint16_t entry(char c, uint8_t color) {
+    constexpr uint16_t entry(char c, uint8_t color) {
         return static_cast<uint16_t>(c) | (static_cast<uint16_t>(color) << 8);
     }
 }  // namespace VGA

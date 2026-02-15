@@ -72,7 +72,7 @@ void Terminal::handle_key(KeyEvent event) {
         return;
     }
 
-    switch (event.key) {
+    switch (event.key.value()) {
         case Key::Up:
             if (row_ > 0) {
                 --row_;

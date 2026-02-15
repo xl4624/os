@@ -17,6 +17,7 @@ class KeyboardDriver {
 
     char lookup_ascii(Key key) const;
     static Key scancode_to_key(uint8_t scancode);
+    KeyEvent scancode_to_event(uint8_t scancode);
 
    private:
     Key lookup_extended(uint8_t scancode);

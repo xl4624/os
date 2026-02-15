@@ -6,9 +6,9 @@
 
 #include "keyboard.hpp"
 
-KTestCase g_ktests[KTEST_MAX];
-int g_ktest_count = 0;
-KTestState g_ktest_state;
+TestCase g_tests[MAX_TESTS];
+int g_test_count = 0;
+TestState g_state;
 
 namespace {
     // PS/2 Controller ports
@@ -30,8 +30,8 @@ namespace KTest {
 
         char current_category[64] = "";
 
-        for (int i = 0; i < g_ktest_count; ++i) {
-            KTestCase &tc = g_ktests[i];
+        for (int i = 0; i < g_test_count; ++i) {
+            TestCase &tc = g_tests[i];
 
             // Parse "category/test_name"
             const char *slash = strchr(tc.name, '/');
@@ -51,20 +51,19 @@ namespace KTest {
 
             printf("  %-42s... ", test_name);
 
-            g_ktest_state.current_failed = false;
+            g_state.current_failed = false;
             tc.func();
 
-            if (!g_ktest_state.current_failed) {
+            if (!g_state.current_failed) {
                 printf("OK\n");
-                ++g_ktest_state.passed;
+                ++g_state.passed;
             } else {
-                ++g_ktest_state.failed;
+                ++g_state.failed;
             }
         }
 
         printf("\n==============================\n");
-        printf("Total: %d passed, %d failed\n", g_ktest_state.passed,
-               g_ktest_state.failed);
+        printf("Total: %d passed, %d failed\n", g_state.passed, g_state.failed);
         printf("==============================\n");
 
         printf("\nPress any key to exit...\n");
@@ -76,16 +75,12 @@ namespace KTest {
 
             uint8_t scancode = inb(PS2_DATA_PORT);
 
-            // Check if it's a press (bit 7 not set)
-            if ((scancode & 0x80) == 0) {
-                Key key = KeyboardDriver::scancode_to_key(scancode);
+            KeyEvent event = keyboard.scancode_to_event(scancode);
 
-                // Skip Enter - require a different key
-                if (key != Key::Enter) {
-                    break;
-                }
+            // Skip Enter - require a different key
+            if (event.pressed && event.key != Key::Enter) {
+                break;
             }
-            // Ignore releases, keep waiting
         }
 
         outb(QEMU_DEBUG_EXIT_PORT, QEMU_EXIT_CODE_SUCCESS);

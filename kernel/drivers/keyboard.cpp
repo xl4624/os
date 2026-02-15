@@ -111,6 +111,50 @@ Key KeyboardDriver::lookup_extended(uint8_t scancode) {
     }
 }
 
+KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
+    KeyEvent event;
+
+    if (scancode == SCANCODE_EXTENDED) {
+        extended_scancode_ = true;
+        event.key = Key::Unknown;
+        event.pressed = false;
+        event.ascii = 0;
+        event.shift = shift_;
+        event.ctrl = ctrl_;
+        event.alt = alt_;
+        return event;
+    }
+
+    event.pressed = !(scancode & SCANCODE_RELEASE_BIT);
+    scancode &= ~SCANCODE_RELEASE_BIT;
+
+    if (extended_scancode_) {
+        event.key = lookup_extended(scancode);
+        extended_scancode_ = false;
+    } else if (scancode < SCANCODE_TABLE_SIZE) {
+        event.key = scancode_table[scancode];
+    } else {
+        event.key = Key::Unknown;
+    }
+
+    switch (event.key) {
+        case Key::LeftShift:
+        case Key::RightShift: shift_ = event.pressed; break;
+        case Key::LeftCtrl:
+        case Key::RightCtrl: ctrl_ = event.pressed; break;
+        case Key::LeftAlt:
+        case Key::RightAlt: alt_ = event.pressed; break;
+        default: break;
+    }
+
+    event.shift = shift_;
+    event.ctrl = ctrl_;
+    event.alt = alt_;
+    event.ascii = event.pressed ? lookup_ascii(event.key) : 0;
+
+    return event;
+}
+
 Key KeyboardDriver::scancode_to_key(uint8_t scancode) {
     if (scancode >= SCANCODE_TABLE_SIZE) {
         return Key::Unknown;

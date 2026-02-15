@@ -64,7 +64,7 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
     printf("Heap smoke test PASSED\n");
     Heap::dump();
 
-    while (1) {
+    while (true) {
         asm volatile("hlt");
     }
 #endif

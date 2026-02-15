@@ -40,8 +40,9 @@ PhysicalMemoryManager::PhysicalMemoryManager() {
          e = mmap_next(e)) {
         if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
             const uint64_t end = e->addr + e->len;
-            if (end > highest_addr)
+            if (end > highest_addr) {
                 highest_addr = end;
+            }
         }
     }
 
@@ -117,16 +118,18 @@ void PhysicalMemoryManager::mark_used_range(paddr_t start, size_t length) {
     for (size_t i = first; i < last && i < total_frames_; ++i) {
         if (!bitmap_.is_set(i)) {
             bitmap_.set(i);
-            if (free_count_ > 0)
+            if (free_count_ > 0) {
                 --free_count_;
+            }
         }
     }
 }
 
 paddr_t PhysicalMemoryManager::alloc() {
     const size_t frame = bitmap_.find_first_clear();
-    if (frame >= total_frames_)
+    if (frame >= total_frames_) {
         return 0;  // Out of memory.
+    }
     bitmap_.set(frame);
     --free_count_;
     return static_cast<paddr_t>(frame) * PAGE_SIZE;

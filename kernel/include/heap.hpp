@@ -1,22 +1,49 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/cdefs.h>
 
-/*
- * Heap lives in the already-mapped virtual window after kernel_end.
- * Boot page tables cover 0xC0000000–0xC07FFFFF (8 MiB); the kernel image is
- * ~200 KiB, leaving ~6 MiB of mapped space.  We take 4 MiB for the heap.
- */
-static constexpr size_t HEAP_SIZE = 4u * 1024u * 1024u;  // 4 MiB
+struct BlockHeader;
 
-namespace Heap {
-    // Initialise the heap. Must be called once before any kmalloc/kfree.
+/*
+ * Kernel heap allocator.
+ *
+ * Backed by physical pages allocated from the PMM and mapped on demand via
+ * VMM::map(). The heap occupies a dedicated virtual region starting at
+ * kHeapVirtBase and can grow up to kHeapMaxSize by mapping additional pages.
+ */
+class Heap {
+   public:
+    static constexpr uintptr_t kVirtBase = 0xD0000000;
+    static constexpr size_t kMaxSize = 16u * 1024u * 1024u;  // 16 MiB cap
+    static constexpr size_t kInitialPages = 16;              // 64 KiB
+
+    // Initialise the heap. Allocates kInitialPages physical pages from
+    // the PMM and maps them at kVirtBase. Must be called once before any
+    // alloc/free, and after the PMM is ready.
     void init();
 
+    void *alloc(size_t size);
+    void free(void *ptr);
+    void *calloc(size_t nmemb, size_t size);
+    void *realloc(void *ptr, size_t size);
+
     // Print a block-by-block dump of the heap to the VGA terminal (debug).
-    void dump();
-}  // namespace Heap
+    void dump() const;
+
+    // Current mapped size in bytes.
+    size_t mapped_size() const;
+
+   private:
+    BlockHeader *find_last_block() const;
+    bool grow(size_t min_bytes);
+
+    BlockHeader *base_ = nullptr;
+    uint8_t *end_ = nullptr;  // one byte past the last mapped byte
+};
+
+extern Heap kHeap;
 
 __BEGIN_DECLS
 

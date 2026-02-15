@@ -19,18 +19,28 @@ public:
         Up, Down, Left, Right,
         COUNT,
     };
-// clang-format on
+    // clang-format on
 
     constexpr Key() : value_(Unknown) {}
     constexpr Key(Value v) : value_(v) {}
 
-    constexpr Value value() const { return value_; }
+    constexpr Value value() const {
+        return value_;
+    }
 
-    constexpr bool operator==(Key other) const { return value_ == other.value_; }
-    constexpr bool operator!=(Key other) const { return value_ != other.value_; }
+    constexpr bool operator==(Key other) const {
+        return value_ == other.value_;
+    }
+    constexpr bool operator!=(Key other) const {
+        return value_ != other.value_;
+    }
     // Allow comparisons directly with enum values: event.key == Key::Enter
-    constexpr bool operator==(Value v) const { return value_ == v; }
-    constexpr bool operator!=(Value v) const { return value_ != v; }
+    constexpr bool operator==(Value v) const {
+        return value_ == v;
+    }
+    constexpr bool operator!=(Value v) const {
+        return value_ != v;
+    }
 
     // Construct from a PS/2 scan set 1 make-code (0x00–0x44).
     static Key from_scancode(uint8_t scancode);
@@ -44,7 +54,7 @@ public:
     // Returns true for shift, ctrl, alt, and capslock keys.
     bool is_modifier() const;
 
-private:
+   private:
     Value value_;
 };
 
@@ -58,7 +68,7 @@ struct KeyEvent {
 };
 
 class KeyboardDriver {
-public:
+   public:
     KeyboardDriver();
     ~KeyboardDriver() = default;
     KeyboardDriver(const KeyboardDriver &) = delete;
@@ -67,7 +77,7 @@ public:
     void process_scancode(uint8_t scancode);
     KeyEvent scancode_to_event(uint8_t scancode);
 
-private:
+   private:
     bool shift_ = false;
     bool ctrl_ = false;
     bool alt_ = false;

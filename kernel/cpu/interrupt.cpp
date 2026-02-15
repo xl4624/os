@@ -66,7 +66,9 @@ static_assert(sizeof(ISRTable::handlers) / sizeof(ISRTable::handlers[0]) == 32,
 static_assert(sizeof(IRQTable::handlers) / sizeof(IRQTable::handlers[0]) == 16,
               "IRQ table must have 16 entries");
 
-void interrupt_init() {
+namespace Interrupt {
+
+void init() {
     IDT::init();
     PIC::init();
 
@@ -83,11 +85,11 @@ void interrupt_init() {
     interrupt_enable();
 }
 
-void exception_register_handler(ISR isr, handler_t handler) {
+void register_handler(ISR isr, handler_t handler) {
     isr_handlers[static_cast<uint8_t>(isr)] = handler;
 }
 
-void interrupt_register_handler(IRQ irq, handler_t handler) {
+void register_handler(IRQ irq, handler_t handler) {
     irq_handlers[static_cast<uint8_t>(irq)] = handler;
     PIC::unmask(static_cast<uint8_t>(irq));
 }
@@ -109,3 +111,5 @@ __attribute__((noreturn)) void halt_and_catch_fire() {
 }
 
 __END_DECLS
+
+}  // namespace Interrupt

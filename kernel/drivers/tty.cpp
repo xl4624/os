@@ -15,7 +15,7 @@ static constexpr size_t to_index(size_t row, size_t col) {
 Terminal terminal;
 
 Terminal::Terminal() {
-    for (size_t y = 0; y < VGA::HEIGHT; y++)
+    for (size_t y = 0; y < VGA::HEIGHT; ++y)
         clear_line(y);
 }
 
@@ -32,18 +32,18 @@ void Terminal::put_char(char c) {
         }
     } else if (c == '\b') {
         if (col_ > 0) {
-            col_--;
+            --col_;
         } else if (row_ > 0) {
-            row_--;
+            --row_;
             size_t tmp = VGA::WIDTH - 1;
             while (tmp > 0 && (buffer_[to_index(row_, tmp - 1)] & 0xFF) == 0) {
-                tmp--;
+                --tmp;
             }
             col_ = tmp;
         }
         put_entry_at(0, color_, row_, col_);
     } else if (c == '\t') {
-        for (size_t i = 0; i < TAB_WIDTH - (col_ % TAB_WIDTH); i++) {
+        for (size_t i = 0; i < TAB_WIDTH - (col_ % TAB_WIDTH); ++i) {
             put_char(' ');
         }
     } else {
@@ -81,8 +81,8 @@ void Terminal::put_entry_at(char c, uint8_t color, size_t row, size_t col) {
 }
 
 void Terminal::scroll() {
-    for (size_t r = 1; r < VGA::HEIGHT; r++) {
-        for (size_t c = 0; c < VGA::WIDTH; c++) {
+    for (size_t r = 1; r < VGA::HEIGHT; ++r) {
+        for (size_t c = 0; c < VGA::WIDTH; ++c) {
             buffer_[to_index((r - 1), c)] = buffer_[to_index(r, c)];
         }
     }
@@ -93,7 +93,7 @@ void Terminal::scroll() {
 }
 
 void Terminal::clear_line(size_t row) {
-    for (size_t col = 0; col < VGA::WIDTH; col++) {
+    for (size_t col = 0; col < VGA::WIDTH; ++col) {
         put_entry_at(0, color_, row, col);
     }
 }

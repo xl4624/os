@@ -13,17 +13,19 @@ struct ISRWrapper {
     static constexpr const char *messages[] = {
         // clang-format off
         "Division By Zero", "Debug", "Non Maskable Interrupt", "Breakpoint",
-        "Overflow", "Out of Bounds", "Invalid Opcode", "Double Fault",
-        "Coprocessor Segment Overrun", "Invalid TSS", "Segment Not Present",
-        "Stack Segment Fault", "General Protection Fault", "Page Fault",
-        "Reserved15", "x87 Floating Point", "Alignment Check",
-        "Machine Check", "SIMD Floating Point", "Virtualization Exception", 
+        "Overflow", "Out of Bounds", "Invalid Opcode", "Device Not Available",
+        "Double Fault", "Coprocessor Segment Overrun", "Invalid TSS",
+        "Segment Not Present", "Stack Segment Fault", "General Protection Fault",
+        "Page Fault", "Reserved15", "x87 Floating Point", "Alignment Check",
+        "Machine Check", "SIMD Floating Point", "Virtualization Exception",
         "Control Protection Exception", "Reserved22", "Reserved23",
         "Reserved24", "Reserved25", "Reserved26", "Reserved27",
         "Hypervision Injection Exception", "VMM Communication Exception",
         "Security Exception", "Reserved31",
         // clang-format on
     };
+    static_assert(sizeof(messages) / sizeof(messages[0]) == 32,
+                  "ISRWrapper::messages must have exactly 32 entries");
 
     static __attribute__((interrupt, noreturn)) void handle(
         interrupt_frame *frame) {

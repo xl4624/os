@@ -98,7 +98,7 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
     event.alt = alt_;
     event.ascii = event.pressed ? lookup_ascii(event.key) : 0;
 
-    terminal.handle_key(event);
+    kTerminal.handle_key(event);
 }
 
 Key KeyboardDriver::lookup_extended(uint8_t scancode) {

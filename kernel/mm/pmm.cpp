@@ -145,4 +145,5 @@ void PhysicalMemoryManager::free(paddr_t addr) {
     ++free_count_;
 }
 
-PhysicalMemoryManager pmm;
+// The global physical memory manager instance.
+PhysicalMemoryManager kPmm;

@@ -11,21 +11,23 @@ struct TestCase {
     int line;
 };
 
-#define MAX_TESTS 128
+constexpr int kMaxTests = 128;
 
-extern TestCase g_tests[MAX_TESTS];
-extern int g_test_count;
+// The list of registered test cases.
+extern TestCase kTests[kMaxTests];
+// The number of registered test cases.
+extern int kTestCount;
 
 struct TestRegistrar {
     TestRegistrar(const char *name, void (*func)(), const char *file,
                   int line) {
-        if (g_test_count >= MAX_TESTS) {
-            printf("ERROR: Too many tests! Increase MAX_TESTS (currently %d)\n",
-                   MAX_TESTS);
+        if (kTestCount >= kMaxTests) {
+            printf("ERROR: Too many tests! Increase kMaxTests (currently %d)\n",
+                   kMaxTests);
             printf("Failed to register: %s\n", name);
             return;
         }
-        g_tests[g_test_count++] = {name, func, file, line};
+        kTests[kTestCount++] = {name, func, file, line};
     }
 };
 
@@ -36,14 +38,15 @@ struct TestState {
     bool current_failed = false;
 };
 
-extern TestState g_state;
+// The current test execution state.
+extern TestState kTestState;
 
 #define ASSERT(expr)                                                     \
     do {                                                                 \
         if (!(expr)) {                                                   \
             printf("FAILED\n    Assertion failed: %s at %s:%d\n", #expr, \
                    __FILE__, __LINE__);                                  \
-            g_state.current_failed = true;                               \
+            kTestState.current_failed = true;                            \
             return;                                                      \
         }                                                                \
     } while (false)

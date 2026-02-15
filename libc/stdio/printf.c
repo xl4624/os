@@ -85,7 +85,7 @@ int vprintf(const char *__restrict__ format, va_list ap) {
     for (; *format; ++format) {
         if (*format != '%') {
             putchar(*format);
-            count++;
+            ++count;
             continue;
         }
 
@@ -93,8 +93,9 @@ int vprintf(const char *__restrict__ format, va_list ap) {
         int flags = 0;
         for (++format; *format; ++format) {
             const char *flagc = strchr(flag_chars, *format);
-            if (!flagc)
+            if (!flagc) {
                 break;
+            }
             flags |= 1 << (flagc - flag_chars);
         }
 
@@ -115,7 +116,7 @@ int vprintf(const char *__restrict__ format, va_list ap) {
             ++format;
             if (*format >= '0' && *format <= '9') {
                 for (precision = 0; *format >= '0' && *format <= '9';
-                     format++) {
+                     ++format) {
                     precision = 10 * precision + *format - '0';
                 }
             } else if (*format == '*') {
@@ -171,8 +172,9 @@ int vprintf(const char *__restrict__ format, va_list ap) {
                 data = numbuf;
                 numbuf[0] = (*format ? *format : '%');
                 numbuf[1] = '\0';
-                if (!*format)
-                    format--;
+                if (!*format) {
+                    --format;
+                }
                 break;
         }
 
@@ -216,23 +218,23 @@ int vprintf(const char *__restrict__ format, va_list ap) {
         width -= len + zeros + (int)strlen(prefix);
         for (; !(flags & FLAG_LEFTJUSTIFY) && width > 0; --width) {
             putchar(' ');
-            count++;
+            ++count;
         }
         for (; *prefix; ++prefix) {
             putchar(*prefix);
-            count++;
+            ++count;
         }
         for (; zeros > 0; --zeros) {
             putchar('0');
-            count++;
+            ++count;
         }
         for (; len > 0; ++data, --len) {
             putchar(*data);
-            count++;
+            ++count;
         }
         for (; width > 0; --width) {
             putchar(' ');
-            count++;
+            ++count;
         }
     }
     return count;

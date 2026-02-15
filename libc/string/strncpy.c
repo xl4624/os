@@ -3,11 +3,11 @@
 char *strncpy(char *__restrict__ dest, const char *__restrict__ src, size_t n) {
     size_t i;
 
-    for (i = 0; i < n && src[i] != '\0'; i++) {
+    for (i = 0; i < n && src[i] != '\0'; ++i) {
         dest[i] = src[i];
     }
 
-    for (; i < n; i++) {
+    for (; i < n; ++i) {
         dest[i] = '\0';
     }
 

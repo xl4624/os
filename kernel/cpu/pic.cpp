@@ -50,8 +50,9 @@ namespace PIC {
     }
 
     void send_eoi(uint8_t irq) {
-        if (irq >= 8)
+        if (irq >= 8) {
             outb(PIC2_CTRL, PIC_EOI);
+        }
         outb(PIC1_CTRL, PIC_EOI);
     }
 

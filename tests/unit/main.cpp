@@ -12,16 +12,18 @@ int main() {
 
     // Group by category
     char current_category[64] = "";
-    for (int i = 0; i < kTestCount; i++) {
+    for (int i = 0; i < kTestCount; ++i) {
         TestCase &test = kTests[i];
         const char *slash = strchr(test.name, '/');
-        if (!slash)
+        if (!slash) {
             continue;
+        }
 
         size_t cat_len = slash - test.name;
         char category[64];
-        for (size_t j = 0; j < cat_len && j < 63; j++)
+        for (size_t j = 0; j < cat_len && j < 63; ++j) {
             category[j] = test.name[j];
+        }
         category[cat_len] = '\0';
         const char *test_name = slash + 1;
 
@@ -41,9 +43,9 @@ int main() {
 
         if (!kTestState.current_failed) {
             printf("OK\n");
-            kTestState.passed++;
+            ++kTestState.passed;
         } else {
-            kTestState.failed++;
+            ++kTestState.failed;
         }
     }
 
@@ -52,5 +54,5 @@ int main() {
            kTestState.failed);
     printf("========================================\n");
 
-    return kTestState.failed > 0 ? 1 : 0;
+    return kTestState.failed == 0 ? 0 : 1;
 }

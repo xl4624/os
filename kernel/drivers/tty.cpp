@@ -17,14 +17,16 @@ static constexpr size_t to_index(size_t row, size_t col) {
 Terminal kTerminal;
 
 Terminal::Terminal() {
-    for (size_t y = 0; y < VGA::HEIGHT; ++y)
+    for (size_t y = 0; y < VGA::HEIGHT; ++y) {
         clear_line(y);
+    }
     enable_cursor();
 }
 
 void Terminal::write(const char *data) {
-    while (*data)
+    while (*data) {
         put_char(*data++);
+    }
 }
 
 void Terminal::put_char(char c) {
@@ -122,7 +124,7 @@ void Terminal::scroll() {
 
     // clear bottom line
     clear_line(VGA::HEIGHT - 1);
-    row_--;
+    --row_;
     update_cursor();
 }
 
@@ -153,8 +155,9 @@ void Terminal::disable_cursor() {
 }
 
 void Terminal::update_cursor() {
-    if (!cursor_enabled_)
+    if (!cursor_enabled_) {
         return;
+    }
     move_cursor(row_, col_);
 }
 

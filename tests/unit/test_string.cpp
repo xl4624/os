@@ -122,7 +122,7 @@ TEST(string, strcmp_different_lengths) {
 TEST(string, memset_entire_buffer) {
     char buf[10];
     memset(buf, 'A', 10);
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; ++i) {
         ASSERT_EQ(buf[i], 'A');
     }
 }
@@ -136,7 +136,7 @@ TEST(string, memset_partial) {
 TEST(string, memset_zero) {
     char buf[] = "hello";
     memset(buf, 0, 5);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 5; ++i) {
         ASSERT_EQ(buf[i], '\0');
     }
 }

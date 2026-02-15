@@ -18,7 +18,7 @@ namespace {
     constexpr uint8_t EXT_ARROW_RIGHT = 0x4D;
 
     constexpr size_t SCANCODE_TABLE_SIZE = 69;
-    constexpr Key scancode_to_key[] = {
+    constexpr Key scancode_table[] = {
         Key::Unknown,  // (0x00)
         Key::Esc,       Key::Num1,        Key::Num2,
         Key::Num3,      Key::Num4,        Key::Num5,
@@ -46,8 +46,8 @@ namespace {
         Key::F10,
     };
 
-    static_assert(sizeof(scancode_to_key) / sizeof(Key) == SCANCODE_TABLE_SIZE,
-                  "scancode_to_key array size must match SCANCODE_TABLE_SIZE");
+    static_assert(sizeof(scancode_table) / sizeof(Key) == SCANCODE_TABLE_SIZE,
+                  "scancode_table array size must match SCANCODE_TABLE_SIZE");
 }  // namespace
 
 KeyboardDriver keyboard;
@@ -78,7 +78,7 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
         event.key = lookup_extended(scancode);
         extended_scancode_ = false;
     } else if (scancode < SCANCODE_TABLE_SIZE) {
-        event.key = scancode_to_key[scancode];
+        event.key = scancode_table[scancode];
     } else {
         event.key = Key::Unknown;
     }
@@ -109,6 +109,13 @@ Key KeyboardDriver::lookup_extended(uint8_t scancode) {
         case EXT_ARROW_RIGHT: return Key::Right;
         default: return Key::Unknown;
     }
+}
+
+Key KeyboardDriver::scancode_to_key(uint8_t scancode) {
+    if (scancode >= SCANCODE_TABLE_SIZE) {
+        return Key::Unknown;
+    }
+    return ::scancode_table[scancode];
 }
 
 char KeyboardDriver::lookup_ascii(Key key) const {

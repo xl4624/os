@@ -16,12 +16,12 @@ namespace Heap {
 
     // Print a block-by-block dump of the heap to the VGA terminal (debug).
     void dump();
-}
+}  // namespace Heap
 
 __BEGIN_DECLS
 
 void *kmalloc(size_t size);
-void  kfree(void *ptr);
+void kfree(void *ptr);
 void *kcalloc(size_t nmemb, size_t size);
 void *krealloc(void *ptr, size_t size);
 

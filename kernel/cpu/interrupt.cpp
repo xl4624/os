@@ -68,48 +68,49 @@ static_assert(sizeof(IRQTable::handlers) / sizeof(IRQTable::handlers[0]) == 16,
 
 namespace Interrupt {
 
-void init() {
-    IDT::init();
-    PIC::init();
+    void init() {
+        IDT::init();
+        PIC::init();
 
-    // Register default ISR/IRQ handlers
-    for (uint8_t i = 0; i < 32; i++) {
-        IDT::set_entry(i, reinterpret_cast<size_t>(ISRTable::handlers[i]),
-                       IDT::Gate::Trap, IDT::Ring::Kernel);
+        // Register default ISR/IRQ handlers
+        for (uint8_t i = 0; i < 32; i++) {
+            IDT::set_entry(i, reinterpret_cast<size_t>(ISRTable::handlers[i]),
+                           IDT::Gate::Trap, IDT::Ring::Kernel);
+        }
+        for (uint8_t i = 0; i < 16; i++) {
+            IDT::set_entry(i + 32,
+                           reinterpret_cast<size_t>(IRQTable::handlers[i]),
+                           IDT::Gate::Interrupt, IDT::Ring::Kernel);
+        }
+
+        interrupt_enable();
     }
-    for (uint8_t i = 0; i < 16; i++) {
-        IDT::set_entry(i + 32, reinterpret_cast<size_t>(IRQTable::handlers[i]),
-                       IDT::Gate::Interrupt, IDT::Ring::Kernel);
+
+    void register_handler(ISR isr, handler_t handler) {
+        isr_handlers[static_cast<uint8_t>(isr)] = handler;
     }
 
-    interrupt_enable();
-}
+    void register_handler(IRQ irq, handler_t handler) {
+        irq_handlers[static_cast<uint8_t>(irq)] = handler;
+        PIC::unmask(static_cast<uint8_t>(irq));
+    }
 
-void register_handler(ISR isr, handler_t handler) {
-    isr_handlers[static_cast<uint8_t>(isr)] = handler;
-}
+    __BEGIN_DECLS
 
-void register_handler(IRQ irq, handler_t handler) {
-    irq_handlers[static_cast<uint8_t>(irq)] = handler;
-    PIC::unmask(static_cast<uint8_t>(irq));
-}
+    void interrupt_enable() {
+        asm volatile("sti");
+    }
 
-__BEGIN_DECLS
+    void interrupt_disable() {
+        asm volatile("cli");
+    }
 
-void interrupt_enable() {
-    asm volatile("sti");
-}
+    __attribute__((noreturn)) void halt_and_catch_fire() {
+        interrupt_disable();
+        asm volatile("hlt");
+        __builtin_unreachable();
+    }
 
-void interrupt_disable() {
-    asm volatile("cli");
-}
-
-__attribute__((noreturn)) void halt_and_catch_fire() {
-    interrupt_disable();
-    asm volatile("hlt");
-    __builtin_unreachable();
-}
-
-__END_DECLS
+    __END_DECLS
 
 }  // namespace Interrupt

@@ -56,7 +56,7 @@ __attribute__((noreturn)) void kernel_main() {
             const Module *mod = Modules::get(i);
             printf("Loading module \"%s\" (%u bytes)...\n", mod->name,
                    static_cast<unsigned>(mod->len));
-            Scheduler::create_process(mod->data, mod->len);
+            Scheduler::create_process(mod->data, mod->len, mod->name);
         }
     } else {
         printf("No multiboot modules found.\n");

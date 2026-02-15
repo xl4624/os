@@ -34,8 +34,10 @@ namespace Scheduler {
     // Create a new user-mode process from an ELF32 executable image.
     // Parses the ELF headers, maps PT_LOAD segments into a new address
     // space, and sets the entry point from e_entry.
+    // `name` is placed in argv[0] (argc=1, argv=["name", nullptr]).
     // Returns the new process, or nullptr on failure.
-    Process *create_process(const uint8_t *elf_data, size_t elf_len);
+    Process *create_process(const uint8_t *elf_data, size_t elf_len,
+                            const char *name);
 
     // Called from timer_entry.S and syscall_entry.S.
     // `esp` is the current kernel stack pointer (pointing to a TrapFrame).

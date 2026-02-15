@@ -259,10 +259,15 @@ namespace Scheduler {
         // The schedule() call will switch away from us.
     }
 
-    Process *create_process(const uint8_t *elf_data, size_t elf_len) {
+    Process *create_process(const uint8_t *elf_data, size_t elf_len,
+                            const char *name) {
         assert(initialized
                && "Scheduler::create_process(): scheduler not "
                   "initialized");
+
+        if (!name) {
+            name = "";
+        }
 
         Process *p = alloc_process();
         if (!p) {
@@ -284,15 +289,58 @@ namespace Scheduler {
         }
         p->heap_break = brk;
 
-        // Allocate user stack pages.
+        // Allocate user stack pages, saving physical addresses for stack setup.
+        paddr_t stack_pages[kUserStackPages];
         for (uint32_t i = 0; i < kUserStackPages; ++i) {
             paddr_t phys = kPmm.alloc();
             assert(phys != 0
                    && "Scheduler::create_process(): out of physical memory "
                       "for user stack");
+            stack_pages[i] = phys;
             AddressSpace::map(pd_virt, kUserStackVA + i * PAGE_SIZE, phys,
                               /*writeable=*/true, /*user=*/true);
         }
+
+        // Write argc/argv onto the user stack.
+        //
+        // At process start (when _start runs), the stack layout is:
+        //   [esp+0]  argc  (= 1)
+        //   [esp+4]  argv[0]  (pointer to the name string)
+        //   [esp+8]  NULL  (argv terminator)
+        //   ... name string bytes above ...
+        //
+        // We access the physical pages via phys_to_virt() since they reside
+        // in the first 8 MiB of physical memory, which is kernel-mapped.
+        auto kptr = [&](uint32_t uva) -> uint8_t * {
+            uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
+            uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;
+            return reinterpret_cast<uint8_t *>(
+                       phys_to_virt(stack_pages[idx]))
+                   + off;
+        };
+
+        uint32_t user_esp = kUserStackTop;
+
+        // Push the program name string (null-terminated).
+        size_t name_len = strlen(name);
+        user_esp -= static_cast<uint32_t>(name_len + 1);
+        memcpy(kptr(user_esp), name, name_len + 1);
+        uint32_t str_uva = user_esp;
+
+        // Align esp down to a 4-byte boundary.
+        user_esp &= ~3u;
+
+        // Push argv[1] = NULL (argv terminator).
+        user_esp -= 4;
+        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = 0;
+
+        // Push argv[0] = pointer to the name string.
+        user_esp -= 4;
+        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = str_uva;
+
+        // Push argc = 1.
+        user_esp -= 4;
+        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = 1;
 
         // Allocate kernel stack for system calls and interrupts.
         p->kernel_stack =
@@ -311,7 +359,7 @@ namespace Scheduler {
         frame->eip = entry;
         frame->cs = GDT::USER_CODE_SELECTOR;
         frame->eflags = 0x202;  // IF set, reserved bit 1 set
-        frame->user_esp = kUserStackTop;
+        frame->user_esp = user_esp;
         frame->user_ss = GDT::USER_DATA_SELECTOR;
         frame->ds = GDT::USER_DATA_SELECTOR;
         frame->es = GDT::USER_DATA_SELECTOR;

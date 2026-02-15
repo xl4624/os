@@ -1,5 +1,6 @@
 #include "tty.hpp"
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/cdefs.h>
@@ -112,6 +113,8 @@ void Terminal::handle_key(KeyEvent event) {
 }
 
 void Terminal::put_entry_at(char c, uint8_t color, size_t row, size_t col) {
+    assert(row < VGA::HEIGHT && "Terminal::put_entry_at(): row out of range");
+    assert(col < VGA::WIDTH && "Terminal::put_entry_at(): col out of range");
     buffer_[to_index(row, col)] = VGA::entry(c, color);
 }
 
@@ -129,6 +132,7 @@ void Terminal::scroll() {
 }
 
 void Terminal::clear_line(size_t row) {
+    assert(row < VGA::HEIGHT && "Terminal::clear_line(): row out of range");
     for (size_t col = 0; col < VGA::WIDTH; ++col) {
         put_entry_at(0, color_, row, col);
     }
@@ -162,6 +166,8 @@ void Terminal::update_cursor() {
 }
 
 void Terminal::move_cursor(size_t row, size_t col) {
+    assert(row < VGA::HEIGHT && "Terminal::move_cursor(): row out of range");
+    assert(col < VGA::WIDTH && "Terminal::move_cursor(): col out of range");
     uint16_t pos = static_cast<uint16_t>(row * VGA::WIDTH + col);
     outb(VGA::CRTC_ADDR_REG, VGA::CURSOR_LOC_LOW_REG);
     outb(VGA::CRTC_DATA_REG, static_cast<uint8_t>(pos & 0xFF));

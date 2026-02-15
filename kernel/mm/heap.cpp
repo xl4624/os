@@ -1,5 +1,6 @@
 #include "heap.hpp"
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +38,7 @@ static inline BlockHeader *block_after(const BlockHeader *hdr) {
 // Linear scan: return the block whose successor is 'target', or nullptr.
 static BlockHeader *find_prev_block(const BlockHeader *base, const uint8_t *end,
                                     const BlockHeader *target) {
+    assert(base != nullptr && "find_prev_block(): base is null");
     if (target == base) {
         return nullptr;
     }
@@ -114,6 +116,8 @@ size_t Heap::mapped_size() const {
 }
 
 void Heap::init() {
+    assert(base_ == nullptr && "Heap::init(): called more than once");
+
     base_ = reinterpret_cast<BlockHeader *>(kVirtBase);
     end_ = reinterpret_cast<uint8_t *>(kVirtBase);
 
@@ -235,6 +239,8 @@ void Heap::free(void *ptr) {
 }
 
 void *Heap::calloc(size_t nmemb, size_t size) {
+    assert(base_ != nullptr
+           && "Heap::calloc(): called before Heap::init()");
     if (nmemb != 0 && size > static_cast<size_t>(-1) / nmemb) {
         return nullptr;
     }
@@ -247,6 +253,8 @@ void *Heap::calloc(size_t nmemb, size_t size) {
 }
 
 void *Heap::realloc(void *ptr, size_t size) {
+    assert(base_ != nullptr
+           && "Heap::realloc(): called before Heap::init()");
     if (!ptr) {
         return alloc(size);
     }

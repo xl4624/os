@@ -1,11 +1,13 @@
 #include "gdt.hpp"
 
+#include <assert.h>
 #include <stddef.h>
 
 namespace GDT {
     // TODO: Add TSS entry once implemented
     static Entry gdt[3];
     static Descriptor gdtp;
+    static bool initialized = false;
 
     static constexpr Entry create_gdt_entry(size_t base, uint32_t limit,
                                             uint8_t access, uint8_t flags) {
@@ -22,6 +24,8 @@ namespace GDT {
     }
 
     void init() {
+        assert(!initialized && "GDT::init(): called more than once");
+
         // Null descriptor
         gdt[0] = create_gdt_entry(0, 0, 0, 0);
         // Code segment
@@ -43,11 +47,16 @@ namespace GDT {
             "mov %%ax, %%fs\n"
             "mov %%ax, %%gs\n"
             "mov %%ax, %%ss\n"
-            "ljmp %2, $1f\n"
+            "pushl %2\n"
+            "pushl $1f\n"
+            "lret\n"
             "1:\n"
-            "ret\n"
             :
             : "m"(gdtp), "i"(KERNEL_DATA_SELECTOR), "i"(KERNEL_CODE_SELECTOR)
-            : "ax");
+            : "ax", "memory");
+
+        initialized = true;
     }
+
+    bool is_initialized() { return initialized; }
 }  // namespace GDT

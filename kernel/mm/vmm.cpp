@@ -1,5 +1,6 @@
 #include "vmm.hpp"
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -69,12 +70,10 @@ static PageTable *page_table_for(vaddr_t virt, bool create, bool user) {
 namespace VMM {
 
     void map(vaddr_t virt, paddr_t phys, bool writeable, bool user) {
-        if (virt & (PAGE_SIZE - 1))
-            panic("VMM::map: virt 0x%08x is not page-aligned\n",
-                  static_cast<unsigned>(virt));
-        if (phys & (PAGE_SIZE - 1))
-            panic("VMM::map: phys 0x%08x is not page-aligned\n",
-                  static_cast<unsigned>(phys));
+        assert(!(virt & (PAGE_SIZE - 1))
+               && "VMM::map(): virt address is not page-aligned");
+        assert(!(phys & (PAGE_SIZE - 1))
+               && "VMM::map(): phys address is not page-aligned");
 
         PageTable *pt = page_table_for(virt, /*create=*/true, user);
         pt->entry[pt_index(virt)] = PageEntry(phys, writeable, user);
@@ -84,9 +83,8 @@ namespace VMM {
     }
 
     void unmap(vaddr_t virt) {
-        if (virt & (PAGE_SIZE - 1))
-            panic("VMM::unmap: virt 0x%08x is not page-aligned\n",
-                  static_cast<unsigned>(virt));
+        assert(!(virt & (PAGE_SIZE - 1))
+               && "VMM::unmap(): virt address is not page-aligned");
 
         PageTable *pt = page_table_for(virt, /*create=*/false, false);
         if (!pt) {

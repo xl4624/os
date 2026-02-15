@@ -1,5 +1,6 @@
 #include "keyboard.hpp"
 
+#include <assert.h>
 #include <sys/io.h>
 
 #include "interrupt.hpp"
@@ -116,6 +117,7 @@ Key Key::from_extended_scancode(uint8_t scancode) {
 }
 
 char Key::ascii(bool shift) const {
+    assert(value_ < COUNT && "Key::ascii(): key value out of range");
     if (value_ < COUNT) {
         return shift ? kAsciiTable[value_].shifted : kAsciiTable[value_].normal;
     }

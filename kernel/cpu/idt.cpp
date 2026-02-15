@@ -1,5 +1,6 @@
 #include "idt.hpp"
 
+#include <assert.h>
 #include <string.h>
 
 namespace IDT {
@@ -14,6 +15,7 @@ namespace IDT {
     }
 
     void set_entry(size_t index, uintptr_t handler, Gate gate, Ring ring) {
+        assert(index < 256 && "IDT::set_entry(): index out of range (0-255)");
         idt[index] = Entry(handler, gate, ring);
     }
 }  // namespace IDT

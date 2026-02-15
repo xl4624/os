@@ -9,6 +9,9 @@ SRCS_CPP := $(shell find . -type f -name "*.cpp" ! -path "./test/*")
 ifdef KERNEL_TESTS
 CPPFLAGS += -DKERNEL_TESTS
 SRCS_CPP += $(shell find ./test -type f -name "*.cpp")
+ifdef KTEST_RUN
+CPPFLAGS += -DKTEST_RUN
+endif
 endif
 SRCS_ASM := $(shell find . -type f -name "*.S")
 OBJS_CPP := $(SRCS_CPP:%.cpp=%.o)

@@ -4,8 +4,6 @@
 #include <string.h>
 #include <sys/io.h>
 
-#include "keyboard.hpp"
-
 TestCase kTests[kMaxTests];
 int kTestCount = 0;
 TestState kTestState;
@@ -21,6 +19,7 @@ namespace {
     // QEMU isa-debug-exit port (for automated testing)
     constexpr uint16_t QEMU_DEBUG_EXIT_PORT = 0xF4;
     constexpr uint8_t QEMU_EXIT_CODE_SUCCESS = 0x00;
+    constexpr uint8_t QEMU_EXIT_CODE_FAILURE = 0x01;
 }  // namespace
 
 namespace KTest {
@@ -63,31 +62,12 @@ namespace KTest {
         }
 
         printf("\n==============================\n");
-        printf("Total: %d passed, %d failed\n", kTestState.passed, kTestState.failed);
+        printf("Total: %d passed, %d failed\n", kTestState.passed,
+               kTestState.failed);
         printf("==============================\n");
 
-        printf("\nPress any key to exit...\n");
-
-        // Wait for a printable key press (not release, not Enter)
-        while (true) {
-            // Wait for scancode available
-            while (!(inb(PS2_STATUS_PORT) & PS2_STATUS_OUTPUT_FULL)) {}
-
-            uint8_t scancode = inb(PS2_DATA_PORT);
-
-            KeyEvent event = keyboard.scancode_to_event(scancode);
-
-            // Skip Enter - require a different key
-            if (event.pressed && event.key != Key::Enter) {
-                break;
-            }
-        }
-
-        outb(QEMU_DEBUG_EXIT_PORT, QEMU_EXIT_CODE_SUCCESS);
-
-        while (1) {
-            asm volatile("hlt");
-        }
+        uint8_t exit_code = (kTestState.failed == 0) ? QEMU_EXIT_CODE_SUCCESS
+                                                     : QEMU_EXIT_CODE_FAILURE;
+        outb(QEMU_DEBUG_EXIT_PORT, exit_code);
     }
-
 }  // namespace KTest

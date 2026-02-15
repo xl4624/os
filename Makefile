@@ -62,7 +62,7 @@ clean-test:
 	$(MAKE) -C tests clean
 
 install:
-	python install.py
+	./install.sh
 
 $(BIN): $(SUBDIRS) $(OBJS) arch/linker.ld
 	$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)

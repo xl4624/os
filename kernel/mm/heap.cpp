@@ -7,10 +7,6 @@
 #include "panic.h"
 #include "x86.hpp"
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Block header  (must be exactly 16 bytes on i686 so every payload is
-//  16-byte aligned when the heap base is 16-byte aligned)
-// ─────────────────────────────────────────────────────────────────────────────
 struct BlockHeader {
     uint32_t size;      // bytes of payload (not counting this header)
     uint32_t free;      // 1 = free, 0 = allocated
@@ -21,15 +17,8 @@ struct BlockHeader {
 static_assert(sizeof(BlockHeader) == 16,
               "BlockHeader must be 16 bytes for payload alignment invariant");
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Module-private state
-// ─────────────────────────────────────────────────────────────────────────────
 static BlockHeader *heap_base_ = nullptr;  // pointer to first block
 static uint8_t *heap_end_ = nullptr;       // one byte past the last heap byte
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Internal helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 // Round sz up to the nearest multiple of 16; minimum 16.
 static inline size_t align16(size_t sz) {
@@ -60,9 +49,6 @@ static BlockHeader *find_prev_block(const BlockHeader *target) {
     return nullptr;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Heap::init
-// ─────────────────────────────────────────────────────────────────────────────
 namespace Heap {
 
     void init() {
@@ -90,9 +76,6 @@ namespace Heap {
         heap_base_->prev = nullptr;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    //  Heap::dump
-    // ─────────────────────────────────────────────────────────────────────────────
     void dump() {
         printf("Heap dump [%p .. %p] (%u KiB):\n",
                reinterpret_cast<void *>(heap_base_),
@@ -127,9 +110,6 @@ namespace Heap {
 
 }  // namespace Heap
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  kmalloc
-// ─────────────────────────────────────────────────────────────────────────────
 void *kmalloc(size_t size) {
     if (!heap_base_)
         panic("kmalloc: heap not initialised\n");
@@ -164,9 +144,6 @@ void *kmalloc(size_t size) {
     return nullptr;  // OOM
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  kfree
-// ─────────────────────────────────────────────────────────────────────────────
 void kfree(void *ptr) {
     if (!ptr)
         return;
@@ -200,9 +177,6 @@ void kfree(void *ptr) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  kcalloc
-// ─────────────────────────────────────────────────────────────────────────────
 void *kcalloc(size_t nmemb, size_t size) {
     // Overflow-safe total size computation.
     if (nmemb != 0 && size > static_cast<size_t>(-1) / nmemb)
@@ -214,9 +188,6 @@ void *kcalloc(size_t nmemb, size_t size) {
     return ptr;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  krealloc
-// ─────────────────────────────────────────────────────────────────────────────
 void *krealloc(void *ptr, size_t size) {
     if (!ptr)
         return kmalloc(size);

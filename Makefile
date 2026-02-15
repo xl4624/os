@@ -18,7 +18,7 @@ CRTBEGIN := $(shell $(CPP) -print-file-name=crtbegin.o)
 CRTEND	 := $(shell $(CPP) -print-file-name=crtend.o)
 
 # ==== Build Artifacts ====
-KERNEL_OBJS = $(shell find kernel -type f -name '*.o')
+KERNEL_OBJS = $(shell find kernel -type f -name '*.o' ! -path 'kernel/test/*')
 LIBC_OBJS   = $(shell find libc -type f -name '*.libk.o')
 OBJS        = $(CRTI) $(CRTBEGIN) arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
 
@@ -48,14 +48,16 @@ ktest: install $(KTEST_ISO)
 		status=$$?; \
 		if [ $$status -eq 1 ]; then \
 			echo "[SUCCESS] All tests passed!"; \
-			exit 0; \
+			result=0; \
 		elif [ $$status -eq 3 ]; then \
 			echo "[FAILURE] Tests failed (exit code: $$status)"; \
-			exit 1; \
+			result=1; \
 		else \
 			echo "[FAILURE] Unknown error (exit code: $$status)"; \
-			exit $$status; \
-		fi
+			result=$$status; \
+		fi; \
+		$(MAKE) -C kernel clean; \
+		exit $$result
 
 clean: clean-test
 	@for dir in $(SUBDIRS); do \

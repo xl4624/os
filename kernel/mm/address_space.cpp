@@ -24,7 +24,7 @@ namespace {
 
     // Extract the physical address from a PDE/PTE frame field.
     constexpr paddr_t frame_to_phys(uint32_t frame) {
-        return static_cast<paddr_t>(frame) << PAGE_OFFSET_BITS;
+        return paddr_t{frame} << PAGE_OFFSET_BITS;
     }
 
 }  // namespace
@@ -41,7 +41,7 @@ namespace AddressSpace {
                 static_cast<unsigned>(pd_phys));
         }
 
-        auto *pd = reinterpret_cast<PageTable *>(phys_to_virt(pd_phys));
+        auto *pd = phys_to_virt(pd_phys).ptr<PageTable>();
 
         memset(pd->entry, 0, kKernelPdeStart * sizeof(PageEntry));
 
@@ -69,13 +69,13 @@ namespace AddressSpace {
                     static_cast<unsigned>(pt_phys));
             }
 
-            auto *pt = reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
+            auto *pt = phys_to_virt(pt_phys).ptr<PageTable>();
             memset(pt, 0, sizeof(PageTable));
             pde = PageEntry(pt_phys, /*writeable=*/true, /*user=*/user);
         }
 
         const paddr_t pt_phys = frame_to_phys(pde.frame);
-        auto *pt = reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
+        auto *pt = phys_to_virt(pt_phys).ptr<PageTable>();
         pt->entry[pt_index(virt)] = PageEntry(phys, writeable, user);
     }
 
@@ -87,7 +87,7 @@ namespace AddressSpace {
         }
 
         const paddr_t pt_phys = frame_to_phys(pde.frame);
-        auto *pt = reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
+        auto *pt = phys_to_virt(pt_phys).ptr<PageTable>();
         PageEntry &pte = pt->entry[pt_index(virt)];
         if (!pte.present) {
             return;
@@ -113,8 +113,8 @@ namespace AddressSpace {
         if (!pde.present || !pde.user) {
             return false;
         }
-        const auto *pt = reinterpret_cast<const PageTable *>(
-            phys_to_virt(frame_to_phys(pde.frame)));
+        const auto *pt =
+            phys_to_virt(frame_to_phys(pde.frame)).ptr<const PageTable>();
         const PageEntry &pte = pt->entry[pt_index(va)];
         if (!pte.present || !pte.user) {
             return false;
@@ -134,7 +134,7 @@ namespace AddressSpace {
             }
 
             const paddr_t pt_phys = frame_to_phys(pde.frame);
-            auto *pt = reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
+            auto *pt = phys_to_virt(pt_phys).ptr<PageTable>();
 
             for (uint32_t pti = 0; pti < PAGES_PER_TABLE; ++pti) {
                 PageEntry &pte = pt->entry[pti];

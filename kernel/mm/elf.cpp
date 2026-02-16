@@ -113,17 +113,17 @@ namespace Elf {
                 AddressSpace::map(pd, va, phys,
                                   /*writeable=*/true, /*user=*/true);
 
-                auto *page = reinterpret_cast<uint8_t *>(phys_to_virt(phys));
+                auto *page = phys_to_virt(phys).ptr<uint8_t>();
 
                 // Determine how much of this page overlaps with file data.
                 size_t filled = 0;
-                if (va < ph->p_vaddr + ph->p_filesz
-                    && va + PAGE_SIZE > ph->p_vaddr) {
+                if (va.raw() < ph->p_vaddr + ph->p_filesz
+                    && va.raw() + PAGE_SIZE > ph->p_vaddr) {
                     // Byte range within the segment that this page covers.
                     const size_t seg_offset =
-                        (va > ph->p_vaddr) ? va - ph->p_vaddr : 0;
+                        (va.raw() > ph->p_vaddr) ? va.raw() - ph->p_vaddr : 0;
                     const size_t page_start =
-                        (ph->p_vaddr > va) ? ph->p_vaddr - va : 0;
+                        (ph->p_vaddr > va.raw()) ? ph->p_vaddr - va.raw() : 0;
                     size_t copy_len = PAGE_SIZE - page_start;
                     if (seg_offset + copy_len > ph->p_filesz) {
                         copy_len = (ph->p_filesz > seg_offset)

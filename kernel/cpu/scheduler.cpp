@@ -166,7 +166,7 @@ namespace Scheduler {
         idle_process->state = ProcessState::Running;
         idle_process->page_directory = &boot_page_directory;
         idle_process->page_directory_phys =
-            virt_to_phys(reinterpret_cast<vaddr_t>(&boot_page_directory));
+            virt_to_phys(vaddr_t{&boot_page_directory});
         idle_process->kernel_stack = reinterpret_cast<uint8_t *>(
             reinterpret_cast<uintptr_t>(stack_top) - kKernelStackSize);
         idle_process->kernel_esp = 0;  // will be set on first schedule()
@@ -240,8 +240,7 @@ namespace Scheduler {
         // Free address space. Must switch to boot page directory first since
         // we cannot free the currently loaded page directory.
         if (current_process != idle_process) {
-            AddressSpace::load(
-                virt_to_phys(reinterpret_cast<vaddr_t>(&boot_page_directory)));
+            AddressSpace::load(virt_to_phys(vaddr_t{&boot_page_directory}));
             AddressSpace::destroy(current_process->page_directory,
                                   current_process->page_directory_phys);
             current_process->page_directory = nullptr;
@@ -314,8 +313,7 @@ namespace Scheduler {
         auto kptr = [&](uint32_t uva) -> uint8_t * {
             uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
             uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;
-            return reinterpret_cast<uint8_t *>(phys_to_virt(stack_pages[idx]))
-                   + off;
+            return phys_to_virt(stack_pages[idx]).ptr<uint8_t>() + off;
         };
 
         uint32_t user_esp = kUserStackTop;

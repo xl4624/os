@@ -47,8 +47,8 @@ __attribute__((noreturn)) void kernel_main() {
     Scheduler::start();
 
     // Load user programs from multiboot modules.
-    const auto *info = reinterpret_cast<const multiboot_info_t *>(
-        phys_to_virt(reinterpret_cast<paddr_t>(mboot_info)));
+    const auto *info =
+        phys_to_virt(paddr_t{mboot_info}).ptr<multiboot_info_t>();
     Modules::init(info);
 
     if (Modules::count() > 0) {

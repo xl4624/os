@@ -135,7 +135,7 @@ static int32_t sys_sbrk(TrapFrame *regs) {
                               /*writeable=*/true, /*user=*/true);
 
             // Zero the page so userspace gets clean memory.
-            auto *page = reinterpret_cast<uint8_t *>(phys_to_virt(phys));
+            auto *page = phys_to_virt(phys).ptr<uint8_t>();
             memset(page, 0, PAGE_SIZE);
         }
     }

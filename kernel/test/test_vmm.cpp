@@ -39,7 +39,7 @@ TEST(vmm, write_through_mapped_page) {
     VMM::map(VA, phys);
 
     // Write through the virtual address and verify the value persists.
-    volatile uint32_t *ptr = reinterpret_cast<volatile uint32_t *>(VA);
+    volatile uint32_t *ptr = VA.ptr<volatile uint32_t>();
     *ptr = 0xDEADBEEF;
     ASSERT_EQ(*ptr, static_cast<uint32_t>(0xDEADBEEF));
 

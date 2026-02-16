@@ -87,7 +87,7 @@ bool Heap::grow(size_t min_bytes) {
         paddr_t phys = kPmm.alloc();
         assert(phys && "Heap::grow: out of physical memory\n");
 
-        VMM::map(static_cast<vaddr_t>(va), phys);
+        VMM::map(vaddr_t{va}, phys);
         va += PAGE_SIZE;
     }
 

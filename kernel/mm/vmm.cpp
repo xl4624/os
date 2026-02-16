@@ -47,16 +47,15 @@ namespace {
             }
 
             // Zero the page table before installing it.
-            auto *pt = reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
+            auto *pt = phys_to_virt(pt_phys).ptr<PageTable>();
             memset(pt, 0, sizeof(PageTable));
 
             pde = PageEntry(pt_phys, /*writeable=*/true, /*user=*/user);
             return pt;
         }
 
-        const paddr_t pt_phys = static_cast<paddr_t>(pde.frame)
-                                << PAGE_OFFSET_BITS;
-        return reinterpret_cast<PageTable *>(phys_to_virt(pt_phys));
+        const paddr_t pt_phys = paddr_t{pde.frame} << PAGE_OFFSET_BITS;
+        return phys_to_virt(pt_phys).ptr<PageTable>();
     }
 
 }  // namespace
@@ -105,7 +104,7 @@ namespace VMM {
             return 0;
         }
 
-        return (static_cast<paddr_t>(pte.frame) << PAGE_OFFSET_BITS)
+        return (paddr_t{pte.frame} << PAGE_OFFSET_BITS)
                | (virt & (PAGE_SIZE - 1));
     }
 

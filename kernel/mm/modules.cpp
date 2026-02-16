@@ -30,8 +30,8 @@ namespace Modules {
             return;
         }
 
-        const auto *mods = reinterpret_cast<const multiboot_module_t *>(
-            phys_to_virt(info->mods_addr));
+        const auto *mods =
+            phys_to_virt(paddr_t{info->mods_addr}).ptr<multiboot_module_t>();
 
         uint32_t n = info->mods_count;
         if (n > kMaxModules) {
@@ -41,14 +41,14 @@ namespace Modules {
         for (uint32_t i = 0; i < n; ++i) {
             const char *name = "";
             if (mods[i].cmdline != 0) {
-                const char *cmdline = reinterpret_cast<const char *>(
-                    phys_to_virt(mods[i].cmdline));
+                const char *cmdline =
+                    phys_to_virt(paddr_t{mods[i].cmdline}).ptr<const char>();
                 name = basename(cmdline);
             }
 
             module_table[i].name = name;
-            module_table[i].data = reinterpret_cast<const uint8_t *>(
-                phys_to_virt(mods[i].mod_start));
+            module_table[i].data =
+                phys_to_virt(paddr_t{mods[i].mod_start}).ptr<const uint8_t>();
             module_table[i].len = mods[i].mod_end - mods[i].mod_start;
         }
 

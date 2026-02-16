@@ -113,19 +113,15 @@ extern "C" __attribute__((noreturn)) void kernel_main() {
     printf("PIT smoke test PASSED\n");
 
     printf("\nKeyboard command queue test:\n");
-    printf("  Disabling keyboard for 2 seconds...\n");
+    printf("  Disabling keyboard for 1 second...\n");
     kKeyboard.send_command(PS2Command::DisableScanning);
-    PIT::sleep_ms(2000);
+    PIT::sleep_ms(1000);
     printf("  Re-enabling keyboard...\n");
     kKeyboard.send_command(PS2Command::EnableScanning);
-
     // Wait for the enable command to complete (ACK received)
     while (!kKeyboard.is_command_queue_empty()) {
         PIT::sleep_ms(10);
     }
-
-    // Give the keyboard controller a moment to fully re-enable
-    PIT::sleep_ms(100);
     printf("  Test complete - try typing now!\n");
 
     while (true) {

@@ -202,7 +202,6 @@ bool KeyboardDriver::wait_for_input() const {
 }
 
 void KeyboardDriver::send_byte(uint8_t data) {
-    // Wait for input buffer to be empty before sending.
     while (!wait_for_input()) {
         // Spin-wait
         // TODO: could add timeout here

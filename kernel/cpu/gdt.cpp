@@ -3,9 +3,11 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "tss.h"
+
 namespace GDT {
-    // TODO: Add TSS entry once implemented
-    static Entry gdt[3];
+    // 6 entries: null, kernel code, kernel data, TSS, user code, user data
+    static Entry gdt[6];
     static Descriptor gdtp;
     static bool initialized = false;
 
@@ -28,14 +30,25 @@ namespace GDT {
 
         // Null descriptor
         gdt[0] = create_gdt_entry(0, 0, 0, 0);
-        // Code segment
+        // Kernel code segment (ring 0)
         gdt[1] =
             create_gdt_entry(0, SEGMENT_LIMIT, CODE_ACCESS, FLAGS_4K_32BIT);
-        // Data segment
+        // Kernel data segment (ring 0)
         gdt[2] =
             create_gdt_entry(0, SEGMENT_LIMIT, DATA_ACCESS, FLAGS_4K_32BIT);
+        // TSS descriptor - base = address of TSS struct, limit = size-1 bytes,
+        // flags = 0 (byte granularity, no size/granularity bits for system seg)
+        gdt[3] =
+            create_gdt_entry(reinterpret_cast<size_t>(&TSS::tss),
+                             sizeof(TSS::Entry) - 1, TSS_ACCESS, /*flags=*/0x0);
+        // User code segment (ring 3)
+        gdt[4] = create_gdt_entry(0, SEGMENT_LIMIT, USER_CODE_ACCESS,
+                                  FLAGS_4K_32BIT);
+        // User data segment (ring 3)
+        gdt[5] = create_gdt_entry(0, SEGMENT_LIMIT, USER_DATA_ACCESS,
+                                  FLAGS_4K_32BIT);
 
-        gdtp.size = (sizeof(Entry) * 3) - 1;
+        gdtp.size = (sizeof(Entry) * 6) - 1;
         gdtp.offset = reinterpret_cast<uintptr_t>(&gdt);
 
         // Load the GDTR
@@ -58,5 +71,7 @@ namespace GDT {
         initialized = true;
     }
 
-    bool is_initialized() { return initialized; }
+    bool is_initialized() {
+        return initialized;
+    }
 }  // namespace GDT

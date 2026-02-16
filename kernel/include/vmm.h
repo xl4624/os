@@ -40,4 +40,10 @@ namespace VMM {
     [[nodiscard]]
     paddr_t get_phys(vaddr_t virt);
 
+    // Flush the entire TLB by reloading CR3 with its current value.
+    // Use when switching address spaces (loading a new page directory).
+    // For single-page invalidation prefer the cheaper `invlpg` instruction,
+    // as used internally by map() and unmap().
+    void flush_tlb();
+
 }  // namespace VMM

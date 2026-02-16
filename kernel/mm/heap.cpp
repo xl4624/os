@@ -239,8 +239,7 @@ void Heap::free(void *ptr) {
 }
 
 void *Heap::calloc(size_t nmemb, size_t size) {
-    assert(base_ != nullptr
-           && "Heap::calloc(): called before Heap::init()");
+    assert(base_ != nullptr && "Heap::calloc(): called before Heap::init()");
     if (nmemb != 0 && size > static_cast<size_t>(-1) / nmemb) {
         return nullptr;
     }
@@ -253,8 +252,7 @@ void *Heap::calloc(size_t nmemb, size_t size) {
 }
 
 void *Heap::realloc(void *ptr, size_t size) {
-    assert(base_ != nullptr
-           && "Heap::realloc(): called before Heap::init()");
+    assert(base_ != nullptr && "Heap::realloc(): called before Heap::init()");
     if (!ptr) {
         return alloc(size);
     }

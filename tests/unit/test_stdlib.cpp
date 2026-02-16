@@ -1,6 +1,6 @@
-#include "../framework/test.h"
-
 #include <stdlib.h>
+
+#include "../framework/test.h"
 
 TEST(stdlib, abs_positive) {
     ASSERT(abs(5) == 5);

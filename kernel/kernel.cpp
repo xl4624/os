@@ -11,8 +11,12 @@
 #include "pit.h"
 #include "pmm.h"
 #include "test/ktest.h"
+#include "tss.h"
 #include "vmm.h"
 #include "x86.h"
+
+// Kernel stack symbol defined in arch/boot.S
+extern "C" char stack_top[];
 
 /* Verify we are using the i686-elf cross-compile */
 #if !defined(__i386__)
@@ -22,6 +26,8 @@
 extern "C" void kernel_init() {
     assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
     GDT::init();
+    TSS::init();
+    TSS::set_kernel_stack(reinterpret_cast<uint32_t>(stack_top));
     Interrupt::init();
     PIT::init();
     kHeap.init();

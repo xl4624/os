@@ -65,6 +65,15 @@ namespace KTest {
                kTestState.failed);
         printf("==============================\n");
 
+        // For debugging
+        // {
+        //     printf("\nPress any key to exit...");
+        //     while ((inb(PS2_STATUS_PORT) & PS2_STATUS_OUTPUT_FULL) == 0) {
+        //         // Wait for key
+        //     }
+        //     inb(PS2_DATA_PORT);
+        // }
+
         uint8_t exit_code = (kTestState.failed == 0) ? QEMU_EXIT_CODE_SUCCESS
                                                      : QEMU_EXIT_CODE_FAILURE;
         outb(QEMU_DEBUG_EXIT_PORT, exit_code);

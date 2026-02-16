@@ -18,7 +18,7 @@ static constexpr uint8_t kExtDown = 0x50;
 static constexpr uint8_t kExtLeft = 0x4B;
 static constexpr uint8_t kExtRight = 0x4D;
 
-// PS/2 scan set 1 make-codes 0x00–0x44 → Key::Value.
+// PS/2 scan set 1 make-codes 0x00–0x44 -> Key::Value.
 // The array is indexed directly by scancode byte.
 // clang-format off
 static constexpr size_t kScancodeTableSize = 69;
@@ -155,6 +155,32 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
     // If not a command response; process as key scancode.
     KeyEvent event = scancode_to_event(scancode);
     kTerminal.handle_key(event);
+
+    // Buffer printable characters for sys_read.
+    if (event.ascii != '\0') {
+        buffer_char(event.ascii);
+    }
+}
+
+void KeyboardDriver::buffer_char(char c) {
+    if (input_count_ >= kInputBufferSize) {
+        return;  // Buffer full, drop character.
+    }
+    input_buffer_[input_tail_] = c;
+    input_tail_ = (input_tail_ + 1) % kInputBufferSize;
+    ++input_count_;
+}
+
+size_t KeyboardDriver::read(char *buf, size_t count) {
+    assert((count == 0 || buf != nullptr)
+           && "KeyboardDriver::read(): buf is null with non-zero count");
+    size_t n = 0;
+    while (n < count && input_count_ > 0) {
+        buf[n++] = input_buffer_[input_head_];
+        input_head_ = (input_head_ + 1) % kInputBufferSize;
+        --input_count_;
+    }
+    return n;
 }
 
 KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
@@ -213,10 +239,8 @@ bool KeyboardDriver::send_command(PS2Command command) {
     assert(queue_count_ < kKeyboardCommandQueueSize
            && "KeyboardDriver::send_command(): command queue full");
 
-    PS2CommandEntry entry{};
-    entry.command = command;
-    entry.has_parameter = false;
-    entry.retry_count = 0;
+    PS2CommandEntry entry{/*command=*/command, /*parameter=*/0,
+                          /*has_parameter=*/false, /*retry_count=*/0};
 
     command_queue_[queue_tail_] = entry;
     queue_tail_ = (queue_tail_ + 1) % kKeyboardCommandQueueSize;
@@ -235,11 +259,8 @@ bool KeyboardDriver::send_command_with_param(PS2Command command,
     assert(queue_count_ < kKeyboardCommandQueueSize
            && "KeyboardDriver::send_command_with_param(): command queue full");
 
-    PS2CommandEntry entry{};
-    entry.command = command;
-    entry.parameter = parameter;
-    entry.has_parameter = true;
-    entry.retry_count = 0;
+    PS2CommandEntry entry{command, parameter, /*has_parameter=*/true,
+                          /*retry_count=*/0};
 
     command_queue_[queue_tail_] = entry;
     queue_tail_ = (queue_tail_ + 1) % kKeyboardCommandQueueSize;
@@ -329,7 +350,7 @@ bool KeyboardDriver::process_response(uint8_t data) {
                 return true;
             }
             // Received something that is neither ACK nor RESEND while expecting
-            // a response.  This should never happen with a well-behaved
+            // a response. This should never happen with a well-behaved
             // keyboard and signals a state-machine or protocol error.
             assert(false
                    && "KeyboardDriver: unexpected byte while WaitingForAck");

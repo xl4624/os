@@ -34,6 +34,9 @@ namespace TSS {
     }
 
     void set_kernel_stack(uint32_t esp0) {
+        assert(initialized
+               && "TSS::set_kernel_stack(): TSS not yet initialized");
+        assert(esp0 != 0 && "TSS::set_kernel_stack(): esp0 is zero");
         tss.esp0 = esp0;
     }
 

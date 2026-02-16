@@ -67,7 +67,7 @@ TEST(heap, coalesce_forward) {
     void *b = kmalloc(64);
     ASSERT_NOT_NULL(a);
     ASSERT_NOT_NULL(b);
-    // Free b first, then a — forward coalesce merges a into b's space.
+    // Free b first, then a - forward coalesce merges a into b's space.
     kfree(b);
     kfree(a);
     // The coalesced region should be large enough for both.
@@ -81,7 +81,7 @@ TEST(heap, coalesce_backward) {
     void *b = kmalloc(64);
     ASSERT_NOT_NULL(a);
     ASSERT_NOT_NULL(b);
-    // Free a first, then b — backward coalesce merges b into a's block.
+    // Free a first, then b - backward coalesce merges b into a's block.
     kfree(a);
     kfree(b);
     void *c = kmalloc(128);
@@ -104,7 +104,7 @@ TEST(heap, grow_on_demand) {
 
 TEST(heap, grow_coalesce_adjacent) {
     // Allocate two 1 MiB blocks (each triggers growth), free both,
-    // then allocate a 2 MiB block — requires coalescing across blocks.
+    // then allocate a 2 MiB block - requires coalescing across blocks.
     static constexpr size_t MB = 1u * 1024u * 1024u;
     void *a = kmalloc(MB);
     void *b = kmalloc(MB);

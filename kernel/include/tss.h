@@ -12,7 +12,7 @@
  * running in ring-3 (user mode). We use software task switching, so the
  * other fields (saved register state, CR3, etc.) are unused.
  *
- * Layout follows Intel SDM Vol. 3 §8.2.1 — 32-bit TSS.
+ * Layout follows Intel SDM Vol. 3 §8.2.1 - 32-bit TSS.
  */
 
 namespace TSS {
@@ -28,7 +28,7 @@ namespace TSS {
         uint32_t esp2;       // 20: Ring-2 (unused)
         uint16_t ss2;
         uint16_t reserved3;  // 24
-        uint32_t cr3;        // 28: (unused — we manage CR3 directly)
+        uint32_t cr3;        // 28: (unused - we manage CR3 directly)
         uint32_t eip;        // 32
         uint32_t eflags;     // 36
         uint32_t eax;        // 40

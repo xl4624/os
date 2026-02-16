@@ -11,7 +11,7 @@ static constexpr uint16_t PIT_COMMAND = 0x43;
 // Command byte = 0x34 = 0b00_11_010_0
 //   bits 7-6: 00      = channel 0
 //   bits 5-4: 11      = access lobyte then hibyte
-//   bits 3-1: 010     = mode 2 (rate generator — reloads divisor automatically)
+//   bits 3-1: 010     = mode 2 (rate generator - reloads divisor automatically)
 //   bit  0:   0       = 16-bit binary (not BCD)
 static constexpr uint8_t PIT_CMD_CHANNEL0_RATE = 0x34;
 

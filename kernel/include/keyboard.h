@@ -6,6 +6,9 @@
 // Maximum number of pending keyboard commands in the queue.
 static constexpr size_t kKeyboardCommandQueueSize = 8;
 
+// Size of the keyboard input buffer for sys_read.
+static constexpr size_t kInputBufferSize = 128;
+
 enum class PS2Command : uint8_t {
     SetLEDs = 0xED,
     Echo = 0xEE,
@@ -26,9 +29,9 @@ static constexpr uint8_t kPS2Echo = 0xEE;
 static constexpr uint8_t kPS2TestPass = 0xAA;
 static constexpr uint8_t kPS2Break = 0xF0;
 
-// clang-format off
 class Key {
 public:
+// clang-format off
     enum Value : uint8_t {
         Unknown = 0,
         A, B, C, D, E, F, G, H, I, J, K, L, M,
@@ -118,6 +121,14 @@ class KeyboardDriver {
     KeyEvent scancode_to_event(uint8_t scancode);
 
     // =================================================================
+    // Input buffer API (for sys_read)
+    // =================================================================
+
+    // Read up to `count` buffered characters into `buf`.
+    // Returns the number of characters actually read (non-blocking).
+    size_t read(char *buf, size_t count);
+
+    // =================================================================
     // Command queue API
     // =================================================================
 
@@ -138,10 +149,19 @@ class KeyboardDriver {
     // Wait for input buffer to be empty before sending.
     bool wait_for_input() const;
 
+    // Buffer a printable character for sys_read consumption.
+    void buffer_char(char c);
+
     bool shift_ = false;
     bool ctrl_ = false;
     bool alt_ = false;
     bool extended_scancode_ = false;
+
+    // Input ring buffer for sys_read.
+    char input_buffer_[kInputBufferSize] = {};
+    size_t input_head_ = 0;
+    size_t input_tail_ = 0;
+    size_t input_count_ = 0;
 
     // Command queue and state machine.
     PS2CommandEntry command_queue_[kKeyboardCommandQueueSize];

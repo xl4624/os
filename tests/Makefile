@@ -5,8 +5,8 @@ CXX := g++
 CC  := gcc
 
 # All files use myos libc headers
-CXXFLAGS := -std=c++17 -Wall -Wextra -I./framework -I../libc/include
-LIBC_CFLAGS := -std=c11 -Wall -Wextra -I../libc/include
+CXXFLAGS := -std=c++17 -Wall -Wextra -D__is_libc -I./framework -I../libc/include
+LIBC_CFLAGS := -std=c11 -Wall -Wextra -D__is_libc -I../libc/include
 
 # Test files
 UNIT_TESTS := $(wildcard unit/test_*.cpp)
@@ -15,8 +15,7 @@ MAIN_OBJ   := $(BUILDDIR)/test/main.o
 
 # libc source files that work on host (exclude kernel-dependent ones)
 LIBC_SRCS := $(shell find ../libc/string -name '*.c') \
-             ../libc/stdlib/itoa.c \
-             ../libc/stdlib/rand.c
+             $(wildcard ../libc/stdlib/*.c)
 LIBC_OBJS := $(patsubst ../libc/%.c,$(BUILDDIR)/test/libc/%.o,$(LIBC_SRCS))
 
 ALL_OBJS := $(UNIT_OBJS) $(MAIN_OBJ) $(LIBC_OBJS)
@@ -35,7 +34,7 @@ $(BUILDDIR)/test/%.o: unit/%.cpp | $(BUILDDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILDDIR)/test/libc/%.o: ../libc/%.c | $(BUILDDIR)
+$(BUILDDIR)/test/libc/%.o: ../libc/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(LIBC_CFLAGS) -c $< -o $@
 

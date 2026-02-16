@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "address_space.h"
 #include "idt.h"
@@ -135,7 +136,7 @@ static int32_t sys_sbrk(TrapFrame *regs) {
 
             // Zero the page so userspace gets clean memory.
             auto *page = reinterpret_cast<uint8_t *>(phys_to_virt(phys));
-            __builtin_memset(page, 0, PAGE_SIZE);
+            memset(page, 0, PAGE_SIZE);
         }
     }
 

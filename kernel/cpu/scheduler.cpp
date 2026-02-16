@@ -314,8 +314,7 @@ namespace Scheduler {
         auto kptr = [&](uint32_t uva) -> uint8_t * {
             uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
             uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;
-            return reinterpret_cast<uint8_t *>(
-                       phys_to_virt(stack_pages[idx]))
+            return reinterpret_cast<uint8_t *>(phys_to_virt(stack_pages[idx]))
                    + off;
         };
 

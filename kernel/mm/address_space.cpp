@@ -94,7 +94,7 @@ namespace AddressSpace {
         }
 
         kPmm.free(frame_to_phys(pte.frame));
-        __builtin_memset(&pte, 0, sizeof(pte));
+        memset(&pte, 0, sizeof(pte));
         asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
     }
 

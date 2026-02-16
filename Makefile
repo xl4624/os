@@ -45,7 +45,7 @@ lldb: $(ISO) $(BIN)
 		-o "protocol-server start MCP listen://localhost:59999" \
 		-o "gdb-remote localhost:1234"
 
-test:
+test: libc
 	@$(MAKE) -C tests unit
 
 KTEST_LOG := $(KTEST_BUILDDIR)/ktest.log

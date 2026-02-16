@@ -3,35 +3,26 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Maximum number of pending keyboard commands in the queue.
-static constexpr size_t kKeyboardCommandQueueSize = 8;
+#include "ps2_command_queue.h"
+#include "ring_buffer.h"
 
-// Size of the keyboard input buffer for sys_read.
-static constexpr size_t kInputBufferSize = 128;
+// Size of keyboard input buffer for sys_read system call
+static constexpr size_t kKeyboardInputBufferSize = 128;
 
-enum class PS2Command : uint8_t {
-    SetLEDs = 0xED,
-    Echo = 0xEE,
-    GetScanCodeSet = 0xF0,
-    Identify = 0xF2,
-    SetTypematicRate = 0xF3,
-    EnableScanning = 0xF4,
-    DisableScanning = 0xF5,
-    SetDefaults = 0xF6,
-    Resend = 0xFE,
-    Reset = 0xFF,
-};
-
-// PS/2 Keyboard response codes.
-static constexpr uint8_t kPS2Ack = 0xFA;
-static constexpr uint8_t kPS2Resend = 0xFE;
-static constexpr uint8_t kPS2Echo = 0xEE;
-static constexpr uint8_t kPS2TestPass = 0xAA;
-static constexpr uint8_t kPS2Break = 0xF0;
-
+/**
+ * Key: Represents a physical keyboard key (not modified by shift/ctrl/alt).
+ *
+ * This class abstracts PS/2 scancode translation. It knows about scan set 1
+ * make codes and extended (0xE0-prefixed) codes, converting them to a
+ * hardware-independent key identifier.
+ *
+ * Usage:
+ *   Key k = Key::from_scancode(0x1E);  // Returns Key::A
+ *   char c = k.ascii(false);           // Returns 'a' (or 'A' if shifted)
+ */
+// clang-format off
 class Key {
 public:
-// clang-format off
     enum Value : uint8_t {
         Unknown = 0,
         A, B, C, D, E, F, G, H, I, J, K, L, M,
@@ -61,8 +52,9 @@ public:
     constexpr bool operator!=(Key other) const {
         return value_ != other.value_;
     }
-
-    // Allow comparisons directly with enum values: event.key == Key::Enter
+    /*
+     * Allow comparisons directly with enum values: event.key == Key::Enter
+     */
     constexpr bool operator==(Value v) const {
         return value_ == v;
     }
@@ -70,16 +62,30 @@ public:
         return value_ != v;
     }
 
-    // Construct from a PS/2 scan set 1 make-code (0x00–0x44).
+    /**
+     * Converts PS/2 scan set 1 make code to Key.
+     * Returns Key::Unknown for unrecognized scancodes.
+     */
     static Key from_scancode(uint8_t scancode);
-    // Construct from a PS/2 extended (0xE0-prefix) make-code.
+
+    /**
+     * Converts extended (0xE0-prefix) make code to Key.
+     * Handles arrow keys and extended keypad.
+     */
     static Key from_extended_scancode(uint8_t scancode);
 
-    // Returns the ASCII character produced by this key, or 0 if non-printable.
-    // Pass shift=true when a shift modifier is held.
+    /**
+     * Returns ASCII character for this key, or 0 if non-printable.
+     *
+     * shift: true for shifted character (e.g., 'A' vs 'a')
+     * Note: Does not handle caps lock
+     */
     char ascii(bool shift) const;
 
-    // Returns true for shift, ctrl, alt, and capslock keys.
+    /**
+     * Returns true for modifier keys (shift, ctrl, alt, capslock).
+     * Modifiers don't produce ASCII characters.
+     */
     bool is_modifier() const;
 
    private:
@@ -88,26 +94,11 @@ public:
 
 struct KeyEvent {
     const Key key;
-    const bool pressed;
-    const char ascii;
+    const bool pressed;  // true = press, false = release
+    const char ascii;    // \0 if non-printable or modifier held
     const bool shift;
     const bool ctrl;
     const bool alt;
-};
-
-// Command queue entry for sending commands to the PS/2 keyboard.
-struct PS2CommandEntry {
-    PS2Command command;
-    uint8_t parameter;  // Valid if has_parameter is true.
-    bool has_parameter;
-    int retry_count;  // Number of resend attempts.
-};
-
-// State machine states for the keyboard command queue.
-enum class PS2State : uint8_t {
-    Idle,            // Not processing any command.
-    WaitingForAck,   // Waiting for ACK (0xFA) response.
-    WaitingForData,  // Waiting for data byte (e.g., after identify).
 };
 
 class KeyboardDriver {
@@ -117,59 +108,69 @@ class KeyboardDriver {
     KeyboardDriver(const KeyboardDriver &) = delete;
     KeyboardDriver &operator=(const KeyboardDriver &) = delete;
 
+    /**
+     * Processes raw scancode byte from hardware.
+     */
     void process_scancode(uint8_t scancode);
+
+    /**
+     * Converts scancode to KeyEvent with current modifier state.
+     */
     KeyEvent scancode_to_event(uint8_t scancode);
 
-    // =================================================================
-    // Input buffer API (for sys_read)
-    // =================================================================
-
-    // Read up to `count` buffered characters into `buf`.
-    // Returns the number of characters actually read (non-blocking).
+    /**
+     * Reads buffered keystrokes into user buffer.
+     *
+     * Reads up to count characters from the internal ring buffer.
+     */
     size_t read(char *buf, size_t count);
 
-    // =================================================================
-    // Command queue API
-    // =================================================================
+    /**
+     * Sends PS/2 command to keyboard controller.
+     */
+    bool send_command(PS2Command command) {
+        return cmd_queue_.send_command(command);
+    }
 
-    bool send_command(PS2Command command);
-    bool send_command_with_param(PS2Command command, uint8_t parameter);
-    bool is_command_queue_empty() const;
-    void flush_command_queue();
+    /**
+     * Sends PS/2 command with parameter byte.
+     */
+    bool send_command_with_param(PS2Command command, uint8_t parameter) {
+        return cmd_queue_.send_command_with_param(command, parameter);
+    }
+
+    /**
+     * Returns true when all pending commands have completed.
+     */
+    bool is_command_queue_empty() const {
+        return cmd_queue_.is_idle();
+    }
+
+    /**
+     * Cancels all pending commands.
+     */
+    void flush_command_queue() {
+        cmd_queue_.flush();
+    }
 
    private:
-    // Process a response byte from the keyboard (returns true if consumed).
-    bool process_response(uint8_t data);
-    // Start processing the next command in the queue
-    void process_command_queue();
-    // Send a byte to the keyboard controller data port.
-    void send_byte(uint8_t data);
-    // Wait for output buffer to have data.
-    bool wait_for_output() const;
-    // Wait for input buffer to be empty before sending.
-    bool wait_for_input() const;
-
-    // Buffer a printable character for sys_read consumption.
+    /**
+     * Buffers printable character for sys_read.
+     * Silently drops character if input buffer is full.
+     */
     void buffer_char(char c);
 
+    // Modifier state tracked across scancodes
     bool shift_ = false;
     bool ctrl_ = false;
     bool alt_ = false;
-    bool extended_scancode_ = false;
+    bool extended_scancode_ = false;  // Received 0xE0 prefix
 
-    // Input ring buffer for sys_read.
-    char input_buffer_[kInputBufferSize] = {};
-    size_t input_head_ = 0;
-    size_t input_tail_ = 0;
-    size_t input_count_ = 0;
+    // Input buffer for sys_read
+    RingBuffer<char, kKeyboardInputBufferSize> input_buffer_;
 
-    // Command queue and state machine.
-    PS2CommandEntry command_queue_[kKeyboardCommandQueueSize];
-    size_t queue_head_ = 0;
-    size_t queue_tail_ = 0;
-    size_t queue_count_ = 0;
-    PS2State state_ = PS2State::Idle;
-    static constexpr int kMaxRetries = 3;
+    // PS/2 command protocol handler
+    PS2CommandQueue cmd_queue_;
 };
 
 extern KeyboardDriver kKeyboard;

@@ -3,16 +3,12 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "gdt.h"
 #include "idt.h"
 #include "interrupt.h"
 #include "keyboard.h"
 #include "paging.h"
-#include "pit.h"
+#include "scheduler.h"
 #include "tty.h"
-
-// Assembly entry point defined in syscall_entry.S.
-extern "C" void syscall_entry();
 
 static constexpr uint32_t SYSCALL_VECTOR = 0x80;
 
@@ -35,7 +31,7 @@ static bool validate_user_buffer(uint32_t ptr, uint32_t len) {
 
 // SYS_WRITE(fd=ebx, buf=ecx, count=edx)
 // Returns number of bytes written, or -1 on error.
-static int32_t sys_write(SyscallRegisters *regs) {
+static int32_t sys_write(TrapFrame *regs) {
     uint32_t fd = regs->ebx;
     uint32_t buf = regs->ecx;
     uint32_t count = regs->edx;
@@ -59,7 +55,7 @@ static int32_t sys_write(SyscallRegisters *regs) {
 
 // SYS_READ(fd=ebx, buf=ecx, count=edx)
 // Returns number of bytes read, or -1 on error.
-static int32_t sys_read(SyscallRegisters *regs) {
+static int32_t sys_read(TrapFrame *regs) {
     uint32_t fd = regs->ebx;
     uint32_t buf = regs->ecx;
     uint32_t count = regs->edx;
@@ -79,20 +75,16 @@ static int32_t sys_read(SyscallRegisters *regs) {
 }
 
 // SYS_EXIT(code=ebx)
-// TODO: Mark process as zombie and schedule next process once we have a process
-// scheduler (Milestone 4). Currently just halts.
-static int32_t sys_exit(SyscallRegisters *regs) {
+static int32_t sys_exit(TrapFrame *regs) {
     uint32_t code = regs->ebx;
-    printf("Process exited with code %u\n", code);
-    halt_and_catch_fire();
+    Scheduler::exit_current(code);
+    return 0;  // not reached by the exiting process
 }
 
 // SYS_SLEEP(ms=ebx)
-// TODO: Block the process and schedule next once we have a scheduler. Currently
-// busy-waits.
-static int32_t sys_sleep(SyscallRegisters *regs) {
+static int32_t sys_sleep(TrapFrame *regs) {
     uint32_t ms = regs->ebx;
-    PIT::sleep_ms(ms);
+    Scheduler::sleep_current(ms);
     return 0;
 }
 
@@ -100,7 +92,7 @@ static int32_t sys_sleep(SyscallRegisters *regs) {
 // Dispatch table
 // ===========================================================================
 
-using syscall_fn = int32_t (*)(SyscallRegisters *);
+using syscall_fn = int32_t (*)(TrapFrame *);
 
 static syscall_fn syscall_table[SYS_MAX] = {
     sys_exit,   // 0
@@ -109,18 +101,32 @@ static syscall_fn syscall_table[SYS_MAX] = {
     sys_sleep,  // 3
 };
 
-extern "C" void syscall_dispatch(SyscallRegisters *regs) {
+__BEGIN_DECLS
+
+// Assembly entry point defined in syscall_entry.S.
+void syscall_entry();
+
+// Called from syscall_entry.S. Returns the kernel ESP to restore (may be a
+// different process's stack after exit/sleep triggers a context switch).
+uint32_t syscall_dispatch(uint32_t esp) {
+    auto *regs = reinterpret_cast<TrapFrame *>(esp);
     assert(regs != nullptr && "syscall_dispatch(): regs pointer is null");
     uint32_t num = regs->eax;
 
     if (num >= SYS_MAX) {
         regs->eax = static_cast<uint32_t>(-1);
-        return;
+        return Scheduler::schedule(esp);
     }
 
     int32_t ret = syscall_table[num](regs);
     regs->eax = static_cast<uint32_t>(ret);
+
+    // Run the scheduler. If the syscall blocked or exited the current process,
+    // this returns a different process's ESP.
+    return Scheduler::schedule(esp);
 }
+
+__END_DECLS
 
 // ===========================================================================
 // Initialization

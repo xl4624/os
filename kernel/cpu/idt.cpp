@@ -1,4 +1,4 @@
-#include "idt.hpp"
+#include "idt.h"
 
 #include <assert.h>
 #include <string.h>

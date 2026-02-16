@@ -1,21 +1,19 @@
-#include "pic.hpp"
+#include "pic.h"
 
 #include <assert.h>
 #include <sys/io.h>
 
-namespace {
-    constexpr uint16_t PIC1_CTRL = 0x20;
-    constexpr uint16_t PIC1_DATA = 0x21;
-    constexpr uint16_t PIC2_CTRL = 0xA0;
-    constexpr uint16_t PIC2_DATA = 0xA1;
+static constexpr uint16_t PIC1_CTRL = 0x20;
+static constexpr uint16_t PIC1_DATA = 0x21;
+static constexpr uint16_t PIC2_CTRL = 0xA0;
+static constexpr uint16_t PIC2_DATA = 0xA1;
 
-    constexpr uint16_t ICW1_INIT = 0x10;
-    constexpr uint16_t ICW1_ICW4 = 0x01;
-    constexpr uint16_t ICW4_8086 = 0x01;
+static constexpr uint16_t ICW1_INIT = 0x10;
+static constexpr uint16_t ICW1_ICW4 = 0x01;
+static constexpr uint16_t ICW4_8086 = 0x01;
 
-    constexpr uint16_t PIC_EOI = 0x20;
-    constexpr uint16_t IRQ0 = 32;
-}  // namespace
+static constexpr uint16_t PIC_EOI = 0x20;
+static constexpr uint16_t IRQ0 = 32;
 
 namespace PIC {
     void init() {
@@ -36,8 +34,8 @@ namespace PIC {
         io_wait();
 
         // ICW3: Tell PICs how they're cascaded
-        constexpr uint8_t MASTER_CASCADE_IRQ = 4;
-        constexpr uint8_t SLAVE_CASCADE_IDENTITY = 2;
+        static constexpr uint8_t MASTER_CASCADE_IRQ = 4;
+        static constexpr uint8_t SLAVE_CASCADE_IDENTITY = 2;
         outb(PIC1_DATA, MASTER_CASCADE_IRQ);
         io_wait();
         outb(PIC2_DATA, SLAVE_CASCADE_IDENTITY);

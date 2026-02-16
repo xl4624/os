@@ -1,6 +1,6 @@
 #pragma once
 
-#include "paging.hpp"
+#include "paging.h"
 
 /*
  * Virtual Memory Mapper

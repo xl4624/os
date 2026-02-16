@@ -1,25 +1,26 @@
-#include "pit.hpp"
+#include "pit.h"
 
 #include <assert.h>
 #include <sys/io.h>
 
-#include "interrupt.hpp"
+#include "interrupt.h"
+
+static constexpr uint16_t PIT_CHANNEL0_DATA = 0x40;
+static constexpr uint16_t PIT_COMMAND = 0x43;
+
+// Command byte = 0x34 = 0b00_11_010_0
+//   bits 7-6: 00      = channel 0
+//   bits 5-4: 11      = access lobyte then hibyte
+//   bits 3-1: 010     = mode 2 (rate generator — reloads divisor automatically)
+//   bit  0:   0       = 16-bit binary (not BCD)
+static constexpr uint8_t PIT_CMD_CHANNEL0_RATE = 0x34;
+
+static constexpr uint32_t PIT_BASE_FREQ = 1193182;
+static constexpr uint32_t PIT_TARGET_HZ = 100;
+static constexpr uint16_t PIT_DIVISOR =
+    static_cast<uint16_t>(PIT_BASE_FREQ / PIT_TARGET_HZ);  // 11932
 
 namespace {
-    constexpr uint16_t PIT_CHANNEL0_DATA = 0x40;
-    constexpr uint16_t PIT_COMMAND = 0x43;
-
-    // Command byte = 0x34 = 0b00_11_010_0
-    //   bits 7-6: 00      = channel 0
-    //   bits 5-4: 11      = access lobyte then hibyte
-    //   bits 3-1: 010     = mode 2 (rate generator — reloads divisor automatically)
-    //   bit  0:   0       = 16-bit binary (not BCD)
-    constexpr uint8_t PIT_CMD_CHANNEL0_RATE = 0x34;
-
-    constexpr uint32_t PIT_BASE_FREQ = 1193182;
-    constexpr uint32_t PIT_TARGET_HZ = 100;
-    constexpr uint16_t PIT_DIVISOR =
-        static_cast<uint16_t>(PIT_BASE_FREQ / PIT_TARGET_HZ);  // 11932
 
     volatile uint64_t ticks = 0;
     bool initialized = false;
@@ -27,6 +28,7 @@ namespace {
     void pit_handler([[maybe_unused]] interrupt_frame *frame) {
         ++ticks;
     }
+
 }  // namespace
 
 namespace PIT {

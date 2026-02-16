@@ -34,6 +34,7 @@ public:
     constexpr bool operator!=(Key other) const {
         return value_ != other.value_;
     }
+
     // Allow comparisons directly with enum values: event.key == Key::Enter
     constexpr bool operator==(Value v) const {
         return value_ == v;

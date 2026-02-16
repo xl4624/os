@@ -1,9 +1,9 @@
 #include <stdint.h>
 
-#include "ktest.hpp"
-#include "paging.hpp"
-#include "pmm.hpp"
-#include "vmm.hpp"
+#include "ktest.h"
+#include "paging.h"
+#include "pmm.h"
+#include "vmm.h"
 
 // Virtual addresses in PDE 770 (0xC0800000–0xC0BFFFFF), past the boot-mapped
 // 8 MiB window, so every test that maps a page here causes VMM to allocate a
@@ -12,7 +12,7 @@ static constexpr vaddr_t BASE = 0xC0800000;
 
 TEST(vmm, get_phys_unmapped_returns_zero) {
     // PDE 771 has never been touched; no page table exists for it.
-    constexpr vaddr_t UNMAPPED = 0xC0C00000;
+    static constexpr vaddr_t UNMAPPED = 0xC0C00000;
     ASSERT_EQ(VMM::get_phys(UNMAPPED), static_cast<paddr_t>(0));
 }
 
@@ -42,7 +42,7 @@ TEST(vmm, write_through_mapped_page) {
     const paddr_t phys = kPmm.alloc();
     ASSERT_NE(phys, static_cast<paddr_t>(0));
 
-    constexpr vaddr_t VA = BASE + 2 * PAGE_SIZE;
+    static constexpr vaddr_t VA = BASE + 2 * PAGE_SIZE;
     VMM::map(VA, phys);
 
     // Write through the virtual address and verify the value persists.
@@ -60,7 +60,7 @@ TEST(vmm, remap_to_different_frame) {
     ASSERT_NE(phys1, static_cast<paddr_t>(0));
     ASSERT_NE(phys2, static_cast<paddr_t>(0));
 
-    constexpr vaddr_t VA = BASE + 3 * PAGE_SIZE;
+    static constexpr vaddr_t VA = BASE + 3 * PAGE_SIZE;
     VMM::map(VA, phys1);
     ASSERT_EQ(VMM::get_phys(VA), phys1);
 
@@ -94,11 +94,11 @@ TEST(vmm, get_phys_preserves_offset) {
     const paddr_t phys = kPmm.alloc();
     ASSERT_NE(phys, static_cast<paddr_t>(0));
 
-    constexpr vaddr_t VA = BASE + 8 * PAGE_SIZE;
+    static constexpr vaddr_t VA = BASE + 8 * PAGE_SIZE;
     VMM::map(VA, phys);
 
     // get_phys with a non-zero offset within the page.
-    constexpr vaddr_t offset = 0x123;
+    static constexpr vaddr_t offset = 0x123;
     ASSERT_EQ(VMM::get_phys(VA + offset), phys + offset);
 
     VMM::unmap(VA);
@@ -109,7 +109,7 @@ TEST(vmm, unmap_idempotent) {
     const paddr_t phys = kPmm.alloc();
     ASSERT_NE(phys, static_cast<paddr_t>(0));
 
-    constexpr vaddr_t VA = BASE + 9 * PAGE_SIZE;
+    static constexpr vaddr_t VA = BASE + 9 * PAGE_SIZE;
     VMM::map(VA, phys);
     VMM::unmap(VA);
     VMM::unmap(VA);  // second unmap must not panic

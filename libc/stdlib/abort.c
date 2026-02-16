@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "interrupt.h"
 #include "panic.h"
 
 __attribute__((noreturn)) void abort(void) {
@@ -9,9 +10,7 @@ __attribute__((noreturn)) void abort(void) {
 #else
     // TODO: Terminate the process using SIGABRT
     printf("abort()\n");
-    while (1) {
-        asm volatile("hlt" : : : "memory");
-    }
+    halt_and_catch_fire();
 #endif
     __builtin_unreachable();
 }

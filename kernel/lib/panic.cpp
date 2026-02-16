@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "interrupt.hpp"
+#include "interrupt.h"
 
 __attribute__((noreturn)) void panic(const char *format, ...) {
     va_list args;

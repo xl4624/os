@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "heap.hpp"
-#include "ktest.hpp"
+#include "heap.h"
+#include "ktest.h"
 
 TEST(heap, alloc_returns_nonnull) {
     void *p = kmalloc(1);

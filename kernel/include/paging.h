@@ -1,24 +1,25 @@
 #pragma once
 
 #include <stdint.h>
+#include <sys/cdefs.h>
 
-constexpr uint32_t PAGE_OFFSET_BITS = 12;
-constexpr uint32_t PAGE_SIZE = 1U << PAGE_OFFSET_BITS;
-constexpr uint32_t PAGE_TABLE_BITS = 10;
-constexpr uint32_t PAGES_PER_TABLE = 1U << PAGE_TABLE_BITS;
+static constexpr uint32_t PAGE_OFFSET_BITS = 12;
+static constexpr uint32_t PAGE_SIZE = 1U << PAGE_OFFSET_BITS;
+static constexpr uint32_t PAGE_TABLE_BITS = 10;
+static constexpr uint32_t PAGES_PER_TABLE = 1U << PAGE_TABLE_BITS;
 
 using paddr_t = uintptr_t;
 using vaddr_t = uintptr_t;
 
-constexpr vaddr_t KERNEL_VMA = 0xC0000000;
+static constexpr vaddr_t KERNEL_VMA = 0xC0000000;
 
 [[nodiscard]]
-constexpr paddr_t virt_to_phys(vaddr_t vaddr) {
+static constexpr paddr_t virt_to_phys(vaddr_t vaddr) {
     return vaddr - KERNEL_VMA;
 }
 
 [[nodiscard]]
-constexpr vaddr_t phys_to_virt(paddr_t paddr) {
+static constexpr vaddr_t phys_to_virt(paddr_t paddr) {
     return paddr + KERNEL_VMA;
 }
 
@@ -60,4 +61,8 @@ struct PageTable {
     PageEntry entry[PAGES_PER_TABLE];
 } __attribute__((aligned(PAGE_SIZE)));
 
-extern "C" PageTable boot_page_directory;
+__BEGIN_DECLS
+
+extern PageTable boot_page_directory;
+
+__END_DECLS

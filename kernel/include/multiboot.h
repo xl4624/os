@@ -24,6 +24,8 @@
 #ifndef MULTIBOOT_HEADER
     #define MULTIBOOT_HEADER 1
 
+    #include <sys/cdefs.h>
+
     /* How many bytes from the start of the file we search for the header. */
     #define MULTIBOOT_SEARCH 8192
     #define MULTIBOOT_HEADER_ALIGN 4
@@ -92,6 +94,8 @@
     #define MULTIBOOT_INFO_FRAMEBUFFER_INFO 0x00001000
 
     #ifndef ASM_FILE
+
+__BEGIN_DECLS
 
 typedef unsigned char multiboot_uint8_t;
 typedef unsigned short multiboot_uint16_t;
@@ -259,6 +263,8 @@ struct multiboot_apm_info {
     multiboot_uint16_t cseg_16_len;
     multiboot_uint16_t dseg_len;
 };
+
+__END_DECLS
 
     #endif /* ! ASM_FILE */
 

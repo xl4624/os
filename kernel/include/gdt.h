@@ -62,18 +62,18 @@
  */
 namespace GDT {
     // Segment selectors (index * 8, plus RPL for user segments)
-    constexpr uint16_t KERNEL_CODE_SELECTOR = 0x08;
-    constexpr uint16_t KERNEL_DATA_SELECTOR = 0x10;
+    static constexpr uint16_t KERNEL_CODE_SELECTOR = 0x08;
+    static constexpr uint16_t KERNEL_DATA_SELECTOR = 0x10;
 
     // Access byte values
-    constexpr uint8_t CODE_ACCESS = 0x9A;  // Present, DPL=0, Code, Readable
-    constexpr uint8_t DATA_ACCESS = 0x92;  // Present, DPL=0, Data, Writable
+    static constexpr uint8_t CODE_ACCESS = 0x9A;  // Present, DPL=0, Code, Readable
+    static constexpr uint8_t DATA_ACCESS = 0x92;  // Present, DPL=0, Data, Writable
 
     // Flags: 4KiB granularity, 32-bit protected mode
-    constexpr uint8_t FLAGS_4K_32BIT = 0xCF;
+    static constexpr uint8_t FLAGS_4K_32BIT = 0xCF;
 
     // Maximum segment limit (20-bit, scaled by granularity)
-    constexpr uint32_t SEGMENT_LIMIT = 0xFFFFF;
+    static constexpr uint32_t SEGMENT_LIMIT = 0xFFFFF;
 
     struct Entry {
         uint16_t limit_low;

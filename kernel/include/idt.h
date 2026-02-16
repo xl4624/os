@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "gdt.hpp"
+#include "gdt.h"
 
 /*
  * ==========================================

@@ -1,14 +1,14 @@
-#include "heap.hpp"
+#include "heap.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "paging.hpp"
+#include "paging.h"
 #include "panic.h"
-#include "pmm.hpp"
-#include "vmm.hpp"
+#include "pmm.h"
+#include "vmm.h"
 
 struct BlockHeader {
     uint32_t size;  // bytes of payload (not counting this header)

@@ -1,5 +1,5 @@
-#include "ktest.hpp"
-#include "pmm.hpp"
+#include "ktest.h"
+#include "pmm.h"
 
 TEST(bitmap, initially_all_clear) {
     Bitmap<32> bm;

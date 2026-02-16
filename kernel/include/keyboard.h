@@ -1,6 +1,30 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
+
+// Maximum number of pending keyboard commands in the queue.
+static constexpr size_t kKeyboardCommandQueueSize = 8;
+
+enum class PS2Command : uint8_t {
+    SetLEDs = 0xED,
+    Echo = 0xEE,
+    GetScanCodeSet = 0xF0,
+    Identify = 0xF2,
+    SetTypematicRate = 0xF3,
+    EnableScanning = 0xF4,
+    DisableScanning = 0xF5,
+    SetDefaults = 0xF6,
+    Resend = 0xFE,
+    Reset = 0xFF,
+};
+
+// PS/2 Keyboard response codes.
+static constexpr uint8_t kPS2Ack = 0xFA;
+static constexpr uint8_t kPS2Resend = 0xFE;
+static constexpr uint8_t kPS2Echo = 0xEE;
+static constexpr uint8_t kPS2TestPass = 0xAA;
+static constexpr uint8_t kPS2Break = 0xF0;
 
 // clang-format off
 class Key {
@@ -68,6 +92,21 @@ struct KeyEvent {
     const bool alt;
 };
 
+// Command queue entry for sending commands to the PS/2 keyboard.
+struct PS2CommandEntry {
+    PS2Command command;
+    uint8_t parameter;  // Valid if has_parameter is true.
+    bool has_parameter;
+    int retry_count;  // Number of resend attempts.
+};
+
+// State machine states for the keyboard command queue.
+enum class PS2State : uint8_t {
+    Idle,            // Not processing any command.
+    WaitingForAck,   // Waiting for ACK (0xFA) response.
+    WaitingForData,  // Waiting for data byte (e.g., after identify).
+};
+
 class KeyboardDriver {
    public:
     KeyboardDriver();
@@ -78,11 +117,39 @@ class KeyboardDriver {
     void process_scancode(uint8_t scancode);
     KeyEvent scancode_to_event(uint8_t scancode);
 
+    // =================================================================
+    // Command queue API
+    // =================================================================
+
+    bool send_command(PS2Command command);
+    bool send_command_with_param(PS2Command command, uint8_t parameter);
+    bool is_command_queue_empty() const;
+    void flush_command_queue();
+
    private:
+    // Process a response byte from the keyboard (returns true if consumed).
+    bool process_response(uint8_t data);
+    // Start processing the next command in the queue
+    void process_command_queue();
+    // Send a byte to the keyboard controller data port.
+    void send_byte(uint8_t data);
+    // Wait for output buffer to have data.
+    bool wait_for_output() const;
+    // Wait for input buffer to be empty before sending.
+    bool wait_for_input() const;
+
     bool shift_ = false;
     bool ctrl_ = false;
     bool alt_ = false;
     bool extended_scancode_ = false;
+
+    // Command queue and state machine.
+    PS2CommandEntry command_queue_[kKeyboardCommandQueueSize];
+    size_t queue_head_ = 0;
+    size_t queue_tail_ = 0;
+    size_t queue_count_ = 0;
+    PS2State state_ = PS2State::Idle;
+    static constexpr int kMaxRetries = 3;
 };
 
-extern KeyboardDriver keyboard;
+extern KeyboardDriver kKeyboard;

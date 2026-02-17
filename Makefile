@@ -8,7 +8,7 @@ KTEST_BUILDDIR := $(CURDIR)/build/ktest
 # ==== Build Settings ====
 LDFLAGS := -T arch/linker.ld -ffreestanding -O2 -nostdlib
 LIBS    := -nostdlib -L$(BUILDDIR)/libc -lk -lgcc
-SUBDIRS := arch kernel libc user
+SUBDIRS := arch kernel libc libcpp user
 
 # ==== Runtime Files ====
 CRTI	 := $(BUILDDIR)/arch/crti.o
@@ -28,7 +28,7 @@ ISO        = $(BUILDDIR)/myos.iso
 KTEST_BIN := $(KTEST_BUILDDIR)/myos-test.bin
 KTEST_ISO := $(KTEST_BUILDDIR)/myos-test.iso
 
-.PHONY: all run debug lldb clean check install arch kernel libc user test ktest ktest-kernel
+.PHONY: all run debug lldb clean check install arch kernel libc libcpp user test ktest ktest-kernel
 
 all: $(BIN)
 
@@ -109,7 +109,7 @@ $(KTEST_ISO): $(KTEST_BIN)
 	@cp grub-test.cfg $(KTEST_BUILDDIR)/isodir/boot/grub/grub.cfg
 	@grub-mkrescue -o $@ $(KTEST_BUILDDIR)/isodir
 
-arch kernel libc: install
+arch kernel libc libcpp: install
 	@$(MAKE) -C $@
 
 user: install libc

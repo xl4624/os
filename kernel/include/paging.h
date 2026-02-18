@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint.h>
 #include <sys/cdefs.h>
 
 static constexpr uint32_t PAGE_OFFSET_BITS = 12;

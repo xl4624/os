@@ -8,7 +8,7 @@ KTEST_BUILDDIR := $(CURDIR)/build/ktest
 # ==== Build Settings ====
 LDFLAGS := -T arch/linker.ld -ffreestanding -O2 -nostdlib
 LIBS    := -nostdlib -L$(BUILDDIR)/libc -lk -lgcc
-SUBDIRS := arch kernel libc libcpp user
+SUBDIRS := arch libc libcpp kernel user
 
 # ==== Runtime Files ====
 CRTI	 := $(BUILDDIR)/arch/crti.o

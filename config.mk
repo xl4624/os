@@ -7,6 +7,7 @@ LD       := $(CROSS)-ld
 AR       := $(CROSS)-ar
 
 # ==== Directory Structure ====
+SYSROOT  ?= $(CURDIR)/sysroot
 PREFIX     := /usr
 INCLUDEDIR := $(PREFIX)/include
 LIBDIR     := $(PREFIX)/lib

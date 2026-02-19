@@ -82,7 +82,7 @@ namespace std {
 
     template <class T>
     struct is_trivially_destructible
-        : integral_constant<bool, __is_trivially_destructible(T)> {};
+        : integral_constant<bool, __has_trivial_destructor(T)> {};
 
     template <class T>
     inline constexpr bool is_trivially_destructible_v =

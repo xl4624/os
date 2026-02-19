@@ -395,6 +395,10 @@ namespace std {
     template <typename T>
     using decay_t = typename decay<T>::type;
 
+    // Forward declaration so common_type can use it.
+    template <typename T>
+    T &&declval() noexcept;
+
     template <typename... T>
     struct common_type {};
 

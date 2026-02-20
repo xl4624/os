@@ -14,7 +14,7 @@
 #include "pmm.h"
 #include "scheduler.h"
 #include "syscall.h"
-#include "test/ktest.h"
+#include "../tests/kernel/ktest.h"
 #include "tss.h"
 #include "x86.h"
 

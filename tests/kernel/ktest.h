@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../tests/framework/test.h"
+#include "../framework/test.h"
 
 #ifdef KERNEL_TESTS
 // Write assertion failure details to QEMU debugcon (port 0xE9) so that

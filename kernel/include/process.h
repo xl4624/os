@@ -46,6 +46,12 @@ static constexpr uint32_t kKernelStackSize = 8192;
 // Maximum number of processes the system can track.
 static constexpr uint32_t kMaxProcesses = 64;
 
+// User-space stack layout for newly created processes.
+static constexpr vaddr_t kUserStackVA = 0x00BFC000;
+static constexpr uint32_t kUserStackPages = 4;
+static constexpr vaddr_t kUserStackTop =
+    kUserStackVA + kUserStackPages * PAGE_SIZE;
+
 /*
  * Process Control Block (PCB).
  *

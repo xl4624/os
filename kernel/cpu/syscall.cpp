@@ -5,12 +5,15 @@
 #include <string.h>
 
 #include "address_space.h"
+#include "elf.h"
 #include "idt.h"
 #include "interrupt.h"
 #include "keyboard.h"
+#include "modules.h"
 #include "paging.h"
 #include "pmm.h"
 #include "scheduler.h"
+#include "tss.h"
 #include "tty.h"
 
 static constexpr uint32_t SYSCALL_VECTOR = 0x80;
@@ -150,6 +153,72 @@ static int32_t sys_getpid([[maybe_unused]] TrapFrame *regs) {
     return static_cast<int32_t>(Scheduler::current()->pid);
 }
 
+// SYS_EXEC(name=ebx)
+// Replaces the current process image with a named module.
+// Returns 0 on success, -1 on failure.
+static int32_t sys_exec(TrapFrame *regs) {
+    uint32_t name_ptr = regs->ebx;
+
+    if (!validate_user_buffer(name_ptr, 1, /*writeable=*/false)) {
+        return -1;
+    }
+
+    const char *name = reinterpret_cast<const char *>(name_ptr);
+    const Module *mod = Modules::find(name);
+    if (!mod) {
+        return -1;
+    }
+
+    Process *proc = Scheduler::current();
+    assert(proc != nullptr && "sys_exec(): no current process");
+
+    auto [new_pd_phys, new_pd_virt] = AddressSpace::create();
+    if (!new_pd_virt) {
+        return -1;
+    }
+
+    vaddr_t entry = 0;
+    vaddr_t brk = 0;
+    if (!Elf::load(mod->data, mod->len, new_pd_virt, entry, brk)) {
+        AddressSpace::destroy(new_pd_virt, new_pd_phys);
+        return -1;
+    }
+
+    uint32_t user_esp = Scheduler::alloc_user_stack(new_pd_virt, name);
+    if (user_esp == 0) {
+        AddressSpace::destroy(new_pd_virt, new_pd_phys);
+        return -1;
+    }
+
+    paddr_t old_pd_phys = proc->page_directory_phys;
+    PageTable *old_pd = proc->page_directory;
+
+    proc->page_directory_phys = new_pd_phys;
+    proc->page_directory = new_pd_virt;
+    proc->heap_break = brk;
+
+    AddressSpace::load(new_pd_phys);
+    AddressSpace::sync_kernel_mappings(new_pd_virt);
+    TSS::set_kernel_stack(reinterpret_cast<uint32_t>(proc->kernel_stack)
+                          + kKernelStackSize);
+
+    if (old_pd) {
+        AddressSpace::load(virt_to_phys(vaddr_t{&boot_page_directory}));
+        AddressSpace::destroy(old_pd, old_pd_phys);
+    }
+
+    auto *kstack_top =
+        reinterpret_cast<uint32_t *>(proc->kernel_stack + kKernelStackSize);
+    auto *frame = reinterpret_cast<TrapFrame *>(
+        reinterpret_cast<uintptr_t>(kstack_top) - sizeof(TrapFrame));
+
+    Scheduler::init_trap_frame(frame, entry, user_esp);
+
+    proc->kernel_esp = reinterpret_cast<uint32_t>(frame);
+
+    return 0;
+}
+
 // SYS_SET_CURSOR(row=ebx, col=ecx)
 static int32_t sys_set_cursor(TrapFrame *regs) {
     uint32_t row = regs->ebx;
@@ -187,6 +256,7 @@ static syscall_fn syscall_table[SYS_MAX] = {
     sys_set_color,   // 6
     sys_clear,       // 7
     sys_getpid,      // 8
+    sys_exec,        // 9
 };
 
 __BEGIN_DECLS

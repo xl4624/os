@@ -39,6 +39,17 @@ namespace Scheduler {
     Process *create_process(const uint8_t *elf_data, size_t elf_len,
                             const char *name);
 
+    // Allocate kUserStackPages physical pages, map them user-writable in pd,
+    // and write argc=1 / argv=["name", nullptr] onto the stack top.
+    // Returns the final user_esp, or 0 on allocation failure.
+    // On failure, any pages already mapped are unmapped and freed.
+    uint32_t alloc_user_stack(PageTable *pd, const char *name);
+
+    // Fill frame with the initial user-mode register state ready for iret.
+    // GP regs are zeroed; eip/user_esp are set from parameters; eflags=0x202;
+    // cs/ds/es/fs/gs/ss are set to the GDT user-mode selectors.
+    void init_trap_frame(TrapFrame *frame, vaddr_t entry, uint32_t user_esp);
+
     // Called from timer_entry.S and syscall_entry.S.
     // `esp` is the current kernel stack pointer (pointing to a TrapFrame).
     // Returns the kernel ESP to restore (may be a different process's stack).

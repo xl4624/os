@@ -17,6 +17,7 @@
 #define SYS_SET_COLOR 6
 #define SYS_CLEAR 7
 #define SYS_GETPID 8
-#define SYS_MAX 9
+#define SYS_EXEC 9
+#define SYS_MAX 10
 
 #endif

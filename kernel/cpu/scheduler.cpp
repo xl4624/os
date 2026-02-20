@@ -144,15 +144,6 @@ namespace {
 
 }  // namespace
 
-// =============================================================================
-// User-space address layout for spawned processes
-// =============================================================================
-
-static constexpr vaddr_t kUserStackVA = 0x00BFC000;
-static constexpr uint32_t kUserStackPages = 4;
-static constexpr vaddr_t kUserStackTop =
-    kUserStackVA + kUserStackPages * PAGE_SIZE;
-
 namespace Scheduler {
 
     void init() {
@@ -258,6 +249,75 @@ namespace Scheduler {
         // The schedule() call will switch away from us.
     }
 
+    uint32_t alloc_user_stack(PageTable *pd, const char *name) {
+        paddr_t stack_pages[kUserStackPages];
+        for (uint32_t i = 0; i < kUserStackPages; ++i) {
+            paddr_t phys = kPmm.alloc();
+            if (phys == 0) {
+                for (uint32_t j = 0; j < i; ++j) {
+                    AddressSpace::unmap(pd, kUserStackVA + j * PAGE_SIZE);
+                }
+                return 0;
+            }
+            stack_pages[i] = phys;
+            AddressSpace::map(pd, kUserStackVA + i * PAGE_SIZE, phys,
+                              /*writeable=*/true, /*user=*/true);
+        }
+
+        // Translate a user virtual address into a kernel pointer via the
+        // physical pages we just allocated (identity-mapped in the first 8 MiB).
+        auto kptr = [&](uint32_t uva) -> uint8_t * {
+            uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
+            uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;
+            return phys_to_virt(stack_pages[idx]).ptr<uint8_t>() + off;
+        };
+
+        uint32_t user_esp = kUserStackTop;
+
+        // Push the program name string (null-terminated).
+        size_t name_len = strlen(name);
+        user_esp -= static_cast<uint32_t>(name_len + 1);
+        memcpy(kptr(user_esp), name, name_len + 1);
+        uint32_t str_uva = user_esp;
+
+        // Align esp down to a 4-byte boundary.
+        user_esp &= ~3u;
+
+        // Push argv[1] = NULL (argv terminator).
+        user_esp -= 4;
+        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = 0;
+
+        // Push argv[0] = pointer to the name string.
+        user_esp -= 4;
+        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = str_uva;
+
+        // Push argc = 1.
+        user_esp -= 4;
+        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = 1;
+
+        return user_esp;
+    }
+
+    void init_trap_frame(TrapFrame *frame, vaddr_t entry, uint32_t user_esp) {
+        frame->eip = entry;
+        frame->cs = GDT::USER_CODE_SELECTOR;
+        frame->eflags = 0x202;  // IF set, reserved bit 1 set
+        frame->user_esp = user_esp;
+        frame->user_ss = GDT::USER_DATA_SELECTOR;
+        frame->ds = GDT::USER_DATA_SELECTOR;
+        frame->es = GDT::USER_DATA_SELECTOR;
+        frame->fs = GDT::USER_DATA_SELECTOR;
+        frame->gs = GDT::USER_DATA_SELECTOR;
+        frame->eax = 0;
+        frame->ebx = 0;
+        frame->ecx = 0;
+        frame->edx = 0;
+        frame->esi = 0;
+        frame->edi = 0;
+        frame->ebp = 0;
+        frame->esp_dummy = 0;
+    }
+
     Process *create_process(const uint8_t *elf_data, size_t elf_len,
                             const char *name) {
         assert(initialized
@@ -288,56 +348,11 @@ namespace Scheduler {
         }
         p->heap_break = brk;
 
-        // Allocate user stack pages, saving physical addresses for stack setup.
-        paddr_t stack_pages[kUserStackPages];
-        for (uint32_t i = 0; i < kUserStackPages; ++i) {
-            paddr_t phys = kPmm.alloc();
-            assert(phys != 0
-                   && "Scheduler::create_process(): out of physical memory "
-                      "for user stack");
-            stack_pages[i] = phys;
-            AddressSpace::map(pd_virt, kUserStackVA + i * PAGE_SIZE, phys,
-                              /*writeable=*/true, /*user=*/true);
-        }
-
-        // Write argc/argv onto the user stack.
-        //
-        // At process start (when _start runs), the stack layout is:
-        //   [esp+0]  argc  (= 1)
-        //   [esp+4]  argv[0]  (pointer to the name string)
-        //   [esp+8]  NULL  (argv terminator)
-        //   ... name string bytes above ...
-        //
-        // We access the physical pages via phys_to_virt() since they reside
-        // in the first 8 MiB of physical memory, which is kernel-mapped.
-        auto kptr = [&](uint32_t uva) -> uint8_t * {
-            uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
-            uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;
-            return phys_to_virt(stack_pages[idx]).ptr<uint8_t>() + off;
-        };
-
-        uint32_t user_esp = kUserStackTop;
-
-        // Push the program name string (null-terminated).
-        size_t name_len = strlen(name);
-        user_esp -= static_cast<uint32_t>(name_len + 1);
-        memcpy(kptr(user_esp), name, name_len + 1);
-        uint32_t str_uva = user_esp;
-
-        // Align esp down to a 4-byte boundary.
-        user_esp &= ~3u;
-
-        // Push argv[1] = NULL (argv terminator).
-        user_esp -= 4;
-        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = 0;
-
-        // Push argv[0] = pointer to the name string.
-        user_esp -= 4;
-        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = str_uva;
-
-        // Push argc = 1.
-        user_esp -= 4;
-        *reinterpret_cast<uint32_t *>(kptr(user_esp)) = 1;
+        // Allocate user stack and write argc/argv onto it.
+        uint32_t user_esp = alloc_user_stack(pd_virt, name);
+        assert(user_esp != 0
+               && "Scheduler::create_process(): out of physical memory "
+                  "for user stack");
 
         // Allocate kernel stack for system calls and interrupts.
         p->kernel_stack =
@@ -353,23 +368,7 @@ namespace Scheduler {
         auto *frame = reinterpret_cast<TrapFrame *>(
             reinterpret_cast<uintptr_t>(kstack_top) - sizeof(TrapFrame));
 
-        frame->eip = entry;
-        frame->cs = GDT::USER_CODE_SELECTOR;
-        frame->eflags = 0x202;  // IF set, reserved bit 1 set
-        frame->user_esp = user_esp;
-        frame->user_ss = GDT::USER_DATA_SELECTOR;
-        frame->ds = GDT::USER_DATA_SELECTOR;
-        frame->es = GDT::USER_DATA_SELECTOR;
-        frame->fs = GDT::USER_DATA_SELECTOR;
-        frame->gs = GDT::USER_DATA_SELECTOR;
-        frame->eax = 0;
-        frame->ebx = 0;
-        frame->ecx = 0;
-        frame->edx = 0;
-        frame->esi = 0;
-        frame->edi = 0;
-        frame->ebp = 0;
-        frame->esp_dummy = 0;
+        init_trap_frame(frame, entry, user_esp);
 
         p->kernel_esp = reinterpret_cast<uint32_t>(frame);
 

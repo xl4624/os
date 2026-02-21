@@ -17,11 +17,6 @@
 #include "tss.h"
 #include "x86.h"
 
-// Hand-encoded user-mode test program (user/hello.S).
-// TODO: Replace with a proper build step that assembles user programs
-// separately and embeds the flat binary via objcopy.
-#include "../../user/hello.h"
-
 /* Verify we are using the i686-elf cross-compile */
 #if !defined(__i386__)
     #error "ix86-elf cross compiler required"
@@ -49,12 +44,25 @@ __attribute__((noreturn)) void kernel_main() {
     KTest::run_all();  // runs all registered tests then exits QEMU
 #else
     Scheduler::start();
-    Scheduler::create_process(kUserProgram, sizeof(kUserProgram),
-                              reinterpret_cast<const uint8_t *>(kUserMessage),
-                              kUserMessageLen);
-    Scheduler::create_process(kUserProgram, sizeof(kUserProgram),
-                              reinterpret_cast<const uint8_t *>(kUserMessage),
-                              kUserMessageLen);
+
+    // Load user programs from multiboot modules.
+    const auto *info = reinterpret_cast<const multiboot_info_t *>(
+        phys_to_virt(reinterpret_cast<paddr_t>(mboot_info)));
+    if ((info->flags & MULTIBOOT_INFO_MODS) && info->mods_count > 0) {
+        const auto *mods = reinterpret_cast<const multiboot_module_t *>(
+            phys_to_virt(info->mods_addr));
+        for (uint32_t i = 0; i < info->mods_count; ++i) {
+            const auto *data = reinterpret_cast<const uint8_t *>(
+                phys_to_virt(mods[i].mod_start));
+            const size_t len = mods[i].mod_end - mods[i].mod_start;
+            printf("Loading module %u (%u bytes)...\n", i,
+                   static_cast<unsigned>(len));
+            Scheduler::create_process(data, len);
+        }
+    } else {
+        printf("No multiboot modules found.\n");
+    }
+
     printf("Starting scheduler...\n");
     while (true) {
         asm volatile("hlt");

@@ -4,6 +4,7 @@
 #include <string.h>
 
 namespace IDT {
+
     __attribute__((aligned(0x10))) static Entry idt[256];
     static Descriptor idtp;
 
@@ -18,4 +19,5 @@ namespace IDT {
         assert(index < 256 && "IDT::set_entry(): index out of range (0-255)");
         idt[index] = Entry(handler, gate, ring);
     }
+
 }  // namespace IDT

@@ -107,7 +107,8 @@ $(KTEST_ISO): $(KTEST_BIN)
 arch kernel libc: install
 	@$(MAKE) -C $@
 
-user:
+user: install libc
+	@$(MAKE) -C libc SYSROOT=$(SYSROOT) install
 	@$(MAKE) -C $@
 
 print-sysroot:

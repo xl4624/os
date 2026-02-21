@@ -52,39 +52,39 @@ TEST(scheduler, current_not_null) {
 
 namespace {
 
-// Build a minimal valid ELF32 i386 executable in a buffer.
-// Contains a single PT_LOAD segment with no file data (just BSS).
-struct TestElf {
-    Elf::Header hdr;
-    Elf::ProgramHeader phdr;
-};
+    // Build a minimal valid ELF32 i386 executable in a buffer.
+    // Contains a single PT_LOAD segment with no file data (just BSS).
+    struct TestElf {
+        Elf::Header hdr;
+        Elf::ProgramHeader phdr;
+    };
 
-void make_test_elf(TestElf &elf, uint32_t entry) {
-    memset(&elf, 0, sizeof(elf));
+    void make_test_elf(TestElf &elf, uint32_t entry) {
+        memset(&elf, 0, sizeof(elf));
 
-    elf.hdr.e_ident[Elf::kEiMag0] = Elf::kElfMag0;
-    elf.hdr.e_ident[Elf::kEiMag1] = Elf::kElfMag1;
-    elf.hdr.e_ident[Elf::kEiMag2] = Elf::kElfMag2;
-    elf.hdr.e_ident[Elf::kEiMag3] = Elf::kElfMag3;
-    elf.hdr.e_ident[Elf::kEiClass] = Elf::kElfClass32;
-    elf.hdr.e_ident[Elf::kEiData] = Elf::kElfData2Lsb;
-    elf.hdr.e_type = Elf::kEtExec;
-    elf.hdr.e_machine = Elf::kEm386;
-    elf.hdr.e_version = 1;
-    elf.hdr.e_entry = entry;
-    elf.hdr.e_phoff = sizeof(Elf::Header);
-    elf.hdr.e_phentsize = sizeof(Elf::ProgramHeader);
-    elf.hdr.e_phnum = 1;
-    elf.hdr.e_ehsize = sizeof(Elf::Header);
+        elf.hdr.e_ident[Elf::kEiMag0] = Elf::kElfMag0;
+        elf.hdr.e_ident[Elf::kEiMag1] = Elf::kElfMag1;
+        elf.hdr.e_ident[Elf::kEiMag2] = Elf::kElfMag2;
+        elf.hdr.e_ident[Elf::kEiMag3] = Elf::kElfMag3;
+        elf.hdr.e_ident[Elf::kEiClass] = Elf::kElfClass32;
+        elf.hdr.e_ident[Elf::kEiData] = Elf::kElfData2Lsb;
+        elf.hdr.e_type = Elf::kEtExec;
+        elf.hdr.e_machine = Elf::kEm386;
+        elf.hdr.e_version = 1;
+        elf.hdr.e_entry = entry;
+        elf.hdr.e_phoff = sizeof(Elf::Header);
+        elf.hdr.e_phentsize = sizeof(Elf::ProgramHeader);
+        elf.hdr.e_phnum = 1;
+        elf.hdr.e_ehsize = sizeof(Elf::Header);
 
-    elf.phdr.p_type = Elf::kPtLoad;
-    elf.phdr.p_offset = 0;
-    elf.phdr.p_vaddr = entry & ~(PAGE_SIZE - 1);
-    elf.phdr.p_filesz = 0;
-    elf.phdr.p_memsz = PAGE_SIZE;
-    elf.phdr.p_flags = Elf::kPfR | Elf::kPfX;
-    elf.phdr.p_align = PAGE_SIZE;
-}
+        elf.phdr.p_type = Elf::kPtLoad;
+        elf.phdr.p_offset = 0;
+        elf.phdr.p_vaddr = entry & ~(PAGE_SIZE - 1);
+        elf.phdr.p_filesz = 0;
+        elf.phdr.p_memsz = PAGE_SIZE;
+        elf.phdr.p_flags = Elf::kPfR | Elf::kPfX;
+        elf.phdr.p_align = PAGE_SIZE;
+    }
 
 }  // namespace
 

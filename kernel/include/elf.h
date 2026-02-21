@@ -90,9 +90,10 @@ namespace Elf {
     bool validate(const uint8_t *data, size_t len);
 
     // Load PT_LOAD segments from an ELF32 executable into the given page
-    // directory. On success, sets entry_out to e_entry and returns true.
+    // directory. On success, sets entry_out to e_entry and brk_out to the
+    // page-aligned end of the highest loaded segment (initial heap break).
     [[nodiscard]]
     bool load(const uint8_t *elf_data, size_t elf_len, PageTable *pd,
-              vaddr_t &entry_out);
+              vaddr_t &entry_out, vaddr_t &brk_out);
 
 }  // namespace Elf

@@ -50,8 +50,7 @@ namespace Elf {
         }
 
         const size_t ph_end =
-            hdr->e_phoff
-            + static_cast<size_t>(hdr->e_phnum) * hdr->e_phentsize;
+            hdr->e_phoff + static_cast<size_t>(hdr->e_phnum) * hdr->e_phentsize;
         if (ph_end > len) {
             printf("ELF: program headers extend past end of file\n");
             return false;
@@ -61,13 +60,14 @@ namespace Elf {
     }
 
     bool load(const uint8_t *elf_data, size_t elf_len, PageTable *pd,
-              vaddr_t &entry_out) {
+              vaddr_t &entry_out, vaddr_t &brk_out) {
         if (!validate(elf_data, elf_len)) {
             return false;
         }
 
         const auto *hdr = reinterpret_cast<const Header *>(elf_data);
         entry_out = hdr->e_entry;
+        vaddr_t highest_end = 0;
 
         for (uint16_t i = 0; i < hdr->e_phnum; ++i) {
             const auto *ph = reinterpret_cast<const ProgramHeader *>(
@@ -83,8 +83,7 @@ namespace Elf {
             }
 
             // Validate that file data is within the ELF buffer.
-            if (ph->p_filesz > 0
-                && (ph->p_offset + ph->p_filesz > elf_len)) {
+            if (ph->p_filesz > 0 && (ph->p_offset + ph->p_filesz > elf_len)) {
                 printf("ELF: segment %u file data out of bounds\n", i);
                 return false;
             }
@@ -98,8 +97,11 @@ namespace Elf {
 
             const vaddr_t seg_start = ph->p_vaddr & ~(PAGE_SIZE - 1);
             const vaddr_t seg_end =
-                (ph->p_vaddr + ph->p_memsz + PAGE_SIZE - 1)
-                & ~(PAGE_SIZE - 1);
+                (ph->p_vaddr + ph->p_memsz + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+
+            if (seg_end > highest_end) {
+                highest_end = seg_end;
+            }
 
             for (vaddr_t va = seg_start; va < seg_end; va += PAGE_SIZE) {
                 paddr_t phys = kPmm.alloc();
@@ -111,8 +113,7 @@ namespace Elf {
                 AddressSpace::map(pd, va, phys,
                                   /*writeable=*/true, /*user=*/true);
 
-                auto *page =
-                    reinterpret_cast<uint8_t *>(phys_to_virt(phys));
+                auto *page = reinterpret_cast<uint8_t *>(phys_to_virt(phys));
 
                 // Determine how much of this page overlaps with file data.
                 size_t filled = 0;
@@ -135,8 +136,7 @@ namespace Elf {
                     }
                     if (copy_len > 0) {
                         memcpy(page + page_start,
-                               elf_data + ph->p_offset + seg_offset,
-                               copy_len);
+                               elf_data + ph->p_offset + seg_offset, copy_len);
                     }
                     filled = page_start + copy_len;
                 }
@@ -147,6 +147,7 @@ namespace Elf {
             }
         }
 
+        brk_out = highest_end;
         return true;
     }
 

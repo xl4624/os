@@ -60,6 +60,7 @@ struct Process {
     paddr_t page_directory_phys;  // CR3 value for this process
     PageTable *page_directory;    // virtual pointer to page directory
     uint8_t *kernel_stack;  // base of allocated kernel stack (for cleanup)
+    vaddr_t heap_break;     // current program break for sbrk
     uint64_t wake_tick;     // tick at which a sleeping process should wake
     Process *next;          // intrusive list pointer (ready/blocked queues)
 };

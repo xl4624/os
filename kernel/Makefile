@@ -14,18 +14,20 @@ CPPFLAGS += -DKTEST_RUN
 endif
 endif
 SRCS_ASM := $(shell find . -type f -name "*.S")
-OBJS_CPP := $(SRCS_CPP:%.cpp=%.o)
-OBJS_ASM := $(SRCS_ASM:%.S=%.o)
+OBJS_CPP := $(patsubst ./%.cpp,$(BUILDDIR)/kernel/%.o,$(SRCS_CPP))
+OBJS_ASM := $(patsubst ./%.S,$(BUILDDIR)/kernel/%.o,$(SRCS_ASM))
 OBJS     := $(OBJS_CPP) $(OBJS_ASM)
 
 .PHONY: all clean install
 
 all: $(OBJS)
 
-%.o: %.cpp
+$(BUILDDIR)/kernel/%.o: ./%.cpp
+	@mkdir -p $(dir $@)
 	$(CPP) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-%.o: %.S
+$(BUILDDIR)/kernel/%.o: ./%.S
+	@mkdir -p $(dir $@)
 	$(AS) $< -o $@
 
 clean:

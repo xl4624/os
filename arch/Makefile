@@ -2,13 +2,14 @@ include ../config.mk
 
 # ==== Source and Object Files ====
 SRCS    := $(wildcard *.S)
-OBJS    := $(SRCS:%.S=%.o)
+OBJS    := $(patsubst %.S,$(BUILDDIR)/arch/%.o,$(SRCS))
 
 .PHONY: all clean
 
 all: $(OBJS) linker.ld
 
-%.o: %.S
+$(BUILDDIR)/arch/%.o: %.S
+	@mkdir -p $(dir $@)
 	$(AS) $< -o $@
 
 clean:

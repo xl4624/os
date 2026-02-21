@@ -3,20 +3,23 @@ include ../config.mk
 CFLAGS  := -ffreestanding -O2 -g -Wall -Wextra -nostdlib -mgeneral-regs-only
 LDFLAGS := -T link.ld -nostdlib
 
-PROGS := hello.elf
+PROGS := $(BUILDDIR)/user/hello.elf
 
 .PHONY: all clean
 
 all: $(PROGS)
 
-hello.elf: crt0.o hello.o link.ld
-	@$(CC) $(LDFLAGS) -o $@ crt0.o hello.o -lgcc
+$(BUILDDIR)/user/hello.elf: $(BUILDDIR)/user/crt0.o $(BUILDDIR)/user/hello.o link.ld
+	@mkdir -p $(dir $@)
+	@$(CC) $(LDFLAGS) -o $@ $(BUILDDIR)/user/crt0.o $(BUILDDIR)/user/hello.o -lgcc
 
-crt0.o: crt0.S
+$(BUILDDIR)/user/crt0.o: crt0.S
+	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-%.o: %.c syscall.h
+$(BUILDDIR)/user/%.o: %.c syscall.h
+	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@rm -f *.o $(PROGS)
+	@rm -f $(BUILDDIR)/user/*.o $(PROGS)

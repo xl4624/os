@@ -37,9 +37,10 @@
 *.elf
 *.xml
 
-# Build directories
-isodir/
+# Build output
+build/
 sysroot/
+
+# Editor/tool caches
 .cache/
-tests/build/
 compile_commands.json

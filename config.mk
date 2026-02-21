@@ -11,6 +11,9 @@ PREFIX     := /usr
 INCLUDEDIR := $(PREFIX)/include
 LIBDIR     := $(PREFIX)/lib
 
+# ==== Build Directory ====
+BUILDDIR ?= build
+
 # ==== Common Flags ====
 BASE_CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include -O2 -g \
                -ffreestanding -Wall -Wextra -Wpedantic -Wconversion

@@ -6,25 +6,29 @@ CFLAGS_C := $(CFLAGS) -D__is_libc
 
 # ==== Source and Object Files ====
 SRCS      := $(shell find . -type f -name "*.c")
-KOBJS     := $(SRCS:%.c=%.libk.o)
-COBJS     := $(SRCS:%.c=%.libc.o)
-TARGET_K  := libk.a
-TARGET_C  := libc.a
+KOBJS     := $(patsubst ./%.c,$(BUILDDIR)/libc/%.libk.o,$(SRCS))
+COBJS     := $(patsubst ./%.c,$(BUILDDIR)/libc/%.libc.o,$(SRCS))
+TARGET_K  := $(BUILDDIR)/libc/libk.a
+TARGET_C  := $(BUILDDIR)/libc/libc.a
 
 .PHONY: all clean install install-headers install-libs
 
 all: $(TARGET_K) $(TARGET_C)
 
-%.libk.o: %.c
+$(BUILDDIR)/libc/%.libk.o: ./%.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS_K) $(INCLUDES) -c $< -o $@
 
 $(TARGET_K): $(KOBJS)
+	@mkdir -p $(dir $@)
 	$(AR) rcs $@ $^
 
-%.libc.o: %.c
+$(BUILDDIR)/libc/%.libc.o: ./%.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS_C) $(INCLUDES) -c $< -o $@
 
 $(TARGET_C): $(COBJS)
+	@mkdir -p $(dir $@)
 	$(AR) rcs $@ $^
 
 clean:

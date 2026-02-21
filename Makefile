@@ -1,33 +1,32 @@
 include config.mk
 
-export SYSROOT := $(CURDIR)/sysroot
+export SYSROOT  := $(CURDIR)/sysroot
+export BUILDDIR := $(CURDIR)/build
+
+KTEST_BUILDDIR := $(CURDIR)/build/ktest
 
 # ==== Build Settings ====
 LDFLAGS := -T arch/linker.ld -ffreestanding -O2 -nostdlib
-LIBS    := -nostdlib -Llibc -lk -lgcc
+LIBS    := -nostdlib -L$(BUILDDIR)/libc -lk -lgcc
 SUBDIRS := arch kernel libc user
 
-# Disable built-in rules for kernel test files (they're built by kernel/Makefile)
-kernel/test/%.o: kernel/test/%.cpp
-	@true
-
 # ==== Runtime Files ====
-CRTI	 := arch/crti.o
-CRTN	 := arch/crtn.o
+CRTI	 := $(BUILDDIR)/arch/crti.o
+CRTN	 := $(BUILDDIR)/arch/crtn.o
 CRTBEGIN := $(shell $(CPP) -print-file-name=crtbegin.o)
 CRTEND	 := $(shell $(CPP) -print-file-name=crtend.o)
 
 # ==== Build Artifacts ====
-KERNEL_OBJS = $(shell find kernel -type f -name '*.o' ! -path 'kernel/test/*')
-LIBC_OBJS   = $(shell find libc -type f -name '*.libk.o')
-OBJS        = $(CRTI) $(CRTBEGIN) arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
+KERNEL_OBJS = $(shell find $(BUILDDIR)/kernel -type f -name '*.o' 2>/dev/null)
+LIBC_OBJS   = $(shell find $(BUILDDIR)/libc -type f -name '*.libk.o' 2>/dev/null)
+OBJS        = $(CRTI) $(CRTBEGIN) $(BUILDDIR)/arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
 
 # ==== Targets ====
-BIN       := myos.bin
-ISODIR     = isodir
-ISO        = myos.iso
-KTEST_BIN := myos-test.bin
-KTEST_ISO := myos-test.iso
+BIN       := $(BUILDDIR)/myos.bin
+ISODIR     = $(BUILDDIR)/isodir
+ISO        = $(BUILDDIR)/myos.iso
+KTEST_BIN := $(KTEST_BUILDDIR)/myos-test.bin
+KTEST_ISO := $(KTEST_BUILDDIR)/myos-test.iso
 
 .PHONY: all run debug lldb clean check install arch kernel libc user test ktest ktest-kernel
 
@@ -61,55 +60,49 @@ ktest: install $(KTEST_ISO)
 			result=1; \
 		elif [ $$status -eq 0 ]; then \
 			echo "[FAILURE] QEMU exited unexpectedly (exit code: $$status)"; \
-			result=1; \ \
+			result=1; \
 		else \
 			echo "[FAILURE] Unknown error (exit code: $$status)"; \
 			result=$$status; \
 		fi; \
-		$(MAKE) -C kernel clean; \
 		exit $$result
 
 clean:
-	@for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir clean; \
-	done
-	@$(MAKE) -C tests clean
-	@rm -f $(BIN) $(ISO) $(KTEST_BIN) $(KTEST_ISO)
-	@rm -rf $(ISODIR) $(SYSROOT)
+	@rm -rf build/ sysroot/
 
 install:
 	@./install.sh
 
-$(BIN): $(SUBDIRS) $(OBJS) arch/linker.ld
+$(BIN): $(SUBDIRS) arch/linker.ld
 	@$(CC) $(LDFLAGS) -o $(BIN) $(OBJS) $(LIBS)
 	@grub-file --is-x86-multiboot $@ || { echo "NOT MULTIBOOT"; exit 1; }
 
 $(ISO): $(BIN) user
 	@mkdir -p $(ISODIR)/boot/grub
-	@cp $< $(ISODIR)/boot/
-	@cp user/hello.elf $(ISODIR)/boot/
+	@cp $(BIN) $(ISODIR)/boot/myos.bin
+	@cp $(BUILDDIR)/user/hello.elf $(ISODIR)/boot/
 	@cp grub.cfg $(ISODIR)/boot/grub/
 	@grub-mkrescue -o $@ $(ISODIR)
 
 # Build kernel objects with tests enabled
 ktest-kernel:
-	@$(MAKE) -C kernel clean
-	@$(MAKE) -C kernel KERNEL_TESTS=1
+	@$(MAKE) -C kernel BUILDDIR=$(KTEST_BUILDDIR) KERNEL_TESTS=1
 
 # Link the test kernel binary
 $(KTEST_BIN): install arch libc ktest-kernel arch/linker.ld
+	@mkdir -p $(dir $@)
 	@$(CC) $(LDFLAGS) -o $@ \
-		$(CRTI) $(CRTBEGIN) arch/boot.o \
-		$$(find kernel -type f -name '*.o' | sort) \
-		$$(find libc   -type f -name '*.libk.o' | sort) \
+		$(CRTI) $(CRTBEGIN) $(BUILDDIR)/arch/boot.o \
+		$$(find $(KTEST_BUILDDIR)/kernel -type f -name '*.o' | sort) \
+		$$(find $(BUILDDIR)/libc -type f -name '*.libk.o' | sort) \
 		$(CRTEND) $(CRTN) $(LIBS)
 	@grub-file --is-x86-multiboot $@ || { echo "NOT MULTIBOOT"; exit 1; }
 
 $(KTEST_ISO): $(KTEST_BIN)
-	@mkdir -p $(ISODIR)/boot/grub
-	@cp $< $(ISODIR)/boot/myos.bin
-	@cp grub.cfg $(ISODIR)/boot/grub/
-	@grub-mkrescue -o $@ $(ISODIR)
+	@mkdir -p $(KTEST_BUILDDIR)/isodir/boot/grub
+	@cp $< $(KTEST_BUILDDIR)/isodir/boot/myos.bin
+	@cp grub.cfg $(KTEST_BUILDDIR)/isodir/boot/grub/
+	@grub-mkrescue -o $@ $(KTEST_BUILDDIR)/isodir
 
 arch kernel libc: install
 	@$(MAKE) -C $@

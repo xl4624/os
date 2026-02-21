@@ -74,7 +74,7 @@ namespace KTest {
             while ((inb(PS2_STATUS_PORT) & PS2_STATUS_OUTPUT_FULL) == 0) {
                 // Wait for key
             }
-            inb(PS2_DATA_PORT);
+            static_cast<void>(inb(PS2_DATA_PORT));
         }
 
         uint8_t exit_code = (kTestState.failed == 0) ? QEMU_EXIT_CODE_SUCCESS

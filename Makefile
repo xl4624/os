@@ -80,7 +80,7 @@ $(BIN): $(SUBDIRS) arch/linker.ld
 $(ISO): $(BIN) user
 	@mkdir -p $(ISODIR)/boot/grub
 	@cp $(BIN) $(ISODIR)/boot/myos.bin
-	@cp $(BUILDDIR)/user/hello.elf $(ISODIR)/boot/
+	@for f in $(BUILDDIR)/user/*.elf; do cp "$$f" $(ISODIR)/boot/; done
 	@cp grub.cfg $(ISODIR)/boot/grub/
 	@grub-mkrescue -o $@ $(ISODIR)
 

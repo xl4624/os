@@ -4,7 +4,6 @@
 #include <sys/io.h>
 
 #include "interrupt.h"
-#include "tty.h"
 
 static constexpr uint16_t kDataPort = 0x60;
 static constexpr uint8_t kExtended = 0xE0;
@@ -151,11 +150,27 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
 
     // If not a command response; process as key scancode.
     KeyEvent event = scancode_to_event(scancode);
-    kTerminal.handle_key(event);
 
     // Buffer printable characters for sys_read.
     if (event.ascii != '\0') {
         buffer_char(event.ascii);
+    }
+
+    // Buffer arrow keys as ANSI escape sequences for sys_read.
+    if (event.pressed && event.ascii == '\0') {
+        char seq = '\0';
+        switch (event.key.value()) {
+            case Key::Up: seq = 'A'; break;
+            case Key::Down: seq = 'B'; break;
+            case Key::Right: seq = 'C'; break;
+            case Key::Left: seq = 'D'; break;
+            default: break;
+        }
+        if (seq != '\0') {
+            buffer_char('\x1b');
+            buffer_char('[');
+            buffer_char(seq);
+        }
     }
 }
 

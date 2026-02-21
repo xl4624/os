@@ -136,6 +136,27 @@ static int32_t sys_sbrk(TrapFrame *regs) {
     return static_cast<int32_t>(old_break);
 }
 
+// SYS_SET_CURSOR(row=ebx, col=ecx)
+static int32_t sys_set_cursor(TrapFrame *regs) {
+    uint32_t row = regs->ebx;
+    uint32_t col = regs->ecx;
+    terminal_set_position(row, col);
+    return 0;
+}
+
+// SYS_SET_COLOR(color=ebx)
+static int32_t sys_set_color(TrapFrame *regs) {
+    uint32_t color = regs->ebx;
+    terminal_set_color(static_cast<uint8_t>(color));
+    return 0;
+}
+
+// SYS_CLEAR()
+static int32_t sys_clear([[maybe_unused]] TrapFrame *regs) {
+    terminal_clear();
+    return 0;
+}
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -143,11 +164,14 @@ static int32_t sys_sbrk(TrapFrame *regs) {
 using syscall_fn = int32_t (*)(TrapFrame *);
 
 static syscall_fn syscall_table[SYS_MAX] = {
-    sys_exit,   // 0
-    sys_read,   // 1
-    sys_write,  // 2
-    sys_sleep,  // 3
-    sys_sbrk,   // 4
+    sys_exit,        // 0
+    sys_read,        // 1
+    sys_write,       // 2
+    sys_sleep,       // 3
+    sys_sbrk,        // 4
+    sys_set_cursor,  // 5
+    sys_set_color,   // 6
+    sys_clear,       // 7
 };
 
 __BEGIN_DECLS

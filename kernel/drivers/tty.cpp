@@ -144,6 +144,28 @@ void Terminal::set_color(uint8_t color) {
     color_ = color;
 }
 
+void Terminal::clear() {
+    color_ = VGA::entry_color(VGA::Color::LightGrey, VGA::Color::Black);
+    for (size_t y = 0; y < VGA::HEIGHT; ++y) {
+        clear_line(y);
+    }
+    row_ = 0;
+    col_ = 0;
+    update_cursor();
+}
+
+void Terminal::set_position(size_t row, size_t col) {
+    if (row >= VGA::HEIGHT) {
+        row = VGA::HEIGHT - 1;
+    }
+    if (col >= VGA::WIDTH) {
+        col = VGA::WIDTH - 1;
+    }
+    row_ = row;
+    col_ = col;
+    update_cursor();
+}
+
 void Terminal::enable_cursor() {
     cursor_enabled_ = true;
     outb(VGA::CRTC_ADDR_REG, VGA::CURSOR_START_REG);
@@ -188,5 +210,17 @@ void terminal_write(const char *data) {
 
 void terminal_putchar(char c) {
     kTerminal.put_char(c);
+}
+
+void terminal_clear(void) {
+    kTerminal.clear();
+}
+
+void terminal_set_position(unsigned int row, unsigned int col) {
+    kTerminal.set_position(row, col);
+}
+
+void terminal_set_color(unsigned char color) {
+    kTerminal.set_color(color);
 }
 __END_DECLS

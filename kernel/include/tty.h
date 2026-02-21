@@ -8,6 +8,9 @@ __BEGIN_DECLS
 
 void terminal_write(const char *data);
 void terminal_putchar(char c);
+void terminal_clear(void);
+void terminal_set_position(unsigned int row, unsigned int col);
+void terminal_set_color(unsigned char color);
 
 __END_DECLS
 
@@ -27,6 +30,8 @@ class Terminal {
     void put_char(char c);
     void handle_key(KeyEvent event);
     void set_color(uint8_t color);
+    void clear();
+    void set_position(size_t row, size_t col);
     void enable_cursor();
     void disable_cursor();
     void update_cursor();

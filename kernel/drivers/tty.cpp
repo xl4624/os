@@ -9,6 +9,19 @@
 
 static constexpr size_t TAB_WIDTH = 4;
 
+// Maps ANSI color indices 0-7 to VGA color values.
+// Bright variants (ANSI 90-97 fg / 100-107 bg) are these values + 8.
+static constexpr uint8_t kAnsiToVga[8] = {
+    0,  // Black   (30/40)
+    4,  // Red     (31/41)
+    2,  // Green   (32/42)
+    6,  // Yellow  (33/43)
+    1,  // Blue    (34/44)
+    5,  // Magenta (35/45)
+    3,  // Cyan    (36/46)
+    7,  // White   (37/47)
+};
+
 [[nodiscard]]
 static constexpr size_t to_index(size_t row, size_t col) {
     return row * VGA::WIDTH + col;
@@ -18,6 +31,11 @@ static constexpr size_t to_index(size_t row, size_t col) {
 Terminal kTerminal;
 
 Terminal::Terminal() {
+    esc_state_ = EscState::Normal;
+    esc_param_count_ = 0;
+    for (size_t i = 0; i < kMaxCsiParams; ++i) {
+        esc_params_[i] = 0;
+    }
     for (size_t y = 0; y < VGA::HEIGHT; ++y) {
         clear_line(y);
     }
@@ -31,6 +49,44 @@ void Terminal::write(const char *data) {
 }
 
 void Terminal::put_char(char c) {
+    if (esc_state_ == EscState::Escape) {
+        if (c == '[') {
+            esc_state_ = EscState::Csi;
+            esc_param_count_ = 0;
+            for (size_t i = 0; i < kMaxCsiParams; ++i) {
+                esc_params_[i] = 0;
+            }
+        } else {
+            // Not a CSI sequence: discard ESC and re-process c normally.
+            esc_state_ = EscState::Normal;
+            put_char(c);
+        }
+        return;
+    }
+
+    if (esc_state_ == EscState::Csi) {
+        if (c >= '0' && c <= '9') {
+            esc_params_[esc_param_count_] =
+                static_cast<uint16_t>(esc_params_[esc_param_count_] * 10u
+                                      + static_cast<uint16_t>(c - '0'));
+        } else if (c == ';') {
+            if (esc_param_count_ < kMaxCsiParams - 1) {
+                ++esc_param_count_;
+                esc_params_[esc_param_count_] = 0;
+            }
+        } else {
+            dispatch_csi(c);
+            esc_state_ = EscState::Normal;
+        }
+        return;
+    }
+
+    // EscState::Normal processing.
+    if (c == '\x1b') {
+        esc_state_ = EscState::Escape;
+        return;
+    }
+
     if (c == '\n') {
         col_ = 0;
         if (++row_ == VGA::HEIGHT) {
@@ -200,11 +256,71 @@ void Terminal::move_cursor(size_t row, size_t col) {
     outb(VGA::CRTC_DATA_REG, static_cast<uint8_t>((pos >> 8) & 0xFF));
 }
 
-// =====================
-//      C Interface
-// =====================
+void Terminal::dispatch_csi(char final_byte) {
+    uint16_t p0 = esc_params_[0];
+    uint16_t p1 = esc_params_[1];
+    size_t n = (p0 == 0) ? 1u : static_cast<size_t>(p0);
+
+    switch (final_byte) {
+        case 'H':
+        case 'f': {
+            size_t row = static_cast<size_t>((p0 == 0 ? 1 : p0) - 1);
+            size_t col = static_cast<size_t>((p1 == 0 ? 1 : p1) - 1);
+            set_position(row, col);
+            break;
+        }
+        case 'A':
+            row_ -= MIN(n, row_);
+            update_cursor();
+            break;
+        case 'B':
+            row_ = MIN(row_ + n, VGA::HEIGHT - 1u);
+            update_cursor();
+            break;
+        case 'C':
+            col_ = MIN(col_ + n, VGA::WIDTH - 1u);
+            update_cursor();
+            break;
+        case 'D':
+            col_ -= MIN(n, col_);
+            update_cursor();
+            break;
+        case 'J':
+            if (p0 == 2) {
+                clear();
+            }
+            break;
+        case 'm': apply_sgr(static_cast<uint8_t>(esc_param_count_ + 1u)); break;
+        default: break;
+    }
+}
+
+void Terminal::apply_sgr(uint8_t nparams) {
+    uint8_t fg = color_ & 0x0Fu;
+    uint8_t bg = (color_ >> 4) & 0x0Fu;
+
+    for (uint8_t i = 0; i < nparams; ++i) {
+        uint16_t code = esc_params_[i];
+        if (code == 0) {
+            fg = static_cast<uint8_t>(VGA::Color::LightGrey);
+            bg = static_cast<uint8_t>(VGA::Color::Black);
+        } else if (code >= 30 && code <= 37) {
+            fg = kAnsiToVga[code - 30];
+        } else if (code >= 40 && code <= 47) {
+            bg = kAnsiToVga[code - 40];
+        } else if (code >= 90 && code <= 97) {
+            fg = static_cast<uint8_t>(kAnsiToVga[code - 90] + 8u);
+        } else if (code >= 100 && code <= 107) {
+            bg = static_cast<uint8_t>(kAnsiToVga[code - 100] + 8u);
+        }
+    }
+
+    color_ = VGA::entry_color(static_cast<VGA::Color>(fg),
+                              static_cast<VGA::Color>(bg));
+}
 
 __BEGIN_DECLS
+
 void terminal_write(const char *data) {
     kTerminal.write(data);
 }
@@ -224,4 +340,5 @@ void terminal_set_position(unsigned int row, unsigned int col) {
 void terminal_set_color(unsigned char color) {
     kTerminal.set_color(color);
 }
+
 __END_DECLS

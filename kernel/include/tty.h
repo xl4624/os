@@ -41,6 +41,11 @@ class Terminal {
     void scroll();
     void clear_line(size_t row);
     void move_cursor(size_t row, size_t col);
+    void dispatch_csi(char final_byte);
+    void apply_sgr(uint8_t nparams);
+
+    enum class EscState : uint8_t { Normal, Escape, Csi };
+    static constexpr size_t kMaxCsiParams = 8;
 
     bool cursor_enabled_ = false;
 
@@ -50,6 +55,10 @@ class Terminal {
     uint8_t cursor_color_ =
         VGA::entry_color(VGA::Color::Black, VGA::Color::LightGrey);
     volatile uint16_t *buffer_ = VGA::MEMORY_ADDR;
+
+    EscState esc_state_;
+    uint16_t esc_params_[kMaxCsiParams];
+    uint8_t esc_param_count_;
 };
 
 extern Terminal kTerminal;

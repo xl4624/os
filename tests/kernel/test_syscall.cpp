@@ -1,9 +1,8 @@
-#include "ktest.h"
-
 #include <sys/syscall.h>
 
 #include "address_space.h"
 #include "gdt.h"
+#include "ktest.h"
 #include "paging.h"
 #include "pmm.h"
 #include "process.h"
@@ -45,9 +44,9 @@ TEST(syscall, write_bad_fd) {
 TEST(syscall, write_zero_count) {
     TrapFrame frame = {};
     frame.eax = SYS_WRITE;
-    frame.ebx = 1;       // fd = stdout
-    frame.ecx = 0;       // buf (irrelevant for len=0)
-    frame.edx = 0;       // count = 0
+    frame.ebx = 1;  // fd = stdout
+    frame.ecx = 0;  // buf (irrelevant for len=0)
+    frame.edx = 0;  // count = 0
     syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
     ASSERT_EQ(frame.eax, 0u);
 }
@@ -55,10 +54,10 @@ TEST(syscall, write_zero_count) {
 // buf + count wraps past 2^32, so the overflow check rejects it.
 TEST(syscall, write_buf_overflow) {
     TrapFrame frame = {};
-    frame.eax  = SYS_WRITE;
-    frame.ebx  = 1;             // fd = stdout
-    frame.ecx  = 0xFFFFFFFEu;   // buf near end of address space
-    frame.edx  = 4;             // buf + count wraps to 2
+    frame.eax = SYS_WRITE;
+    frame.ebx = 1;            // fd = stdout
+    frame.ecx = 0xFFFFFFFEu;  // buf near end of address space
+    frame.edx = 4;            // buf + count wraps to 2
     syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
     ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
 }
@@ -67,9 +66,9 @@ TEST(syscall, write_buf_overflow) {
 TEST(syscall, write_buf_in_kernel_space) {
     TrapFrame frame = {};
     frame.eax = SYS_WRITE;
-    frame.ebx = 1;                                   // fd = stdout
-    frame.ecx = static_cast<uint32_t>(KERNEL_VMA);   // buf at kernel boundary
-    frame.edx = 1;                                   // count = 1
+    frame.ebx = 1;                                  // fd = stdout
+    frame.ecx = static_cast<uint32_t>(KERNEL_VMA);  // buf at kernel boundary
+    frame.edx = 1;                                  // count = 1
     syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
     ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
 }
@@ -90,9 +89,9 @@ TEST(syscall, read_bad_fd) {
 TEST(syscall, read_buf_overflow) {
     TrapFrame frame = {};
     frame.eax = SYS_READ;
-    frame.ebx = 0;              // fd = stdin
-    frame.ecx = 0xFFFFFFFEu;    // buf near end of address space
-    frame.edx = 4;              // buf + count wraps to 2
+    frame.ebx = 0;            // fd = stdin
+    frame.ecx = 0xFFFFFFFEu;  // buf near end of address space
+    frame.edx = 4;            // buf + count wraps to 2
     syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
     ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
 }
@@ -101,9 +100,9 @@ TEST(syscall, read_buf_overflow) {
 TEST(syscall, read_buf_in_kernel_space) {
     TrapFrame frame = {};
     frame.eax = SYS_READ;
-    frame.ebx = 0;                                   // fd = stdin
-    frame.ecx = static_cast<uint32_t>(KERNEL_VMA);   // buf at kernel boundary
-    frame.edx = 1;                                   // count = 1
+    frame.ebx = 0;                                  // fd = stdin
+    frame.ecx = static_cast<uint32_t>(KERNEL_VMA);  // buf at kernel boundary
+    frame.edx = 1;                                  // count = 1
     syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
     ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
 }
@@ -122,7 +121,8 @@ TEST(syscall, sbrk_query) {
 }
 
 // An increment that would push the break to exactly KERNEL_VMA is rejected.
-// With heap_break=0 and ebx=KERNEL_VMA: new_break = 0 + 0xC0000000 = KERNEL_VMA.
+// With heap_break=0 and ebx=KERNEL_VMA: new_break = 0 + 0xC0000000 =
+// KERNEL_VMA.
 TEST(syscall, sbrk_at_kernel_boundary) {
     TrapFrame frame = {};
     frame.eax = SYS_SBRK;
@@ -157,13 +157,13 @@ TEST(syscall, sbrk_allocates_page) {
     ASSERT_NOT_NULL(pd);
 
     Process *proc = Scheduler::current();
-    PageTable *orig_pd      = proc->page_directory;
-    paddr_t   orig_pd_phys  = proc->page_directory_phys;
-    vaddr_t   orig_break    = proc->heap_break;
+    PageTable *orig_pd = proc->page_directory;
+    paddr_t orig_pd_phys = proc->page_directory_phys;
+    vaddr_t orig_break = proc->heap_break;
 
-    proc->page_directory      = pd;
+    proc->page_directory = pd;
     proc->page_directory_phys = pd_phys;
-    proc->heap_break          = 0x00400000;
+    proc->heap_break = 0x00400000;
 
     TrapFrame frame = {};
     frame.eax = SYS_SBRK;
@@ -174,41 +174,14 @@ TEST(syscall, sbrk_allocates_page) {
     ASSERT_EQ(frame.eax, 0x00400000u);
     ASSERT_EQ(static_cast<uint32_t>(proc->heap_break), 0x00401000u);
     // The page that was newly allocated must be user-writable.
-    ASSERT_TRUE(AddressSpace::is_user_mapped(pd, 0x00400000, /*writeable=*/true));
+    ASSERT_TRUE(
+        AddressSpace::is_user_mapped(pd, 0x00400000, /*writeable=*/true));
 
-    proc->page_directory      = orig_pd;
+    proc->page_directory = orig_pd;
     proc->page_directory_phys = orig_pd_phys;
-    proc->heap_break          = orig_break;
+    proc->heap_break = orig_break;
 
     AddressSpace::destroy(pd, pd_phys);
-}
-
-// ---------------------------------------------------------------------------
-// SYS_SET_CURSOR, SYS_SET_COLOR, SYS_CLEAR
-// ---------------------------------------------------------------------------
-
-TEST(syscall, set_cursor_returns_zero) {
-    TrapFrame frame = {};
-    frame.eax = SYS_SET_CURSOR;
-    frame.ebx = 0;  // row
-    frame.ecx = 0;  // col
-    syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-    ASSERT_EQ(frame.eax, 0u);
-}
-
-TEST(syscall, set_color_returns_zero) {
-    TrapFrame frame = {};
-    frame.eax = SYS_SET_COLOR;
-    frame.ebx = 0x07;  // light grey on black
-    syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-    ASSERT_EQ(frame.eax, 0u);
-}
-
-TEST(syscall, clear_returns_zero) {
-    TrapFrame frame = {};
-    frame.eax = SYS_CLEAR;
-    syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-    ASSERT_EQ(frame.eax, 0u);
 }
 
 // ---------------------------------------------------------------------------

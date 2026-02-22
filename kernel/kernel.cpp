@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/io.h>
 
+#include "../tests/kernel/ktest.h"
 #include "gdt.h"
 #include "heap.h"
 #include "interrupt.h"
@@ -14,7 +15,6 @@
 #include "pmm.h"
 #include "scheduler.h"
 #include "syscall.h"
-#include "../tests/kernel/ktest.h"
 #include "tss.h"
 #include "x86.h"
 

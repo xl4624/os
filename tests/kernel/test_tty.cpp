@@ -187,3 +187,117 @@ TEST(tty, clear_zeroes_all_cells) {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// ANSI escape sequences
+// ---------------------------------------------------------------------------
+
+TEST(tty, csi_cursor_position) {
+    terminal_clear();
+    terminal_write("\033[6;11H");
+    terminal_putchar('P');
+    ASSERT_EQ(vga_char_at(5, 10), 'P');
+}
+
+TEST(tty, csi_cursor_position_default) {
+    terminal_clear();
+    terminal_set_position(3, 3);
+    terminal_write("\033[H");
+    terminal_putchar('Q');
+    ASSERT_EQ(vga_char_at(0, 0), 'Q');
+}
+
+TEST(tty, csi_cursor_position_partial) {
+    terminal_clear();
+    // Only row provided; col defaults to 1 (index 0).
+    terminal_write("\033[3H");
+    terminal_putchar('R');
+    ASSERT_EQ(vga_char_at(2, 0), 'R');
+}
+
+TEST(tty, csi_clear_screen) {
+    for (size_t c = 0; c < VGA::WIDTH; ++c) {
+        terminal_putchar('X');
+    }
+    terminal_write("\033[2J");
+    for (size_t r = 0; r < VGA::HEIGHT; ++r) {
+        for (size_t c = 0; c < VGA::WIDTH; ++c) {
+            ASSERT_EQ(vga_char_at(r, c), 0);
+        }
+    }
+}
+
+TEST(tty, csi_sgr_foreground) {
+    terminal_clear();
+    terminal_write("\033[32m");  // ANSI green -> VGA green (2)
+    terminal_putchar('G');
+    ASSERT_EQ(vga_char_at(0, 0), 'G');
+    ASSERT_EQ(vga_color_at(0, 0),
+              VGA::entry_color(VGA::Color::Green, VGA::Color::Black));
+}
+
+TEST(tty, csi_sgr_background) {
+    terminal_clear();
+    terminal_write("\033[41m");  // ANSI red background -> VGA red bg (4)
+    terminal_putchar('B');
+    ASSERT_EQ(vga_char_at(0, 0), 'B');
+    ASSERT_EQ(vga_color_at(0, 0),
+              VGA::entry_color(VGA::Color::LightGrey, VGA::Color::Red));
+}
+
+TEST(tty, csi_sgr_bright) {
+    terminal_clear();
+    terminal_write("\033[92m");  // ANSI bright green -> VGA light green (10)
+    terminal_putchar('L');
+    ASSERT_EQ(vga_char_at(0, 0), 'L');
+    ASSERT_EQ(vga_color_at(0, 0),
+              VGA::entry_color(VGA::Color::LightGreen, VGA::Color::Black));
+}
+
+TEST(tty, csi_sgr_reset) {
+    terminal_clear();
+    terminal_write("\033[32m");  // change color
+    terminal_write("\033[0m");   // reset
+    terminal_putchar('Z');
+    ASSERT_EQ(vga_char_at(0, 0), 'Z');
+    ASSERT_EQ(vga_color_at(0, 0),
+              VGA::entry_color(VGA::Color::LightGrey, VGA::Color::Black));
+}
+
+TEST(tty, csi_cursor_up_down_left_right) {
+    terminal_clear();
+
+    // Cursor Up 3: from (12, 40) to (9, 40).
+    terminal_set_position(12, 40);
+    terminal_write("\033[3A");
+    terminal_putchar('U');
+    ASSERT_EQ(vga_char_at(9, 40), 'U');
+
+    // Cursor Down 3: from (12, 40) to (15, 40).
+    terminal_set_position(12, 40);
+    terminal_write("\033[3B");
+    terminal_putchar('D');
+    ASSERT_EQ(vga_char_at(15, 40), 'D');
+
+    // Cursor Forward 3: from (12, 40) to (12, 43).
+    terminal_set_position(12, 40);
+    terminal_write("\033[3C");
+    terminal_putchar('R');
+    ASSERT_EQ(vga_char_at(12, 43), 'R');
+
+    // Cursor Back 3: from (12, 40) to (12, 37).
+    terminal_set_position(12, 40);
+    terminal_write("\033[3D");
+    terminal_putchar('L');
+    ASSERT_EQ(vga_char_at(12, 37), 'L');
+}
+
+TEST(tty, csi_unknown_sequence_ignored) {
+    terminal_clear();
+    terminal_putchar('X');
+    // An unrecognized final byte is silently ignored; cursor stays after 'X'.
+    terminal_write("\033[99z");
+    terminal_putchar('Y');
+    ASSERT_EQ(vga_char_at(0, 0), 'X');
+    ASSERT_EQ(vga_char_at(0, 1), 'Y');
+}

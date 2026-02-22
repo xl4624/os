@@ -265,7 +265,7 @@ namespace Scheduler {
         }
 
         // Translate a user virtual address into a kernel pointer via the
-        // physical pages we just allocated (identity-mapped in the first 8 MiB).
+        // physical pages we just allocated.
         auto kptr = [&](uint32_t uva) -> uint8_t * {
             uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
             uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;

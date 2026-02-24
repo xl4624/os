@@ -8,7 +8,7 @@
 __BEGIN_DECLS
 
 extern uint32_t mboot_magic;
-extern multiboot_info_t *mboot_info;
+extern multiboot_info_t* mboot_info;
 
 /* Defined in arch/linker.ld */
 extern uint32_t kernel_start;

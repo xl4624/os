@@ -90,41 +90,45 @@ static_assert(sizeof(kAsciiTable) / sizeof(AsciiPair) == Key::COUNT,
               "kAsciiTable size must match Key::COUNT");
 
 Key Key::from_scancode(uint8_t scancode) {
-    if (scancode < kScancodeTableSize) {
-        return Key(kScancodeTable[scancode]);
-    }
-    return Key(Unknown);
+  if (scancode < kScancodeTableSize) {
+    return Key(kScancodeTable[scancode]);
+  }
+  return Key(Unknown);
 }
 
 Key Key::from_extended_scancode(uint8_t scancode) {
-    switch (scancode) {
-        case kExtUp: return Key(Up);
-        case kExtDown: return Key(Down);
-        case kExtLeft: return Key(Left);
-        case kExtRight: return Key(Right);
-        default: return Key(Unknown);
-    }
+  switch (scancode) {
+    case kExtUp:
+      return Key(Up);
+    case kExtDown:
+      return Key(Down);
+    case kExtLeft:
+      return Key(Left);
+    case kExtRight:
+      return Key(Right);
+    default:
+      return Key(Unknown);
+  }
 }
 
 char Key::ascii(bool shift) const {
-    assert(value_ < COUNT && "Key::ascii(): key value out of range");
-    if (value_ < COUNT) {
-        return shift ? kAsciiTable[value_].shifted : kAsciiTable[value_].normal;
-    }
-    return '\0';
+  assert(value_ < COUNT && "Key::ascii(): key value out of range");
+  return shift ? kAsciiTable[value_].shifted : kAsciiTable[value_].normal;
 }
 
 bool Key::is_modifier() const {
-    switch (value_) {
-        case LeftShift:
-        case RightShift:
-        case LeftCtrl:
-        case RightCtrl:
-        case LeftAlt:
-        case RightAlt:
-        case CapsLock: return true;
-        default: return false;
-    }
+  switch (value_) {
+    case LeftShift:
+    case RightShift:
+    case LeftCtrl:
+    case RightCtrl:
+    case LeftAlt:
+    case RightAlt:
+    case CapsLock:
+      return true;
+    default:
+      return false;
+  }
 }
 
 // ====================================================================
@@ -133,89 +137,103 @@ bool Key::is_modifier() const {
 
 KeyboardDriver kKeyboard;
 
-static void keyboard_handler([[maybe_unused]] interrupt_frame *frame) {
-    uint8_t scancode = inb(kDataPort);
-    kKeyboard.process_scancode(scancode);
+static void keyboard_handler([[maybe_unused]] interrupt_frame* frame) {
+  uint8_t scancode = inb(kDataPort);
+  kKeyboard.process_scancode(scancode);
 }
 
-KeyboardDriver::KeyboardDriver() {
-    Interrupt::register_handler(IRQ::Keyboard, keyboard_handler);
-}
+KeyboardDriver::KeyboardDriver() { Interrupt::register_handler(IRQ::Keyboard, keyboard_handler); }
 
 void KeyboardDriver::process_scancode(uint8_t scancode) {
-    // First, try to process as a command response.
-    if (cmd_queue_.process_byte(scancode)) {
-        return;
-    }
+  // First, try to process as a command response.
+  if (cmd_queue_.process_byte(scancode)) {
+    return;
+  }
 
-    // If not a command response; process as key scancode.
-    KeyEvent event = scancode_to_event(scancode);
+  // If not a command response; process as key scancode.
+  KeyEvent event = scancode_to_event(scancode);
 
-    // Buffer printable characters for sys_read.
-    if (event.ascii != '\0') {
-        buffer_char(event.ascii);
-    }
+  // Buffer printable characters for sys_read.
+  if (event.ascii != '\0') {
+    buffer_char(event.ascii);
+  }
 
-    // Buffer arrow keys as ANSI escape sequences for sys_read.
-    if (event.pressed && event.ascii == '\0') {
-        char seq = '\0';
-        switch (event.key.value()) {
-            case Key::Up: seq = 'A'; break;
-            case Key::Down: seq = 'B'; break;
-            case Key::Right: seq = 'C'; break;
-            case Key::Left: seq = 'D'; break;
-            default: break;
-        }
-        if (seq != '\0') {
-            buffer_char('\x1b');
-            buffer_char('[');
-            buffer_char(seq);
-        }
+  // Buffer arrow keys as ANSI escape sequences for sys_read.
+  if (event.pressed && event.ascii == '\0') {
+    char seq = '\0';
+    switch (event.key.value()) {
+      case Key::Up:
+        seq = 'A';
+        break;
+      case Key::Down:
+        seq = 'B';
+        break;
+      case Key::Right:
+        seq = 'C';
+        break;
+      case Key::Left:
+        seq = 'D';
+        break;
+      default:
+        break;
     }
+    if (seq != '\0') {
+      buffer_char('\x1b');
+      buffer_char('[');
+      buffer_char(seq);
+    }
+  }
 }
 
 void KeyboardDriver::buffer_char(char c) {
-    static_cast<void>(input_buffer_.push(c));  // Drop char if buffer full
+  static_cast<void>(input_buffer_.push(c));  // Drop char if buffer full
 }
 
-size_t KeyboardDriver::read(char *buf, size_t count) {
-    assert((count == 0 || buf != nullptr)
-           && "KeyboardDriver::read(): buf is null with non-zero count");
-    size_t n = 0;
-    char c;
-    while (n < count && input_buffer_.pop(c)) {
-        buf[n++] = c;
-    }
-    return n;
+size_t KeyboardDriver::read(char* buf, size_t count) {
+  assert((count == 0 || buf != nullptr) &&
+         "KeyboardDriver::read(): buf is null with non-zero count");
+  size_t n = 0;
+  char c;
+  while (n < count && input_buffer_.pop(c)) {
+    buf[n++] = c;
+  }
+  return n;
 }
 
 KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
-    // The 0xE0 prefix byte is not a key event itself; set the flag and bail.
-    if (scancode == kExtended) {
-        extended_scancode_ = true;
-        return KeyEvent{Key{}, false, '\0', shift_, ctrl_, alt_};
+  // The 0xE0 prefix byte is not a key event itself; set the flag and bail.
+  if (scancode == kExtended) {
+    extended_scancode_ = true;
+    return KeyEvent{Key{}, false, '\0', shift_, ctrl_, alt_};
+  }
+
+  const bool pressed = !(scancode & kReleaseBit);
+  scancode &= ~kReleaseBit;
+
+  Key key =
+      extended_scancode_ ? Key::from_extended_scancode(scancode) : Key::from_scancode(scancode);
+  extended_scancode_ = false;
+
+  if (key.is_modifier()) {
+    switch (key.value()) {
+      case Key::LeftShift:
+      case Key::RightShift:
+        shift_ = pressed;
+        break;
+      case Key::LeftCtrl:
+      case Key::RightCtrl:
+        ctrl_ = pressed;
+        break;
+      case Key::LeftAlt:
+      case Key::RightAlt:
+        alt_ = pressed;
+        break;
+      default:
+        break;
     }
+  }
 
-    const bool pressed = !(scancode & kReleaseBit);
-    scancode &= ~kReleaseBit;
-
-    Key key = extended_scancode_ ? Key::from_extended_scancode(scancode)
-                                 : Key::from_scancode(scancode);
-    extended_scancode_ = false;
-
-    if (key.is_modifier()) {
-        switch (key.value()) {
-            case Key::LeftShift:
-            case Key::RightShift: shift_ = pressed; break;
-            case Key::LeftCtrl:
-            case Key::RightCtrl: ctrl_ = pressed; break;
-            case Key::LeftAlt:
-            case Key::RightAlt: alt_ = pressed; break;
-            default: break;
-        }
-    }
-
-    // ctrl/alt combinations suppress printable output.
-    const char ascii = (pressed && !ctrl_ && !alt_) ? key.ascii(shift_) : '\0';
-    return KeyEvent{key, pressed, ascii, shift_, ctrl_, alt_};
+  // ctrl/alt combinations suppress printable output.
+  const char ascii = (pressed && !ctrl_ && !alt_) ? key.ascii(shift_) : '\0';
+  return KeyEvent{key, pressed, ascii, shift_, ctrl_, alt_};
 }

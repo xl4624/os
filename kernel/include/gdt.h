@@ -61,46 +61,42 @@
  *   - Reserved (bit 52): Must be 0
  */
 namespace GDT {
-    // Segment selectors (index * 8, plus RPL for user segments)
-    static constexpr uint16_t KERNEL_CODE_SELECTOR = 0x08;  // index 1
-    static constexpr uint16_t KERNEL_DATA_SELECTOR = 0x10;  // index 2
-    static constexpr uint16_t TSS_SELECTOR = 0x18;          // index 3
-    static constexpr uint16_t USER_CODE_SELECTOR = 0x23;    // index 4 | RPL 3
-    static constexpr uint16_t USER_DATA_SELECTOR = 0x2B;    // index 5 | RPL 3
+// Segment selectors (index * 8, plus RPL for user segments)
+static constexpr uint16_t KERNEL_CODE_SELECTOR = 0x08;  // index 1
+static constexpr uint16_t KERNEL_DATA_SELECTOR = 0x10;  // index 2
+static constexpr uint16_t TSS_SELECTOR = 0x18;          // index 3
+static constexpr uint16_t USER_CODE_SELECTOR = 0x23;    // index 4 | RPL 3
+static constexpr uint16_t USER_DATA_SELECTOR = 0x2B;    // index 5 | RPL 3
 
-    // Access byte values
-    static constexpr uint8_t CODE_ACCESS =
-        0x9A;  // Present, DPL=0, Code, Readable
-    static constexpr uint8_t DATA_ACCESS =
-        0x92;  // Present, DPL=0, Data, Writable
-    // TSS: Present, DPL=0, S=0 (system), type=0x9 (32-bit TSS available)
-    static constexpr uint8_t TSS_ACCESS = 0x89;
-    // User: Present, DPL=3, S=1, Code/Data
-    static constexpr uint8_t USER_CODE_ACCESS =
-        0xFA;  // Present, DPL=3, Code, Readable
-    static constexpr uint8_t USER_DATA_ACCESS =
-        0xF2;  // Present, DPL=3, Data, Writable
+// Access byte values
+static constexpr uint8_t CODE_ACCESS = 0x9A;  // Present, DPL=0, Code, Readable
+static constexpr uint8_t DATA_ACCESS = 0x92;  // Present, DPL=0, Data, Writable
+// TSS: Present, DPL=0, S=0 (system), type=0x9 (32-bit TSS available)
+static constexpr uint8_t TSS_ACCESS = 0x89;
+// User: Present, DPL=3, S=1, Code/Data
+static constexpr uint8_t USER_CODE_ACCESS = 0xFA;  // Present, DPL=3, Code, Readable
+static constexpr uint8_t USER_DATA_ACCESS = 0xF2;  // Present, DPL=3, Data, Writable
 
-    // Flags: 4KiB granularity, 32-bit protected mode
-    static constexpr uint8_t FLAGS_4K_32BIT = 0xCF;
+// Flags: 4KiB granularity, 32-bit protected mode
+static constexpr uint8_t FLAGS_4K_32BIT = 0xCF;
 
-    // Maximum segment limit (20-bit, scaled by granularity)
-    static constexpr uint32_t SEGMENT_LIMIT = 0xFFFFF;
+// Maximum segment limit (20-bit, scaled by granularity)
+static constexpr uint32_t SEGMENT_LIMIT = 0xFFFFF;
 
-    struct Entry {
-        uint16_t limit_low;
-        uint16_t base_low;
-        uint8_t base_mid;
-        uint8_t access;
-        uint8_t granularity;
-        uint8_t base_high;
-    } __attribute__((packed));
+struct Entry {
+  uint16_t limit_low;
+  uint16_t base_low;
+  uint8_t base_mid;
+  uint8_t access;
+  uint8_t granularity;
+  uint8_t base_high;
+} __attribute__((packed));
 
-    struct Descriptor {
-        uint16_t size;     // Size of GDT in bytes - 1: (8 * entry) - 1
-        uintptr_t offset;  // GDT linear address
-    } __attribute__((packed));
+struct Descriptor {
+  uint16_t size;     // Size of GDT in bytes - 1: (8 * entry) - 1
+  uintptr_t offset;  // GDT linear address
+} __attribute__((packed));
 
-    void init();
-    bool is_initialized();
+void init();
+bool is_initialized();
 }  // namespace GDT

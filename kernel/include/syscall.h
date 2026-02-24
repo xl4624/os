@@ -8,9 +8,9 @@
 
 namespace Syscall {
 
-    // Register IDT entry 0x80 as a user-callable interrupt gate.
-    // Must be called after Interrupt::init().
-    void init();
+// Register IDT entry 0x80 as a user-callable interrupt gate.
+// Must be called after Interrupt::init().
+void init();
 
 }  // namespace Syscall
 

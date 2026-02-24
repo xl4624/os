@@ -4,6 +4,6 @@
 
 namespace std {
 
-    using va_list = ::va_list;
+using va_list = ::va_list;
 
 }  // namespace std

@@ -17,47 +17,46 @@
 
 namespace AddressSpace {
 
-    // Kernel PDE range: indices 768–1023 (0xC0000000 / 4 MiB per entry = 768).
-    static constexpr uint32_t kKernelPdeStart = KERNEL_VMA >> 22;
+// Kernel PDE range: indices 768–1023 (0xC0000000 / 4 MiB per entry = 768).
+static constexpr uint32_t kKernelPdeStart = KERNEL_VMA >> 22;
 
-    // Allocate a new page directory with kernel mappings copied from
-    // boot_page_directory and user entries zeroed.
-    // Returns the physical and virtual addresses of the new page directory.
-    struct PageDir {
-        paddr_t phys;
-        PageTable *virt;
-    };
-    PageDir create();
+// Allocate a new page directory with kernel mappings copied from
+// boot_page_directory and user entries zeroed.
+// Returns the physical and virtual addresses of the new page directory.
+struct PageDir {
+  paddr_t phys;
+  PageTable* virt;
+};
+PageDir create();
 
-    // Duplicate src_pd into a fresh address space by eagerly copying every
-    // user-space physical page (PDE indices 0..kKernelPdeStart-1).
-    // Kernel PDEs are shared, as with create().
-    // Panics if physical memory is exhausted.
-    PageDir copy(const PageTable *src_pd);
+// Duplicate src_pd into a fresh address space by eagerly copying every
+// user-space physical page (PDE indices 0..kKernelPdeStart-1).
+// Kernel PDEs are shared, as with create().
+// Panics if physical memory is exhausted.
+PageDir copy(const PageTable* src_pd);
 
-    // Map a single page in a specific page directory.
-    // The page directory does not need to be the currently loaded one.
-    void map(PageTable *pd, vaddr_t virt, paddr_t phys, bool writeable,
-             bool user);
+// Map a single page in a specific page directory.
+// The page directory does not need to be the currently loaded one.
+void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user);
 
-    // Unmap a single page from a page directory, freeing its physical frame.
-    // Invalidates the TLB entry for `virt` via invlpg. No-op if not mapped.
-    void unmap(PageTable *pd, vaddr_t virt);
+// Unmap a single page from a page directory, freeing its physical frame.
+// Invalidates the TLB entry for `virt` via invlpg. No-op if not mapped.
+void unmap(PageTable* pd, vaddr_t virt);
 
-    // Copy current kernel PDE entries (768–1023) from boot_page_directory
-    // into the given page directory. Call before switching to this address
-    // space to pick up any new kernel mappings (e.g. heap growth).
-    void sync_kernel_mappings(PageTable *pd);
+// Copy current kernel PDE entries (768–1023) from boot_page_directory
+// into the given page directory. Call before switching to this address
+// space to pick up any new kernel mappings (e.g. heap growth).
+void sync_kernel_mappings(PageTable* pd);
 
-    // Load a page directory into CR3, switching the active address space.
-    void load(paddr_t pd_phys);
+// Load a page directory into CR3, switching the active address space.
+void load(paddr_t pd_phys);
 
-    // Free all user-space pages and page tables owned by this page directory,
-    // then free the page directory page itself.
-    void destroy(PageTable *pd, paddr_t pd_phys);
+// Free all user-space pages and page tables owned by this page directory,
+// then free the page directory page itself.
+void destroy(PageTable* pd, paddr_t pd_phys);
 
-    // Returns true if the page containing va is present in pd and is
-    // user-accessible. If writeable is true, also requires the PTE rw bit.
-    bool is_user_mapped(const PageTable *pd, vaddr_t va, bool writeable);
+// Returns true if the page containing va is present in pd and is
+// user-accessible. If writeable is true, also requires the PTE rw bit.
+bool is_user_mapped(const PageTable* pd, vaddr_t va, bool writeable);
 
 }  // namespace AddressSpace

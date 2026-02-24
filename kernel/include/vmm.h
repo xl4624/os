@@ -20,30 +20,29 @@
 
 namespace VMM {
 
-    // Map the virtual page at `virt` to the physical page at `phys`.
-    // - Both addresses must be PAGE_SIZE-aligned.
-    // - writeable: if true the page is writable from ring-0 (and ring-3 when
-    // user).
-    // - user: if true the page is also accessible from ring-3.
-    // Remapping an already-mapped virtual page is allowed.
-    void map(vaddr_t virt, paddr_t phys, bool writeable = true,
-             bool user = false);
+// Map the virtual page at `virt` to the physical page at `phys`.
+// - Both addresses must be PAGE_SIZE-aligned.
+// - writeable: if true the page is writable from ring-0 (and ring-3 when
+// user).
+// - user: if true the page is also accessible from ring-3.
+// Remapping an already-mapped virtual page is allowed.
+void map(vaddr_t virt, paddr_t phys, bool writeable = true, bool user = false);
 
-    // Remove the mapping for the virtual page at `virt`.
-    // No-op if the address is not currently mapped.
-    // The caller is responsible for freeing the backing physical frame.
-    void unmap(vaddr_t virt);
+// Remove the mapping for the virtual page at `virt`.
+// No-op if the address is not currently mapped.
+// The caller is responsible for freeing the backing physical frame.
+void unmap(vaddr_t virt);
 
-    // Translate `virt` to its backing physical address.
-    // Returns 0 if `virt` is not mapped.
-    // The low 12 bits of `virt` (the page offset) are preserved in the result.
-    [[nodiscard]]
-    paddr_t get_phys(vaddr_t virt);
+// Translate `virt` to its backing physical address.
+// Returns 0 if `virt` is not mapped.
+// The low 12 bits of `virt` (the page offset) are preserved in the result.
+[[nodiscard]]
+paddr_t get_phys(vaddr_t virt);
 
-    // Flush the entire TLB by reloading CR3 with its current value.
-    // Use when switching address spaces (loading a new page directory).
-    // For single-page invalidation prefer the cheaper `invlpg` instruction,
-    // as used internally by map() and unmap().
-    void flush_tlb();
+// Flush the entire TLB by reloading CR3 with its current value.
+// Use when switching address spaces (loading a new page directory).
+// For single-page invalidation prefer the cheaper `invlpg` instruction,
+// as used internally by map() and unmap().
+void flush_tlb();
 
 }  // namespace VMM

@@ -16,16 +16,15 @@
  * which is the reverse of the push order.
  */
 struct TrapFrame {
-    // Pushed last by pushal (EDI at lowest address, EAX at highest).
-    uint32_t edi, esi, ebp, esp_dummy, ebx, edx, ecx, eax;
-    // Pushed before pushal: ds pushed last (lowest), gs pushed first (highest).
-    uint32_t ds, es, fs, gs;
-    // Pushed by CPU on privilege-level change (EIP lowest, SS highest).
-    uint32_t eip, cs, eflags, user_esp, user_ss;
+  // Pushed last by pushal (EDI at lowest address, EAX at highest).
+  uint32_t edi, esi, ebp, esp_dummy, ebx, edx, ecx, eax;
+  // Pushed before pushal: ds pushed last (lowest), gs pushed first (highest).
+  uint32_t ds, es, fs, gs;
+  // Pushed by CPU on privilege-level change (EIP lowest, SS highest).
+  uint32_t eip, cs, eflags, user_esp, user_ss;
 } __attribute__((packed));
 
-static_assert(sizeof(TrapFrame) == 17 * 4,
-              "TrapFrame must be 17 dwords (68 bytes)");
+static_assert(sizeof(TrapFrame) == 17 * 4, "TrapFrame must be 17 dwords (68 bytes)");
 static_assert(offsetof(TrapFrame, edi) == 0, "edi at offset 0");
 static_assert(offsetof(TrapFrame, eax) == 28, "eax at offset 28");
 static_assert(offsetof(TrapFrame, ds) == 32, "ds at offset 32");
@@ -34,10 +33,10 @@ static_assert(offsetof(TrapFrame, user_ss) == 64, "user_ss at offset 64");
 
 // Process states for the scheduler.
 enum class ProcessState : uint8_t {
-    Ready,
-    Running,
-    Blocked,
-    Zombie,
+  Ready,
+  Running,
+  Blocked,
+  Zombie,
 };
 
 // Per-process kernel stack size (2 pages = 8 KiB).
@@ -49,8 +48,7 @@ static constexpr uint32_t kMaxProcesses = 64;
 // User-space stack layout for newly created processes.
 static constexpr vaddr_t kUserStackVA = 0x00BFC000;
 static constexpr uint32_t kUserStackPages = 4;
-static constexpr vaddr_t kUserStackTop =
-    kUserStackVA + kUserStackPages * PAGE_SIZE;
+static constexpr vaddr_t kUserStackTop = kUserStackVA + kUserStackPages * PAGE_SIZE;
 
 /*
  * Process Control Block (PCB).
@@ -60,15 +58,15 @@ static constexpr vaddr_t kUserStackTop =
  * of processes via the `next` pointer.
  */
 struct Process {
-    uint32_t pid;
-    uint32_t parent_pid;  // pid of the parent process (0 for root processes)
-    ProcessState state;
-    uint32_t kernel_esp;  // saved kernel stack pointer (into kernel_stack)
-    paddr_t page_directory_phys;  // CR3 value for this process
-    PageTable *page_directory;    // virtual pointer to page directory
-    uint8_t *kernel_stack;  // base of allocated kernel stack (for cleanup)
-    vaddr_t heap_break;     // current program break for sbrk
-    uint64_t wake_tick;     // tick at which a sleeping process should wake
-    int32_t exit_code;      // exit code stored when process becomes zombie
-    Process *next;          // intrusive list pointer (ready/blocked queues)
+  uint32_t pid;
+  uint32_t parent_pid;  // pid of the parent process (0 for root processes)
+  ProcessState state;
+  uint32_t kernel_esp;          // saved kernel stack pointer (into kernel_stack)
+  paddr_t page_directory_phys;  // CR3 value for this process
+  PageTable* page_directory;    // virtual pointer to page directory
+  uint8_t* kernel_stack;        // base of allocated kernel stack (for cleanup)
+  vaddr_t heap_break;           // current program break for sbrk
+  uint64_t wake_tick;           // tick at which a sleeping process should wake
+  int32_t exit_code;            // exit code stored when process becomes zombie
+  Process* next;                // intrusive list pointer (ready/blocked queues)
 };

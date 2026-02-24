@@ -20,43 +20,41 @@ static constexpr uint16_t PIT_DIVISOR =
 
 namespace {
 
-    volatile uint64_t ticks = 0;
-    bool initialized = false;
+volatile uint64_t ticks = 0;
+bool initialized = false;
 
 }  // namespace
 
 namespace PIT {
 
-    void init() {
-        assert(!initialized && "PIT::init(): called more than once");
+void init() {
+  assert(!initialized && "PIT::init(): called more than once");
 
-        outb(PIT_COMMAND, PIT_CMD_CHANNEL0_RATE);
-        outb(PIT_CHANNEL0_DATA, static_cast<uint8_t>(PIT_DIVISOR & 0xFF));
-        outb(PIT_CHANNEL0_DATA, static_cast<uint8_t>(PIT_DIVISOR >> 8));
+  outb(PIT_COMMAND, PIT_CMD_CHANNEL0_RATE);
+  outb(PIT_CHANNEL0_DATA, static_cast<uint8_t>(PIT_DIVISOR & 0xFF));
+  outb(PIT_CHANNEL0_DATA, static_cast<uint8_t>(PIT_DIVISOR >> 8));
 
-        initialized = true;
-    }
+  initialized = true;
+}
 
-    void tick() {
-        ++ticks;
-    }
+void tick() { ++ticks; }
 
-    uint64_t get_ticks() {
-        assert(initialized && "PIT::get_ticks(): called before PIT::init()");
-        return ticks;
-    }
+uint64_t get_ticks() {
+  assert(initialized && "PIT::get_ticks(): called before PIT::init()");
+  return ticks;
+}
 
-    void sleep_ticks(uint64_t n) {
-        assert(initialized && "PIT::sleep_ticks(): called before PIT::init()");
-        const uint64_t target = ticks + n;
-        while (ticks < target) {
-            asm volatile("hlt");
-        }
-    }
+void sleep_ticks(uint64_t n) {
+  assert(initialized && "PIT::sleep_ticks(): called before PIT::init()");
+  const uint64_t target = ticks + n;
+  while (ticks < target) {
+    asm volatile("hlt");
+  }
+}
 
-    void sleep_ms(uint32_t ms) {
-        assert(initialized && "PIT::sleep_ms(): called before PIT::init()");
-        sleep_ticks((static_cast<uint64_t>(ms) + 9) / 10);
-    }
+void sleep_ms(uint32_t ms) {
+  assert(initialized && "PIT::sleep_ms(): called before PIT::init()");
+  sleep_ticks((static_cast<uint64_t>(ms) + 9) / 10);
+}
 
 }  // namespace PIT

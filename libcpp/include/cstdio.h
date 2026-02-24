@@ -4,10 +4,10 @@
 
 namespace std {
 
-    using ::getchar;
-    using ::printf;
-    using ::putchar;
-    using ::puts;
-    using ::vprintf;
+using ::getchar;
+using ::printf;
+using ::putchar;
+using ::puts;
+using ::vprintf;
 
 }  // namespace std

@@ -16,21 +16,21 @@
 
 namespace PIC {
 
-    // Remap both PICs so IRQs 0–15 arrive on vectors 32–47, then mask all
-    // IRQ lines. Must be called before enabling interrupts.
-    void init();
+// Remap both PICs so IRQs 0–15 arrive on vectors 32–47, then mask all
+// IRQ lines. Must be called before enabling interrupts.
+void init();
 
-    // Signal end-of-interrupt to the PIC(s). Must be called at the end of
-    // every IRQ handler. Sends EOI to the slave as well if irq >= 8.
-    void send_eoi(uint8_t irq);
+// Signal end-of-interrupt to the PIC(s). Must be called at the end of
+// every IRQ handler. Sends EOI to the slave as well if irq >= 8.
+void send_eoi(uint8_t irq);
 
-    // Suppress interrupts from the given IRQ line (0–15).
-    void mask(uint8_t irq);
+// Suppress interrupts from the given IRQ line (0–15).
+void mask(uint8_t irq);
 
-    // Allow interrupts from the given IRQ line (0–15).
-    void unmask(uint8_t irq);
+// Allow interrupts from the given IRQ line (0–15).
+void unmask(uint8_t irq);
 
-    // Mask all IRQ lines on both PICs (write 0xFF to both data ports).
-    void disable();
+// Mask all IRQ lines on both PICs (write 0xFF to both data ports).
+void disable();
 
 }  // namespace PIC

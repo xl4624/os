@@ -15,16 +15,16 @@ static constexpr uint8_t kPS2StatusInputFull = 0x02;
 
 // PS/2 Keyboard commands (sent to data port)
 enum class PS2Command : uint8_t {
-    SetLEDs = 0xED,
-    Echo = 0xEE,
-    GetScanCodeSet = 0xF0,
-    Identify = 0xF2,
-    SetTypematicRate = 0x3,
-    EnableScanning = 0xF4,
-    DisableScanning = 0xF5,
-    SetDefaults = 0xF6,
-    Resend = 0xFE,
-    Reset = 0xFF,
+  SetLEDs = 0xED,
+  Echo = 0xEE,
+  GetScanCodeSet = 0xF0,
+  Identify = 0xF2,
+  SetTypematicRate = 0x3,
+  EnableScanning = 0xF4,
+  DisableScanning = 0xF5,
+  SetDefaults = 0xF6,
+  Resend = 0xFE,
+  Reset = 0xFF,
 };
 
 // PS/2 Keyboard response codes (received from data port)
@@ -42,10 +42,10 @@ static constexpr size_t kPS2CommandQueueSize = 8;
  * Contains command byte, optional parameter, and retry tracking.
  */
 struct PS2CommandEntry {
-    PS2Command command;
-    uint8_t parameter = 0;
-    bool has_parameter = false;
-    int retry_count = 0;
+  PS2Command command;
+  uint8_t parameter = 0;
+  bool has_parameter = false;
+  int retry_count = 0;
 };
 
 /**
@@ -53,9 +53,9 @@ struct PS2CommandEntry {
  * Idle -> WaitingForAck (-> WaitingForData) -> Idle
  */
 enum class PS2State : uint8_t {
-    Idle,
-    WaitingForAck,
-    WaitingForData,
+  Idle,
+  WaitingForAck,
+  WaitingForData,
 };
 
 /**
@@ -66,71 +66,71 @@ enum class PS2State : uint8_t {
  * via 0xFE. This class handles the state machine and queuing.
  */
 class PS2CommandQueue {
-   public:
-    PS2CommandQueue();
-    ~PS2CommandQueue() = default;
+ public:
+  PS2CommandQueue();
+  ~PS2CommandQueue() = default;
 
-    PS2CommandQueue(const PS2CommandQueue &) = delete;
-    PS2CommandQueue &operator=(const PS2CommandQueue &) = delete;
+  PS2CommandQueue(const PS2CommandQueue&) = delete;
+  PS2CommandQueue& operator=(const PS2CommandQueue&) = delete;
 
-    /**
-     * Queues a command without parameters.
-     * Returns true if queued, false if queue is full.
-     */
-    [[nodiscard]]
-    bool send_command(PS2Command command);
+  /**
+   * Queues a command without parameters.
+   * Returns true if queued, false if queue is full.
+   */
+  [[nodiscard]]
+  bool send_command(PS2Command command);
 
-    /**
-     * Queues a command with a parameter byte.
-     * Returns true if queued, false if queue is full.
-     */
-    [[nodiscard]]
-    bool send_command_with_param(PS2Command command, uint8_t parameter);
+  /**
+   * Queues a command with a parameter byte.
+   * Returns true if queued, false if queue is full.
+   */
+  [[nodiscard]]
+  bool send_command_with_param(PS2Command command, uint8_t parameter);
 
-    /**
-     * Returns true when no commands are pending and state machine is idle.
-     * Use this to wait for command completion before continuing.
-     */
-    [[nodiscard]]
-    bool is_idle() const;
+  /**
+   * Returns true when no commands are pending and state machine is idle.
+   * Use this to wait for command completion before continuing.
+   */
+  [[nodiscard]]
+  bool is_idle() const;
 
-    /**
-     * Clears all pending commands and resets state machine.
-     */
-    void flush();
+  /**
+   * Clears all pending commands and resets state machine.
+   */
+  void flush();
 
-    /**
-     * Processes a byte from the keyboard hardware.
-     *
-     * Must be called for every byte received from the keyboard before
-     * interpreting it as a scancode. Returns true if the byte was
-     * consumed as a command response (ACK, Resend, etc.).
-     *
-     * Returns true if consumed as command response, false if it's a scancode.
-     */
-    [[nodiscard]]
-    bool process_byte(uint8_t data);
+  /**
+   * Processes a byte from the keyboard hardware.
+   *
+   * Must be called for every byte received from the keyboard before
+   * interpreting it as a scancode. Returns true if the byte was
+   * consumed as a command response (ACK, Resend, etc.).
+   *
+   * Returns true if consumed as command response, false if it's a scancode.
+   */
+  [[nodiscard]]
+  bool process_byte(uint8_t data);
 
-   private:
-    /**
-     * Sends next command in queue. Assumes queue is non-empty.
-     * Sets state to WaitingForAck before sending to avoid race with IRQ.
-     */
-    void process_next();
+ private:
+  /**
+   * Sends next command in queue. Assumes queue is non-empty.
+   * Sets state to WaitingForAck before sending to avoid race with IRQ.
+   */
+  void process_next();
 
-    /**
-     * Sends byte to keyboard controller data port.
-     * Spins until input buffer is ready.
-     */
-    void send_byte(uint8_t data);
+  /**
+   * Sends byte to keyboard controller data port.
+   * Spins until input buffer is ready.
+   */
+  void send_byte(uint8_t data);
 
-    /**
-     * Returns true when keyboard controller input buffer is empty.
-     */
-    [[nodiscard]]
-    bool can_send() const;
+  /**
+   * Returns true when keyboard controller input buffer is empty.
+   */
+  [[nodiscard]]
+  bool can_send() const;
 
-    RingBuffer<PS2CommandEntry, kPS2CommandQueueSize> queue_;
-    PS2State state_;
-    static constexpr int kMaxRetries = 3;
+  RingBuffer<PS2CommandEntry, kPS2CommandQueueSize> queue_;
+  PS2State state_;
+  static constexpr int kMaxRetries = 3;
 };

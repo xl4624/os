@@ -19,8 +19,11 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(dir $@)
 	$(AR) rcs $@ $^
 
+DEPS := $(OBJS:.o=.d)
+-include $(DEPS)
+
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) $(DEPS)
 
 install: install-headers install-libs
 

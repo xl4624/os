@@ -15,6 +15,7 @@
 #define SYS_SBRK 4
 #define SYS_GETPID 5
 #define SYS_EXEC 6
-#define SYS_MAX 7
+#define SYS_FORK 7
+#define SYS_MAX 8
 
 #endif

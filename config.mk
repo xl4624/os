@@ -17,4 +17,4 @@ BUILDDIR ?= build
 
 # ==== Common Flags ====
 BASE_CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include -O2 -g \
-               -ffreestanding -Wall -Wextra -Wpedantic -Wconversion
+               -ffreestanding -Wall -Wextra -Wpedantic -Wconversion -MMD -MP

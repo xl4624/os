@@ -61,6 +61,7 @@ static constexpr vaddr_t kUserStackTop =
  */
 struct Process {
     uint32_t pid;
+    uint32_t parent_pid;  // pid of the parent process (0 for root processes)
     ProcessState state;
     uint32_t kernel_esp;  // saved kernel stack pointer (into kernel_stack)
     paddr_t page_directory_phys;  // CR3 value for this process

@@ -8,6 +8,8 @@ static constexpr uint32_t PAGE_SIZE = 1U << PAGE_OFFSET_BITS;
 static constexpr uint32_t PAGE_TABLE_BITS = 10;
 static constexpr uint32_t PAGES_PER_TABLE = 1U << PAGE_TABLE_BITS;
 
+static constexpr uintptr_t KERNEL_VMA = 0xC0000000;
+
 struct paddr_t {
     constexpr paddr_t(uintptr_t v = 0) : value(v) {}
     template <typename T>
@@ -131,8 +133,6 @@ struct vaddr_t {
    private:
     uintptr_t value;
 };
-
-static constexpr uintptr_t KERNEL_VMA = 0xC0000000;
 
 [[nodiscard]]
 static constexpr paddr_t virt_to_phys(vaddr_t vaddr) {

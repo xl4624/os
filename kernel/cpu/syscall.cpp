@@ -219,6 +219,12 @@ static int32_t sys_exec(TrapFrame *regs) {
     return 0;
 }
 
+// SYS_FORK()
+// Returns child PID to parent, 0 to child, or -1 on failure.
+static int32_t sys_fork(TrapFrame *regs) {
+    return static_cast<int32_t>(Scheduler::fork_current(regs));
+}
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -233,6 +239,7 @@ static syscall_fn syscall_table[SYS_MAX] = {
     sys_sbrk,    // 4
     sys_getpid,  // 5
     sys_exec,    // 6
+    sys_fork,    // 7
 };
 
 __BEGIN_DECLS

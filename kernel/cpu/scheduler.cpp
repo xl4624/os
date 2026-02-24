@@ -379,6 +379,47 @@ namespace Scheduler {
         return p;
     }
 
+    uint32_t fork_current(const TrapFrame *parent_regs) {
+        assert(current_process != idle_process
+               && "fork_current(): cannot fork idle process");
+
+        Process *child = alloc_process();
+        if (!child) {
+            return static_cast<uint32_t>(-1);
+        }
+
+        auto [child_pd_phys, child_pd] =
+            AddressSpace::copy(current_process->page_directory);
+        child->page_directory_phys = child_pd_phys;
+        child->page_directory = child_pd;
+        child->heap_break = current_process->heap_break;
+        child->parent_pid = current_process->pid;
+
+        child->kernel_stack =
+            reinterpret_cast<uint8_t *>(kmalloc(kKernelStackSize));
+        assert(child->kernel_stack
+               && "fork_current(): failed to allocate kernel stack");
+        memset(child->kernel_stack, 0, kKernelStackSize);
+
+        // Place a copy of the parent's TrapFrame at the top of the child's
+        // kernel stack. The child returns 0 from fork().
+        auto *kstack_top = reinterpret_cast<uint32_t *>(child->kernel_stack
+                                                        + kKernelStackSize);
+        auto *child_frame = reinterpret_cast<TrapFrame *>(
+            reinterpret_cast<uintptr_t>(kstack_top) - sizeof(TrapFrame));
+
+        *child_frame = *parent_regs;
+        child_frame->eax = 0;
+
+        child->kernel_esp = reinterpret_cast<uint32_t>(child_frame);
+
+        enqueue_ready(child);
+
+        printf("Scheduler: forked process %u -> child %u\n",
+               current_process->pid, child->pid);
+        return child->pid;
+    }
+
     Process *current() {
         return current_process;
     }

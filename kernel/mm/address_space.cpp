@@ -17,7 +17,7 @@ namespace {
         return va >> (PAGE_TABLE_BITS + PAGE_OFFSET_BITS);
     }
 
-    // Middle 10 bits of a virtual address → page table index.
+    // Middle 10 bits of a virtual address -> page table index.
     constexpr uint32_t pt_index(vaddr_t va) {
         return (va >> PAGE_OFFSET_BITS) & (PAGES_PER_TABLE - 1);
     }
@@ -123,6 +123,41 @@ namespace AddressSpace {
             return false;
         }
         return true;
+    }
+
+    PageDir copy(const PageTable *src_pd) {
+        auto [new_phys, new_pd] = create();
+
+        for (uint32_t pdi = 0; pdi < kKernelPdeStart; ++pdi) {
+            const PageEntry &pde = src_pd->entry[pdi];
+            if (!pde.present) {
+                continue;
+            }
+
+            const auto *src_pt =
+                phys_to_virt(frame_to_phys(pde.frame)).ptr<const PageTable>();
+
+            for (uint32_t pti = 0; pti < PAGES_PER_TABLE; ++pti) {
+                const PageEntry &pte = src_pt->entry[pti];
+                if (!pte.present) {
+                    continue;
+                }
+
+                paddr_t new_page = kPmm.alloc();
+                assert(new_page
+                       && "AddressSpace::copy(): out of physical memory\n");
+
+                const auto *src =
+                    phys_to_virt(frame_to_phys(pte.frame)).ptr<const uint8_t>();
+                auto *dst = phys_to_virt(new_page).ptr<uint8_t>();
+                memcpy(dst, src, PAGE_SIZE);
+
+                const vaddr_t va{(pdi << 22u) | (pti << PAGE_OFFSET_BITS)};
+                map(new_pd, va, new_page, pte.rw != 0, pte.user != 0);
+            }
+        }
+
+        return {new_phys, new_pd};
     }
 
     void destroy(PageTable *pd, paddr_t pd_phys) {

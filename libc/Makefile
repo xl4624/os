@@ -31,8 +31,11 @@ $(TARGET_C): $(COBJS)
 	@mkdir -p $(dir $@)
 	$(AR) rcs $@ $^
 
+DEPS := $(KOBJS:.o=.d) $(COBJS:.o=.d)
+-include $(DEPS)
+
 clean:
-	rm -f $(KOBJS) $(COBJS) $(TARGET_K) $(TARGET_C)
+	rm -f $(KOBJS) $(COBJS) $(TARGET_K) $(TARGET_C) $(DEPS)
 
 install: install-headers install-libs
 

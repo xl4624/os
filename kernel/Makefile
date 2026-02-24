@@ -37,8 +37,11 @@ $(BUILDDIR)/kernel/%.o: ./%.S
 	@mkdir -p $(dir $@)
 	$(AS) $< -o $@
 
+DEPS := $(OBJS:.o=.d)
+-include $(DEPS)
+
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(DEPS)
 
 install:
 	mkdir -p $(SYSROOT)$(INCLUDEDIR)

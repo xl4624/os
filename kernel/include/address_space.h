@@ -29,6 +29,12 @@ namespace AddressSpace {
     };
     PageDir create();
 
+    // Duplicate src_pd into a fresh address space by eagerly copying every
+    // user-space physical page (PDE indices 0..kKernelPdeStart-1).
+    // Kernel PDEs are shared, as with create().
+    // Panics if physical memory is exhausted.
+    PageDir copy(const PageTable *src_pd);
+
     // Map a single page in a specific page directory.
     // The page directory does not need to be the currently loaded one.
     void map(PageTable *pd, vaddr_t virt, paddr_t phys, bool writeable,

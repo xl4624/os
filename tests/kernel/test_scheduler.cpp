@@ -49,6 +49,121 @@ TEST(address_space, map_user_page) {
 }
 
 // ---------------------------------------------------------------------------
+// AddressSpace::copy
+// ---------------------------------------------------------------------------
+
+TEST(address_space, copy_empty_has_kernel_pdes) {
+    // An empty address space (no user pages) can be copied; the result is a
+    // distinct page directory that still shares all kernel PDEs.
+    auto [src_phys, src_pd] = AddressSpace::create();
+    auto [dst_phys, dst_pd] = AddressSpace::copy(src_pd);
+
+    ASSERT_NOT_NULL(dst_pd);
+    ASSERT_NE(dst_phys, src_phys);
+
+    for (uint32_t i = AddressSpace::kKernelPdeStart; i < PAGES_PER_TABLE; ++i) {
+        ASSERT_EQ(dst_pd->entry[i].present,
+                  boot_page_directory.entry[i].present);
+        if (dst_pd->entry[i].present) {
+            ASSERT_EQ(dst_pd->entry[i].frame,
+                      boot_page_directory.entry[i].frame);
+        }
+    }
+
+    AddressSpace::destroy(src_pd, src_phys);
+    AddressSpace::destroy(dst_pd, dst_phys);
+}
+
+TEST(address_space, copy_propagates_user_mapping) {
+    // A user page mapped in the source must appear at the same virtual address
+    // in the copy, with the same access flags.
+    auto [src_phys, src_pd] = AddressSpace::create();
+    paddr_t page = kPmm.alloc();
+    ASSERT_NE(page, 0u);
+    AddressSpace::map(src_pd, 0x00400000, page, /*writeable=*/true,
+                      /*user=*/true);
+
+    auto [dst_phys, dst_pd] = AddressSpace::copy(src_pd);
+    ASSERT_NOT_NULL(dst_pd);
+
+    ASSERT_TRUE(
+        AddressSpace::is_user_mapped(dst_pd, 0x00400000, /*writeable=*/true));
+
+    AddressSpace::destroy(src_pd, src_phys);
+    AddressSpace::destroy(dst_pd, dst_phys);
+}
+
+TEST(address_space, copy_uses_distinct_physical_frames) {
+    // The copied page must be backed by a different physical frame so writes
+    // in one address space do not affect the other.
+    auto [src_phys, src_pd] = AddressSpace::create();
+    paddr_t page = kPmm.alloc();
+    ASSERT_NE(page, 0u);
+    AddressSpace::map(src_pd, 0x00400000, page, /*writeable=*/true,
+                      /*user=*/true);
+
+    auto [dst_phys, dst_pd] = AddressSpace::copy(src_pd);
+    ASSERT_NOT_NULL(dst_pd);
+
+    const uint32_t pdi = 0x00400000 >> 22;
+    const uint32_t pti = (0x00400000 >> 12) & 0x3FF;
+    const auto &src_pde = src_pd->entry[pdi];
+    const auto &dst_pde = dst_pd->entry[pdi];
+    ASSERT_EQ(src_pde.present, 1u);
+    ASSERT_EQ(dst_pde.present, 1u);
+
+    const auto *src_pt =
+        phys_to_virt(
+            paddr_t{static_cast<uintptr_t>(src_pde.frame) << PAGE_OFFSET_BITS})
+            .ptr<const PageTable>();
+    const auto *dst_pt =
+        phys_to_virt(
+            paddr_t{static_cast<uintptr_t>(dst_pde.frame) << PAGE_OFFSET_BITS})
+            .ptr<const PageTable>();
+
+    ASSERT_NE(src_pt->entry[pti].frame, dst_pt->entry[pti].frame);
+
+    AddressSpace::destroy(src_pd, src_phys);
+    AddressSpace::destroy(dst_pd, dst_phys);
+}
+
+TEST(address_space, copy_replicates_page_data) {
+    // Page contents from the source must be present verbatim in the copy.
+    auto [src_phys, src_pd] = AddressSpace::create();
+    paddr_t page = kPmm.alloc();
+    ASSERT_NE(page, 0u);
+
+    uint8_t *src_data = phys_to_virt(page).ptr<uint8_t>();
+    for (uint32_t i = 0; i < PAGE_SIZE; ++i) {
+        src_data[i] = static_cast<uint8_t>(i & 0xFF);
+    }
+    AddressSpace::map(src_pd, 0x00400000, page, /*writeable=*/true,
+                      /*user=*/true);
+
+    auto [dst_phys, dst_pd] = AddressSpace::copy(src_pd);
+    ASSERT_NOT_NULL(dst_pd);
+
+    const uint32_t pdi = 0x00400000 >> 22;
+    const uint32_t pti = (0x00400000 >> 12) & 0x3FF;
+    const auto &dst_pde = dst_pd->entry[pdi];
+    ASSERT_EQ(dst_pde.present, 1u);
+
+    const auto *dst_pt =
+        phys_to_virt(
+            paddr_t{static_cast<uintptr_t>(dst_pde.frame) << PAGE_OFFSET_BITS})
+            .ptr<const PageTable>();
+    const uint8_t *dst_data =
+        phys_to_virt(paddr_t{static_cast<uintptr_t>(dst_pt->entry[pti].frame)
+                             << PAGE_OFFSET_BITS})
+            .ptr<const uint8_t>();
+
+    ASSERT_EQ(memcmp(src_data, dst_data, PAGE_SIZE), 0);
+
+    AddressSpace::destroy(src_pd, src_phys);
+    AddressSpace::destroy(dst_pd, dst_phys);
+}
+
+// ---------------------------------------------------------------------------
 // Scheduler
 // ---------------------------------------------------------------------------
 

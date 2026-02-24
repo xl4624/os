@@ -64,6 +64,12 @@ namespace Scheduler {
     // then switch to the next ready process.
     void sleep_current(uint32_t ms);
 
+    // Create a child process as an exact copy of the current process.
+    // The child gets a deep copy of the parent's address space.
+    // Returns the child PID to the parent, or (uint32_t)-1 on failure.
+    // The child's TrapFrame has eax=0 so fork() returns 0 in the child.
+    uint32_t fork_current(const TrapFrame *parent_regs);
+
     // Get the currently running process (nullptr before init).
     Process *current();
 

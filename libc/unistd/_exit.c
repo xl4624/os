@@ -12,7 +12,7 @@ void _exit(int status) {
     #include <sys/syscall.h>
 
 void _exit(int status) {
-    __asm__ volatile("int $0x80" ::"a"(SYS_EXIT), "b"(status));
+    asm volatile("int $0x80" ::"a"(SYS_EXIT), "b"(status));
     __builtin_unreachable();
 }
 

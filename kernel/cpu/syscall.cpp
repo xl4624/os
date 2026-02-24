@@ -225,6 +225,20 @@ static int32_t sys_fork(TrapFrame *regs) {
     return static_cast<int32_t>(Scheduler::fork_current(regs));
 }
 
+// SYS_WAITPID(pid=ebx, exit_code_ptr=ecx)
+// Blocks until a child exits, returns child PID on success.
+// exit_code_ptr (if non-null) receives the child's exit code.
+// Returns 0 if blocked (will be restarted by scheduler), or -1 on error.
+static int32_t sys_waitpid(TrapFrame *regs) {
+    auto pid = static_cast<int32_t>(regs->ebx);
+    uint32_t exit_code_ptr = regs->ecx;
+    int32_t *exit_code = nullptr;
+    if (exit_code_ptr != 0) {
+        exit_code = reinterpret_cast<int32_t *>(exit_code_ptr);
+    }
+    return Scheduler::waitpid_current(pid, exit_code);
+}
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -232,14 +246,15 @@ static int32_t sys_fork(TrapFrame *regs) {
 using syscall_fn = int32_t (*)(TrapFrame *);
 
 static syscall_fn syscall_table[SYS_MAX] = {
-    sys_exit,    // 0
-    sys_read,    // 1
-    sys_write,   // 2
-    sys_sleep,   // 3
-    sys_sbrk,    // 4
-    sys_getpid,  // 5
-    sys_exec,    // 6
-    sys_fork,    // 7
+    sys_exit,     // 0
+    sys_read,     // 1
+    sys_write,    // 2
+    sys_sleep,    // 3
+    sys_sbrk,     // 4
+    sys_getpid,   // 5
+    sys_exec,     // 6
+    sys_fork,     // 7
+    sys_waitpid,  // 8
 };
 
 __BEGIN_DECLS

@@ -12,7 +12,7 @@ void msleep(unsigned int ms) {
 
 void msleep(unsigned int ms) {
     int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_SLEEP), "b"(ms));
+    asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SLEEP), "b"(ms));
     (void)ret;
 }
 

@@ -2,19 +2,16 @@
 
 #if defined(__is_libk)
 
-    #include "tty.h"
-
 void set_cursor(unsigned int row, unsigned int col) {
-    terminal_set_position(row, col);
+    (void)row;
+    (void)col;
 }
 
 void set_color(unsigned char color) {
-    terminal_set_color(color);
+    (void)color;
 }
 
-void clear_screen(void) {
-    terminal_clear();
-}
+void clear_screen(void) {}
 
 #elif defined(__is_libc)
 

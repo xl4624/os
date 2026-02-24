@@ -70,6 +70,14 @@ namespace Scheduler {
     // The child's TrapFrame has eax=0 so fork() returns 0 in the child.
     uint32_t fork_current(const TrapFrame *parent_regs);
 
+    // Block until a child process exits and collect its exit code.
+    // If pid > 0, wait for that specific child.
+    // If pid == -1, wait for any child.
+    // exit_code_ptr, if non-null, receives the child's exit code.
+    // Returns child PID on success, 0 if blocked (will be restarted by
+    // scheduler), or -1 if no matching child found.
+    int32_t waitpid_current(int32_t pid, int32_t *exit_code_ptr);
+
     // Get the currently running process (nullptr before init).
     Process *current();
 

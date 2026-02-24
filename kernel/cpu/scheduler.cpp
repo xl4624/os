@@ -152,8 +152,9 @@ namespace Scheduler {
         // Create the idle process. This process runs when no other process is
         // ready to run. It uses the kernel's original stack and page tables.
         idle_process = alloc_process();
-        assert(idle_process && "Scheduler::init(): failed to allocate idle "
-                               "process");
+        assert(idle_process &&
+         "Scheduler::init(): failed to allocate idle "
+         "process");
         idle_process->state = ProcessState::Running;
         idle_process->page_directory = &boot_page_directory;
         idle_process->page_directory_phys =
@@ -227,6 +228,7 @@ namespace Scheduler {
                exit_code);
 
         current_process->state = ProcessState::Zombie;
+        current_process->exit_code = static_cast<int32_t>(exit_code);
 
         // Free address space. Must switch to boot page directory first since
         // we cannot free the currently loaded page directory.
@@ -320,9 +322,9 @@ namespace Scheduler {
 
     Process *create_process(const uint8_t *elf_data, size_t elf_len,
                             const char *name) {
-        assert(initialized
-               && "Scheduler::create_process(): scheduler not "
-                  "initialized");
+        assert(initialized &&
+         "Scheduler::create_process(): scheduler not "
+         "initialized");
 
         if (!name) {
             name = "";
@@ -350,16 +352,16 @@ namespace Scheduler {
 
         // Allocate user stack and write argc/argv onto it.
         uint32_t user_esp = alloc_user_stack(pd_virt, name);
-        assert(user_esp != 0
-               && "Scheduler::create_process(): out of physical memory "
-                  "for user stack");
+        assert(user_esp != 0 &&
+         "Scheduler::create_process(): out of physical memory "
+         "for user stack");
 
         // Allocate kernel stack for system calls and interrupts.
         p->kernel_stack =
             reinterpret_cast<uint8_t *>(kmalloc(kKernelStackSize));
-        assert(p->kernel_stack
-               && "Scheduler::create_process(): failed to allocate kernel "
-                  "stack");
+        assert(p->kernel_stack &&
+         "Scheduler::create_process(): failed to allocate kernel "
+         "stack");
         memset(p->kernel_stack, 0, kKernelStackSize);
 
         // Set up initial TrapFrame for iret into user mode.
@@ -418,6 +420,33 @@ namespace Scheduler {
         printf("Scheduler: forked process %u -> child %u\n",
                current_process->pid, child->pid);
         return child->pid;
+    }
+
+    int32_t waitpid_current(int32_t pid, int32_t *exit_code_ptr) {
+        assert(current_process != idle_process
+               && "waitpid_current(): cannot wait on idle process");
+
+        while (true) {
+            for (uint32_t i = 1; i < next_pid; ++i) {
+                Process &child = process_table[i];
+                if (child.parent_pid == current_process->pid
+                    && child.state == ProcessState::Zombie) {
+                    if (exit_code_ptr) {
+                        *exit_code_ptr = child.exit_code;
+                    }
+                    uint32_t child_pid = child.pid;
+                    memset(&child, 0, sizeof(Process));
+                    return static_cast<int32_t>(child_pid);
+                }
+            }
+
+            if (pid > 0) {
+                return -1;
+            }
+
+            enqueue_blocked(current_process);
+            return 0;
+        }
     }
 
     Process *current() {

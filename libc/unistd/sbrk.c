@@ -13,7 +13,7 @@ void *sbrk(int increment) {
 
 void *sbrk(int increment) {
     int ret;
-    __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_SBRK), "b"(increment));
+    asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SBRK), "b"(increment));
     return (void *)ret;
 }
 

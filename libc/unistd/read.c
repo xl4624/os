@@ -15,9 +15,9 @@ int read(int fd, void *buf, size_t count) {
 
 int read(int fd, void *buf, size_t count) {
     int ret;
-    __asm__ volatile("int $0x80"
-                     : "=a"(ret)
-                     : "a"(SYS_READ), "b"(fd), "c"(buf), "d"(count));
+    asm volatile("int $0x80"
+                 : "=a"(ret)
+                 : "a"(SYS_READ), "b"(fd), "c"(buf), "d"(count));
     return ret;
 }
 

@@ -9,6 +9,7 @@ __BEGIN_DECLS
 __attribute__((noreturn)) void _exit(int status);
 int getpid(void);
 int fork(void);
+int waitpid(int pid, int *exit_code);
 int write(int fd, const void *buf, size_t count);
 int read(int fd, void *buf, size_t count);
 unsigned int sleep(unsigned int seconds);

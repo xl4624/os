@@ -2,10 +2,9 @@
 
 #if defined(__is_libk)
 
-int write(int fd, const void *buf, size_t count) {
-    (void)fd;
-    (void)buf;
-    (void)count;
+int waitpid(int pid, int *exit_code) {
+    (void)pid;
+    (void)exit_code;
     return -1;
 }
 
@@ -13,11 +12,11 @@ int write(int fd, const void *buf, size_t count) {
 
     #include <sys/syscall.h>
 
-int write(int fd, const void *buf, size_t count) {
+int waitpid(int pid, int *exit_code) {
     int ret;
     asm volatile("int $0x80"
                  : "=a"(ret)
-                 : "a"(SYS_WRITE), "b"(fd), "c"(buf), "d"(count));
+                 : "a"(SYS_WAITPID), "b"(pid), "c"(exit_code));
     return ret;
 }
 

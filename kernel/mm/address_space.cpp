@@ -60,8 +60,8 @@ namespace AddressSpace {
         if (!pde.present) {
             const paddr_t pt_phys = kPmm.alloc();
             assert(pt_phys &&
-                    "AddressSpace::map(): out of physical memory for page "
-                    "table\n");
+           "AddressSpace::map(): out of physical memory for page "
+           "table\n");
             if (pt_phys >= kMappedPhysEnd) {
                 panic(
                     "AddressSpace::map(): page table phys 0x%08x outside "

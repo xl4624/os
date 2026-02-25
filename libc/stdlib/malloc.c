@@ -2,7 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__is_libc)
+#if defined(__is_libk)
+
+extern void* kmalloc(size_t size);
+extern void kfree(void* ptr);
+extern void* kcalloc(size_t nmemb, size_t size);
+extern void* krealloc(void* ptr, size_t size);
+
+void* malloc(size_t size) { return kmalloc(size); }
+
+void free(void* ptr) { kfree(ptr); }
+
+void* calloc(size_t nmemb, size_t size) { return kcalloc(nmemb, size); }
+
+void* realloc(void* ptr, size_t size) { return krealloc(ptr, size); }
+
+#elif defined(__is_libc)
 
 #include <unistd.h>
 

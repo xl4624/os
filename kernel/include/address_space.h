@@ -43,6 +43,10 @@ void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user);
 // Invalidates the TLB entry for `virt` via invlpg. No-op if not mapped.
 void unmap(PageTable* pd, vaddr_t virt);
 
+// Unmap a single page without freeing the backing physical frame.
+// Used for shared memory where the physical page is owned by the shm region.
+void unmap_nofree(PageTable* pd, vaddr_t virt);
+
 // Copy current kernel PDE entries (768–1023) from boot_page_directory
 // into the given page directory. Call before switching to this address
 // space to pick up any new kernel mappings (e.g. heap growth).

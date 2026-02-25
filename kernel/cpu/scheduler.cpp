@@ -6,6 +6,7 @@
 
 #include "address_space.h"
 #include "elf.h"
+#include "file.h"
 #include "gdt.h"
 #include "heap.h"
 #include "idt.h"
@@ -13,6 +14,7 @@
 #include "pic.h"
 #include "pit.h"
 #include "pmm.h"
+#include "shm.h"
 #include "tss.h"
 
 __BEGIN_DECLS
@@ -160,6 +162,7 @@ void init() {
   idle_process->kernel_stack =
       reinterpret_cast<uint8_t*>(reinterpret_cast<uintptr_t>(stack_top) - kKernelStackSize);
   idle_process->kernel_esp = 0;  // will be set on first schedule()
+  fd_init_stdio(idle_process->fds);
 
   current_process = idle_process;
   initialized = true;
@@ -220,6 +223,18 @@ void exit_current(uint32_t exit_code) {
 
   printf("Process %u exited with code %u\n", current_process->pid, exit_code);
 
+  // Close all file descriptors before destroying the address space.
+  for (uint32_t i = 0; i < kMaxFds; ++i) {
+    if (current_process->fds[i]) {
+      file_close(current_process->fds[i]);
+      current_process->fds[i] = nullptr;
+    }
+  }
+
+  // Detach all shared memory regions so AddressSpace::destroy() does
+  // not free the shared physical pages.
+  Shm::detach_all(current_process);
+
   current_process->state = ProcessState::Zombie;
   current_process->exit_code = static_cast<int32_t>(exit_code);
 
@@ -239,6 +254,16 @@ void sleep_current(uint32_t ms) {
   current_process->wake_tick = PIT::get_ticks() + (static_cast<uint64_t>(ms) + 9) / 10;
   enqueue_blocked(current_process);
   // The schedule() call will switch away from us.
+}
+
+void block_current() {
+  assert(current_process != idle_process && "block_current(): cannot block idle process");
+
+  // TODO: This creates a 100 Hz polling loop (block, wake, retry syscall,
+  // block again). A proper wait queue on the pipe/resource would be more
+  // efficient, waking the process only when data is available.
+  current_process->wake_tick = 0;
+  enqueue_blocked(current_process);
 }
 
 uint32_t alloc_user_stack(PageTable* pd, const char* name) {
@@ -325,6 +350,8 @@ Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* nam
     return nullptr;
   }
 
+  fd_init_stdio(p->fds);
+
   auto [pd_phys, pd_virt] = AddressSpace::create();
   p->page_directory_phys = pd_phys;
   p->page_directory = pd_virt;
@@ -381,6 +408,34 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   child->page_directory = child_pd;
   child->heap_break = current_process->heap_break;
   child->parent_pid = current_process->pid;
+
+  // Inherit the parent's file descriptor table.
+  for (uint32_t i = 0; i < kMaxFds; ++i) {
+    child->fds[i] = current_process->fds[i];
+    if (child->fds[i]) {
+      child->fds[i]->ref();
+    }
+  }
+
+  // Re-map shared memory in the child. AddressSpace::copy() deep-copied
+  // all user pages, but shared memory pages should reference the same
+  // physical frames. Unmap the spurious copies and re-map the originals.
+  for (uint32_t i = 0; i < current_process->shm_mapping_count; ++i) {
+    const ShmMapping& m = current_process->shm_mappings[i];
+    ShmRegion* region = Shm::find_region(m.shm_id);
+    if (!region) {
+      continue;
+    }
+
+    for (uint32_t p = 0; p < m.num_pages; ++p) {
+      AddressSpace::unmap(child_pd, m.vaddr + p * PAGE_SIZE);
+      AddressSpace::map(child_pd, m.vaddr + p * PAGE_SIZE, region->pages[p],
+                        /*writeable=*/true, /*user=*/true);
+    }
+
+    child->shm_mappings[child->shm_mapping_count++] = m;
+    ++region->ref_count;
+  }
 
   child->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));
   assert(child->kernel_stack && "fork_current(): failed to allocate kernel stack");

@@ -3,7 +3,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "file.h"
 #include "paging.h"
+#include "shm.h"
 
 /*
  * Trap frame: full register state saved on the kernel stack when a process
@@ -61,12 +63,15 @@ struct Process {
   uint32_t pid;
   uint32_t parent_pid;  // pid of the parent process (0 for root processes)
   ProcessState state;
-  uint32_t kernel_esp;          // saved kernel stack pointer (into kernel_stack)
-  paddr_t page_directory_phys;  // CR3 value for this process
-  PageTable* page_directory;    // virtual pointer to page directory
-  uint8_t* kernel_stack;        // base of allocated kernel stack (for cleanup)
-  vaddr_t heap_break;           // current program break for sbrk
-  uint64_t wake_tick;           // tick at which a sleeping process should wake
-  int32_t exit_code;            // exit code stored when process becomes zombie
-  Process* next;                // intrusive list pointer (ready/blocked queues)
+  uint32_t kernel_esp;                       // saved kernel stack pointer (into kernel_stack)
+  paddr_t page_directory_phys;               // CR3 value for this process
+  PageTable* page_directory;                 // virtual pointer to page directory
+  uint8_t* kernel_stack;                     // base of allocated kernel stack (for cleanup)
+  vaddr_t heap_break;                        // current program break for sbrk
+  uint64_t wake_tick;                        // tick at which a sleeping process should wake
+  int32_t exit_code;                         // exit code stored when process becomes zombie
+  FileDescription* fds[kMaxFds];             // per-process file descriptor table
+  ShmMapping shm_mappings[kMaxShmMappings];  // shared memory attachments
+  uint32_t shm_mapping_count;                // number of active shm mappings
+  Process* next;                             // intrusive list pointer (ready/blocked queues)
 };

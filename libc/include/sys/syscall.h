@@ -17,6 +17,12 @@
 #define SYS_EXEC 6
 #define SYS_FORK 7
 #define SYS_WAITPID 8
-#define SYS_MAX 9
+#define SYS_PIPE 9
+#define SYS_CLOSE 10
+#define SYS_DUP2 11
+#define SYS_SHMGET 12
+#define SYS_SHMAT 13
+#define SYS_SHMDT 14
+#define SYS_MAX 15
 
 #endif

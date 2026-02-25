@@ -90,6 +90,24 @@ void unmap(PageTable* pd, vaddr_t virt) {
   asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
 }
 
+void unmap_nofree(PageTable* pd, vaddr_t virt) {
+  const uint32_t pdi = pd_index(virt);
+  PageEntry& pde = pd->entry[pdi];
+  if (!pde.present) {
+    return;
+  }
+
+  const paddr_t pt_phys = frame_to_phys(pde.frame);
+  auto* pt = phys_to_virt(pt_phys).ptr<PageTable>();
+  PageEntry& pte = pt->entry[pt_index(virt)];
+  if (!pte.present) {
+    return;
+  }
+
+  memset(&pte, 0, sizeof(pte));
+  asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
+}
+
 void sync_kernel_mappings(PageTable* pd) {
   memcpy(&pd->entry[kKernelPdeStart], &boot_page_directory.entry[kKernelPdeStart],
          (PAGES_PER_TABLE - kKernelPdeStart) * sizeof(PageEntry));

@@ -6,13 +6,17 @@
 
 #include "address_space.h"
 #include "elf.h"
+#include "file.h"
+#include "heap.h"
 #include "idt.h"
 #include "interrupt.h"
 #include "keyboard.h"
 #include "modules.h"
 #include "paging.h"
+#include "pipe.h"
 #include "pmm.h"
 #include "scheduler.h"
+#include "shm.h"
 #include "tss.h"
 #include "tty.h"
 
@@ -46,12 +50,12 @@ static bool validate_user_buffer(uint32_t ptr, uint32_t len, bool writeable) {
 // SYS_WRITE(fd=ebx, buf=ecx, count=edx)
 // Returns number of bytes written, or -1 on error.
 static int32_t sys_write(TrapFrame* regs) {
-  uint32_t fd = regs->ebx;
+  uint32_t fd_num = regs->ebx;
   uint32_t buf = regs->ecx;
   uint32_t count = regs->edx;
 
-  // TODO: Support stderr (fd=2) and file descriptors once we have a VFS.
-  if (fd != 1) {
+  Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
     return -1;
   }
 
@@ -59,23 +63,18 @@ static int32_t sys_write(TrapFrame* regs) {
     return -1;
   }
 
-  const char* data = reinterpret_cast<const char*>(buf);
-  for (uint32_t i = 0; i < count; ++i) {
-    terminal_putchar(data[i]);
-  }
-
-  return static_cast<int32_t>(count);
+  return file_write(proc->fds[fd_num], reinterpret_cast<uint8_t*>(buf), count);
 }
 
 // SYS_READ(fd=ebx, buf=ecx, count=edx)
 // Returns number of bytes read, or -1 on error.
 static int32_t sys_read(TrapFrame* regs) {
-  uint32_t fd = regs->ebx;
+  uint32_t fd_num = regs->ebx;
   uint32_t buf = regs->ecx;
   uint32_t count = regs->edx;
 
-  // TODO: Support file descriptors once we have a VFS.
-  if (fd != 0) {
+  Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
     return -1;
   }
 
@@ -83,9 +82,7 @@ static int32_t sys_read(TrapFrame* regs) {
     return -1;
   }
 
-  char* data = reinterpret_cast<char*>(buf);
-  size_t n = kKeyboard.read(data, count);
-  return static_cast<int32_t>(n);
+  return file_read(proc->fds[fd_num], reinterpret_cast<uint8_t*>(buf), count);
 }
 
 // SYS_EXIT(code=ebx)
@@ -239,6 +236,128 @@ static int32_t sys_waitpid(TrapFrame* regs) {
   return Scheduler::waitpid_current(pid, exit_code);
 }
 
+// SYS_PIPE(pipefd_ptr=ebx)
+// Creates a pipe and writes the read/write fd pair into the user-supplied
+// int[2] array. Returns 0 on success, -1 on failure.
+static int32_t sys_pipe(TrapFrame* regs) {
+  uint32_t pipefd_ptr = regs->ebx;
+
+  if (!validate_user_buffer(pipefd_ptr, 2 * sizeof(int32_t), /*writeable=*/true)) {
+    return -1;
+  }
+
+  Process* proc = Scheduler::current();
+
+  int32_t rfd = fd_alloc(proc->fds);
+  if (rfd < 0) {
+    return -1;
+  }
+
+  int32_t wfd = fd_alloc_from(proc->fds, static_cast<uint32_t>(rfd) + 1);
+  if (wfd < 0) {
+    return -1;
+  }
+
+  auto* pipe = new Pipe();
+  if (!pipe) {
+    return -1;
+  }
+
+  auto* rd = static_cast<FileDescription*>(kmalloc(sizeof(FileDescription)));
+  auto* wr = static_cast<FileDescription*>(kmalloc(sizeof(FileDescription)));
+  if (!rd || !wr) {
+    kfree(rd);
+    kfree(wr);
+    delete pipe;
+    return -1;
+  }
+
+  rd->type = FileType::PipeRead;
+  rd->ref_count = 1;
+  rd->pipe = pipe;
+  ++pipe->readers;
+
+  wr->type = FileType::PipeWrite;
+  wr->ref_count = 1;
+  wr->pipe = pipe;
+  ++pipe->writers;
+
+  proc->fds[rfd] = rd;
+  proc->fds[wfd] = wr;
+
+  auto* user_fds = reinterpret_cast<int32_t*>(pipefd_ptr);
+  user_fds[0] = rfd;
+  user_fds[1] = wfd;
+
+  return 0;
+}
+
+// SYS_CLOSE(fd=ebx)
+// Closes a file descriptor. Returns 0 on success, -1 on error.
+static int32_t sys_close(TrapFrame* regs) {
+  uint32_t fd_num = regs->ebx;
+  Process* proc = Scheduler::current();
+
+  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
+    return -1;
+  }
+
+  file_close(proc->fds[fd_num]);
+  proc->fds[fd_num] = nullptr;
+  return 0;
+}
+
+// SYS_DUP2(oldfd=ebx, newfd=ecx)
+// Duplicates oldfd onto newfd. Returns newfd on success, -1 on error.
+static int32_t sys_dup2(TrapFrame* regs) {
+  uint32_t oldfd = regs->ebx;
+  uint32_t newfd = regs->ecx;
+  Process* proc = Scheduler::current();
+
+  if (oldfd >= kMaxFds || newfd >= kMaxFds || !proc->fds[oldfd]) {
+    return -1;
+  }
+
+  if (oldfd == newfd) {
+    return static_cast<int32_t>(newfd);
+  }
+
+  // Close existing description at newfd if open.
+  if (proc->fds[newfd]) {
+    file_close(proc->fds[newfd]);
+  }
+
+  proc->fds[newfd] = proc->fds[oldfd];
+  proc->fds[newfd]->ref();
+  return static_cast<int32_t>(newfd);
+}
+
+// SYS_SHMGET(size=ebx)
+// Allocates physical pages for a shared memory region.
+// Returns shmid on success, -1 on failure.
+static int32_t sys_shmget(TrapFrame* regs) {
+  uint32_t size = regs->ebx;
+  return Shm::create(size);
+}
+
+// SYS_SHMAT(shmid=ebx, vaddr=ecx)
+// Maps a shared memory region into the caller's address space.
+// Returns 0 on success, -1 on failure.
+static int32_t sys_shmat(TrapFrame* regs) {
+  uint32_t shmid = regs->ebx;
+  vaddr_t vaddr{regs->ecx};
+  return Shm::attach(shmid, vaddr);
+}
+
+// SYS_SHMDT(vaddr=ebx, size=ecx)
+// Unmaps a shared memory region from the caller's address space.
+// Returns 0 on success, -1 on failure.
+static int32_t sys_shmdt(TrapFrame* regs) {
+  vaddr_t vaddr{regs->ebx};
+  uint32_t size = regs->ecx;
+  return Shm::detach(vaddr, size);
+}
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -255,6 +374,12 @@ static syscall_fn syscall_table[SYS_MAX] = {
     sys_exec,     // 6
     sys_fork,     // 7
     sys_waitpid,  // 8
+    sys_pipe,     // 9
+    sys_close,    // 10
+    sys_dup2,     // 11
+    sys_shmget,   // 12
+    sys_shmat,    // 13
+    sys_shmdt,    // 14
 };
 
 __BEGIN_DECLS
@@ -275,7 +400,16 @@ uint32_t syscall_dispatch(uint32_t esp) {
   }
 
   int32_t ret = syscall_table[num](regs);
-  regs->eax = static_cast<uint32_t>(ret);
+
+  if (ret == kSyscallRestart) {
+    // Rewind EIP past the "int $0x80" instruction (opcode CD 80, 2 bytes)
+    // so it re-executes when the process is rescheduled. EAX still holds
+    // the syscall number (we do not overwrite it).
+    regs->eip -= 2;
+    Scheduler::block_current();
+  } else {
+    regs->eax = static_cast<uint32_t>(ret);
+  }
 
   // Run the scheduler. If the syscall blocked or exited the current process,
   // this returns a different process's ESP.

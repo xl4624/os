@@ -19,7 +19,8 @@ CRTEND	 := $(shell $(CPP) -print-file-name=crtend.o)
 # ==== Build Artifacts ====
 KERNEL_OBJS = $(shell find $(BUILDDIR)/kernel -type f -name '*.o' 2>/dev/null)
 LIBC_OBJS   = $(shell find $(BUILDDIR)/libc -type f -name '*.libk.o' 2>/dev/null)
-OBJS        = $(CRTI) $(CRTBEGIN) $(BUILDDIR)/arch/boot.o $(KERNEL_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
+LIBCPP_OBJS = $(shell find $(BUILDDIR)/libcpp -type f -name '*.o' 2>/dev/null)
+OBJS        = $(CRTI) $(CRTBEGIN) $(BUILDDIR)/arch/boot.o $(KERNEL_OBJS) $(LIBCPP_OBJS) $(LIBC_OBJS) $(CRTEND) $(CRTN)
 
 # ==== Targets ====
 BIN       := $(BUILDDIR)/myos.bin
@@ -94,11 +95,12 @@ ktest-kernel:
 	@$(MAKE) -C kernel BUILDDIR=$(KTEST_BUILDDIR) KERNEL_TESTS=1
 
 # Link the test kernel binary
-$(KTEST_BIN): install arch libc ktest-kernel arch/linker.ld
+$(KTEST_BIN): install arch libc libcpp ktest-kernel arch/linker.ld
 	@mkdir -p $(dir $@)
 	@$(CC) $(LDFLAGS) -o $@ \
 		$(CRTI) $(CRTBEGIN) $(BUILDDIR)/arch/boot.o \
 		$$(find $(KTEST_BUILDDIR)/kernel -type f -name '*.o' | sort) \
+		$$(find $(BUILDDIR)/libcpp -type f -name '*.o' | sort) \
 		$$(find $(BUILDDIR)/libc -type f -name '*.libk.o' | sort) \
 		$(CRTEND) $(CRTN) $(LIBS)
 	@grub-file --is-x86-multiboot $@ || { echo "NOT MULTIBOOT"; exit 1; }

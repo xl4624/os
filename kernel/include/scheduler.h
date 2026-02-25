@@ -63,6 +63,11 @@ void exit_current(uint32_t exit_code);
 // then switch to the next ready process.
 void sleep_current(uint32_t ms);
 
+// Block the current process with wake_tick=0, so it wakes on the next
+// scheduler tick. Used by the syscall restart mechanism to retry a
+// blocked syscall (e.g. pipe read on empty buffer).
+void block_current();
+
 // Create a child process as an exact copy of the current process.
 // The child gets a deep copy of the parent's address space.
 // Returns the child PID to the parent, or (uint32_t)-1 on failure.

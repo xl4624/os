@@ -51,11 +51,11 @@ __attribute__((noreturn)) void kernel_main() {
   Modules::init(info);
 
   if (Modules::count() > 0) {
-    for (uint32_t i = 0; i < Modules::count(); ++i) {
-      const Module* mod = Modules::get(i);
-      printf("Loading module \"%s\" (%u bytes)...\n", mod->name, static_cast<unsigned>(mod->len));
-      Scheduler::create_process(mod->data, mod->len, mod->name);
-    }
+    // Launch module 0 (the shell); other modules stay in the registry
+    // for the shell to exec by name.
+    const Module* shell = Modules::get(0);
+    printf("Loading shell \"%s\" (%u bytes)...\n", shell->name, static_cast<unsigned>(shell->len));
+    Scheduler::create_process(shell->data, shell->len, shell->name);
   } else {
     printf("No multiboot modules found.\n");
   }

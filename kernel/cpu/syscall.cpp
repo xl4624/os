@@ -202,17 +202,19 @@ static int32_t sys_exec(TrapFrame* regs) {
   TSS::set_kernel_stack(reinterpret_cast<uint32_t>(proc->kernel_stack) + kKernelStackSize);
 
   if (old_pd) {
+    // Temporarily switch to the boot page directory to safely free the old
+    // one, then reload the new page directory before returning to user mode.
     AddressSpace::load(virt_to_phys(vaddr_t{&boot_page_directory}));
     AddressSpace::destroy(old_pd, old_pd_phys);
+    AddressSpace::load(new_pd_phys);
   }
 
-  auto* kstack_top = reinterpret_cast<uint32_t*>(proc->kernel_stack + kKernelStackSize);
-  auto* frame =
-      reinterpret_cast<TrapFrame*>(reinterpret_cast<uintptr_t>(kstack_top) - sizeof(TrapFrame));
-
-  Scheduler::init_trap_frame(frame, entry, user_esp);
-
-  proc->kernel_esp = reinterpret_cast<uint32_t>(frame);
+  // Overwrite the current syscall TrapFrame in-place with the new process's
+  // initial register state. When syscall_dispatch returns through TRAP_ENTRY,
+  // the macro restores from this same frame and irets directly into the new
+  // program. schedule() will save this esp as kernel_esp, so context-switch
+  // based resume is also correct.
+  Scheduler::init_trap_frame(regs, entry, user_esp);
 
   return 0;
 }

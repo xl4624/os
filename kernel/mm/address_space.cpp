@@ -29,10 +29,8 @@ PageDir create() {
   const paddr_t pd_phys = kPmm.alloc();
   assert(pd_phys && "AddressSpace::create(): out of physical memory\n");
   if (pd_phys >= kMappedPhysEnd) {
-    panic(
-        "AddressSpace::create(): page dir phys 0x%08x outside mapped "
-        "region\n",
-        static_cast<unsigned>(pd_phys));
+    panic("AddressSpace::create(): page dir phys 0x%08x outside mapped region\n",
+          static_cast<unsigned>(pd_phys));
   }
 
   auto* pd = phys_to_virt(pd_phys).ptr<PageTable>();
@@ -51,14 +49,10 @@ void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user) {
 
   if (!pde.present) {
     const paddr_t pt_phys = kPmm.alloc();
-    assert(pt_phys &&
-           "AddressSpace::map(): out of physical memory for page "
-           "table\n");
+    assert(pt_phys && "AddressSpace::map(): out of physical memory for page table\n");
     if (pt_phys >= kMappedPhysEnd) {
-      panic(
-          "AddressSpace::map(): page table phys 0x%08x outside "
-          "mapped region\n",
-          static_cast<unsigned>(pt_phys));
+      panic("AddressSpace::map(): page table phys 0x%08x outside mapped region\n",
+            static_cast<unsigned>(pt_phys));
     }
 
     auto* pt = phys_to_virt(pt_phys).ptr<PageTable>();

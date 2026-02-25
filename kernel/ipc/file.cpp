@@ -2,7 +2,6 @@
 
 #include <string.h>
 
-#include "heap.h"
 #include "keyboard.h"
 #include "pipe.h"
 #include "tty.h"
@@ -65,11 +64,11 @@ void file_close(FileDescription* fd) {
   switch (fd->type) {
     case FileType::PipeRead:
       pipe_close_read(fd->pipe);
-      kfree(fd);
+      delete fd;
       return;
     case FileType::PipeWrite:
       pipe_close_write(fd->pipe);
-      kfree(fd);
+      delete fd;
       return;
     default:
       return;

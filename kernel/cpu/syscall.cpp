@@ -7,7 +7,6 @@
 #include "address_space.h"
 #include "elf.h"
 #include "file.h"
-#include "heap.h"
 #include "idt.h"
 #include "interrupt.h"
 #include "keyboard.h"
@@ -263,23 +262,16 @@ static int32_t sys_pipe(TrapFrame* regs) {
     return -1;
   }
 
-  auto* rd = static_cast<FileDescription*>(kmalloc(sizeof(FileDescription)));
-  auto* wr = static_cast<FileDescription*>(kmalloc(sizeof(FileDescription)));
+  auto* rd = new FileDescription{FileType::PipeRead, 1, pipe};
+  auto* wr = new FileDescription{FileType::PipeWrite, 1, pipe};
   if (!rd || !wr) {
-    kfree(rd);
-    kfree(wr);
+    delete rd;
+    delete wr;
     delete pipe;
     return -1;
   }
 
-  rd->type = FileType::PipeRead;
-  rd->ref_count = 1;
-  rd->pipe = pipe;
   ++pipe->readers;
-
-  wr->type = FileType::PipeWrite;
-  wr->ref_count = 1;
-  wr->pipe = pipe;
   ++pipe->writers;
 
   proc->fds[rfd] = rd;

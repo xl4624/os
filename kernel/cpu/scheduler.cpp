@@ -153,9 +153,7 @@ void init() {
   // Create the idle process. This process runs when no other process is
   // ready to run. It uses the kernel's original stack and page tables.
   idle_process = alloc_process();
-  assert(idle_process &&
-         "Scheduler::init(): failed to allocate idle "
-         "process");
+  assert(idle_process && "Scheduler::init(): failed to allocate idle process");
   idle_process->state = ProcessState::Running;
   idle_process->page_directory = &boot_page_directory;
   idle_process->page_directory_phys = virt_to_phys(vaddr_t{&boot_page_directory});
@@ -336,9 +334,7 @@ void init_trap_frame(TrapFrame* frame, vaddr_t entry, uint32_t user_esp) {
 }
 
 Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* name) {
-  assert(initialized &&
-         "Scheduler::create_process(): scheduler not "
-         "initialized");
+  assert(initialized && "Scheduler::create_process(): scheduler not initialized");
 
   if (!name) {
     name = "";
@@ -366,17 +362,11 @@ Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* nam
   }
   p->heap_break = brk;
 
-  // Allocate user stack and write argc/argv onto it.
   uint32_t user_esp = alloc_user_stack(pd_virt, name);
-  assert(user_esp != 0 &&
-         "Scheduler::create_process(): out of physical memory "
-         "for user stack");
+  assert(user_esp != 0 && "Scheduler::create_process(): out of physical memory for user stack");
 
-  // Allocate kernel stack for system calls and interrupts.
   p->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));
-  assert(p->kernel_stack &&
-         "Scheduler::create_process(): failed to allocate kernel "
-         "stack");
+  assert(p->kernel_stack && "Scheduler::create_process(): failed to allocate kernel stack");
   memset(p->kernel_stack, 0, kKernelStackSize);
 
   // Set up initial TrapFrame for iret into user mode.

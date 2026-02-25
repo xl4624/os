@@ -1,7 +1,6 @@
 #include "pipe.h"
 
 #include "file.h"
-#include "heap.h"
 
 int32_t pipe_read(Pipe* pipe, uint8_t* buf, uint32_t count) {
   uint32_t bytes_read = 0;
@@ -51,7 +50,7 @@ int32_t pipe_write(Pipe* pipe, const uint8_t* buf, uint32_t count) {
 
 static void pipe_maybe_free(Pipe* pipe) {
   if (pipe->readers == 0 && pipe->writers == 0) {
-    kfree(pipe);
+    delete pipe;
   }
 }
 

@@ -2,7 +2,6 @@
 #include <sys/syscall.h>
 
 #include "file.h"
-#include "heap.h"
 #include "ktest.h"
 #include "process.h"
 #include "scheduler.h"
@@ -109,11 +108,7 @@ TEST(fd, write_null_fd_slot) {
 TEST(fd, close_valid_fd) {
   Process* proc = Scheduler::current();
 
-  // Allocate a dummy file description on the heap.
-  auto* desc = static_cast<FileDescription*>(kmalloc(sizeof(FileDescription)));
-  desc->type = FileType::PipeRead;
-  desc->ref_count = 1;
-  desc->pipe = nullptr;
+  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
 
   int32_t slot = fd_alloc(proc->fds);
   ASSERT(slot >= 0);
@@ -143,10 +138,7 @@ TEST(fd, close_invalid_fd) {
 TEST(fd, dup2_copies_fd) {
   Process* proc = Scheduler::current();
 
-  auto* desc = static_cast<FileDescription*>(kmalloc(sizeof(FileDescription)));
-  desc->type = FileType::PipeRead;
-  desc->ref_count = 1;
-  desc->pipe = nullptr;
+  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
 
   int32_t slot = fd_alloc(proc->fds);
   ASSERT(slot >= 0);
@@ -166,7 +158,7 @@ TEST(fd, dup2_copies_fd) {
   // Cleanup: close both fds.
   proc->fds[slot] = nullptr;
   proc->fds[newfd] = nullptr;
-  kfree(desc);
+  delete desc;
 }
 
 TEST(fd, dup2_same_fd) {

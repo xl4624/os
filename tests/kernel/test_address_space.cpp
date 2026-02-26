@@ -6,9 +6,9 @@
 // These tests focus on AddressSpace::is_user_mapped and AddressSpace::unmap.
 // The create/destroy and basic map tests live in test_scheduler.cpp.
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // AddressSpace::is_user_mapped
-// ---------------------------------------------------------------------------
+// ===========================================================================
 
 TEST(address_space, is_user_mapped_unmapped_returns_false) {
   auto [pd_phys, pd] = AddressSpace::create();
@@ -39,9 +39,9 @@ TEST(address_space, is_user_mapped_read_only) {
   AddressSpace::destroy(pd, pd_phys);
 }
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // AddressSpace::unmap
-// ---------------------------------------------------------------------------
+// ===========================================================================
 
 TEST(address_space, unmap_removes_mapping) {
   auto [pd_phys, pd] = AddressSpace::create();
@@ -75,9 +75,9 @@ TEST(address_space, unmap_noop_on_unmapped) {
   AddressSpace::destroy(pd, pd_phys);
 }
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // AddressSpace
-// ---------------------------------------------------------------------------
+// ===========================================================================
 
 TEST(address_space, sync_kernel_mappings) {
   auto [pd_phys, pd] = AddressSpace::create();

@@ -1,5 +1,6 @@
 #include "scheduler.h"
 
+#include <array.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -49,7 +50,7 @@ __END_DECLS
 
 namespace {
 
-Process process_table[kMaxProcesses];
+std::array<Process, kMaxProcesses> process_table;
 uint32_t next_pid = 0;
 
 Process* current_process = nullptr;
@@ -160,7 +161,7 @@ void init() {
   idle_process->kernel_stack =
       reinterpret_cast<uint8_t*>(reinterpret_cast<uintptr_t>(stack_top) - kKernelStackSize);
   idle_process->kernel_esp = 0;  // will be set on first schedule()
-  fd_init_stdio(idle_process->fds);
+  fd_init_stdio(idle_process->fds.data());
 
   current_process = idle_process;
   initialized = true;
@@ -222,10 +223,10 @@ void exit_current(uint32_t exit_code) {
   printf("Process %u exited with code %u\n", current_process->pid, exit_code);
 
   // Close all file descriptors before destroying the address space.
-  for (uint32_t i = 0; i < kMaxFds; ++i) {
-    if (current_process->fds[i]) {
-      file_close(current_process->fds[i]);
-      current_process->fds[i] = nullptr;
+  for (auto& fd : current_process->fds) {
+    if (fd) {
+      file_close(fd);
+      fd = nullptr;
     }
   }
 
@@ -346,7 +347,7 @@ Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* nam
     return nullptr;
   }
 
-  fd_init_stdio(p->fds);
+  fd_init_stdio(p->fds.data());
 
   auto [pd_phys, pd_virt] = AddressSpace::create();
   p->page_directory_phys = pd_phys;
@@ -400,10 +401,10 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   child->parent_pid = current_process->pid;
 
   // Inherit the parent's file descriptor table.
-  for (uint32_t i = 0; i < kMaxFds; ++i) {
-    child->fds[i] = current_process->fds[i];
-    if (child->fds[i]) {
-      child->fds[i]->ref();
+  child->fds = current_process->fds;
+  for (auto* fd : child->fds) {
+    if (fd) {
+      fd->ref();
     }
   }
 

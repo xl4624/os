@@ -1,13 +1,17 @@
 #include "gdt.h"
 
+#include <array.h>
 #include <assert.h>
 #include <stddef.h>
 
 #include "tss.h"
 
 namespace GDT {
+
+static constexpr size_t kEntryCount = 6;
+
 // 6 entries: null, kernel code, kernel data, TSS, user code, user data
-static Entry gdt[6];
+static std::array<Entry, kEntryCount> gdt;
 static Descriptor gdtp;
 static bool initialized = false;
 
@@ -46,8 +50,8 @@ void init() {
   gdt[5] = create_gdt_entry(/*base=*/0, /*limit=*/SEGMENT_LIMIT, /*access=*/USER_DATA_ACCESS,
                             /*flags=*/FLAGS_4K_32BIT);
 
-  gdtp.size = (sizeof(Entry) * 6) - 1;
-  gdtp.offset = reinterpret_cast<uintptr_t>(&gdt);
+  gdtp.size = sizeof(gdt) - 1;
+  gdtp.offset = reinterpret_cast<uintptr_t>(gdt.data());
 
   // Load the GDTR
   asm volatile(

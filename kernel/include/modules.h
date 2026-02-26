@@ -22,12 +22,12 @@ namespace Modules {
 void init(const multiboot_info_t* info);
 
 // Return a module by name, or nullptr if not found.
-const Module* find(const char* name);
+[[nodiscard]] const Module* find(const char* name);
 
 // Number of modules registered.
-uint32_t count();
+[[nodiscard]] uint32_t count();
 
 // Access a module by index (0-based). Returns nullptr if out of range.
-const Module* get(uint32_t index);
+[[nodiscard]] const Module* get(uint32_t index);
 
 }  // namespace Modules

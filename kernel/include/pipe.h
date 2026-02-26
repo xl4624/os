@@ -16,11 +16,11 @@ struct Pipe {
 
 // Read up to count bytes from the pipe buffer into buf.
 // Returns bytes read, 0 for EOF (no writers), or kSyscallRestart to block.
-int32_t pipe_read(Pipe* pipe, uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t pipe_read(Pipe* pipe, uint8_t* buf, uint32_t count);
 
 // Write up to count bytes from buf into the pipe buffer.
 // Returns bytes written, -1 for broken pipe (no readers), or kSyscallRestart.
-int32_t pipe_write(Pipe* pipe, const uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t pipe_write(Pipe* pipe, const uint8_t* buf, uint32_t count);
 
 // Called when a read-end FileDescription is freed. Decrements readers;
 // frees the Pipe if both readers and writers are zero.

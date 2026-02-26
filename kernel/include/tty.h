@@ -16,6 +16,8 @@ __END_DECLS
 
 #ifdef __cplusplus
 
+#include <array.h>
+
 #include "keyboard.h"
 #include "vga.h"
 
@@ -56,7 +58,7 @@ class Terminal {
   volatile uint16_t* buffer_ = VGA::MEMORY_ADDR;
 
   EscState esc_state_;
-  uint16_t esc_params_[kMaxCsiParams];
+  std::array<uint16_t, kMaxCsiParams> esc_params_{};
   uint8_t esc_param_count_;
 };
 

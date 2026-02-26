@@ -35,11 +35,11 @@ struct FileDescription {
 
 // Read up to count bytes. Returns bytes read, 0 for EOF, or kSyscallRestart
 // to block. Returns -1 on error (e.g. not a readable fd).
-int32_t file_read(FileDescription* fd, uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t file_read(FileDescription* fd, uint8_t* buf, uint32_t count);
 
 // Write up to count bytes. Returns bytes written, kSyscallRestart to block,
 // or -1 on error.
-int32_t file_write(FileDescription* fd, const uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t file_write(FileDescription* fd, const uint8_t* buf, uint32_t count);
 
 // Decrement ref_count and perform type-specific cleanup when it reaches 0.
 // Terminal descriptions are static singletons and are never freed.
@@ -50,7 +50,7 @@ void file_close(FileDescription* fd);
 void fd_init_stdio(FileDescription* fds[]);
 
 // Find the lowest free fd slot in fds[]. Returns index or -1 if full.
-int32_t fd_alloc(FileDescription* fds[]);
+[[nodiscard]] int32_t fd_alloc(FileDescription* fds[]);
 
 // Find the lowest free fd slot >= min_fd. Returns index or -1 if full.
-int32_t fd_alloc_from(FileDescription* fds[], uint32_t min_fd);
+[[nodiscard]] int32_t fd_alloc_from(FileDescription* fds[], uint32_t min_fd);

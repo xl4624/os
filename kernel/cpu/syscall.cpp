@@ -247,12 +247,12 @@ static int32_t sys_pipe(TrapFrame* regs) {
 
   Process* proc = Scheduler::current();
 
-  int32_t rfd = fd_alloc(proc->fds);
+  int32_t rfd = fd_alloc(proc->fds.data());
   if (rfd < 0) {
     return -1;
   }
 
-  int32_t wfd = fd_alloc_from(proc->fds, static_cast<uint32_t>(rfd) + 1);
+  int32_t wfd = fd_alloc_from(proc->fds.data(), static_cast<uint32_t>(rfd) + 1);
   if (wfd < 0) {
     return -1;
   }

@@ -27,13 +27,13 @@ struct PageDir {
   paddr_t phys;
   PageTable* virt;
 };
-PageDir create();
+[[nodiscard]] PageDir create();
 
 // Duplicate src_pd into a fresh address space by eagerly copying every
 // user-space physical page (PDE indices 0..kKernelPdeStart-1).
 // Kernel PDEs are shared, as with create().
 // Panics if physical memory is exhausted.
-PageDir copy(const PageTable* src_pd);
+[[nodiscard]] PageDir copy(const PageTable* src_pd);
 
 // Map a single page in a specific page directory.
 // The page directory does not need to be the currently loaded one.
@@ -61,6 +61,6 @@ void destroy(PageTable* pd, paddr_t pd_phys);
 
 // Returns true if the page containing va is present in pd and is
 // user-accessible. If writeable is true, also requires the PTE rw bit.
-bool is_user_mapped(const PageTable* pd, vaddr_t va, bool writeable);
+[[nodiscard]] bool is_user_mapped(const PageTable* pd, vaddr_t va, bool writeable);
 
 }  // namespace AddressSpace

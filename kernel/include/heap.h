@@ -24,10 +24,10 @@ class Heap {
   // alloc/free, and after the PMM is ready.
   void init();
 
-  void* alloc(size_t size);
+  [[nodiscard]] void* alloc(size_t size);
   void free(void* ptr);
-  void* calloc(size_t nmemb, size_t size);
-  void* realloc(void* ptr, size_t size);
+  [[nodiscard]] void* calloc(size_t nmemb, size_t size);
+  [[nodiscard]] void* realloc(void* ptr, size_t size);
 
   // Print a block-by-block dump of the heap to the VGA terminal (debug).
   void dump() const;
@@ -47,9 +47,9 @@ extern Heap kHeap;
 
 __BEGIN_DECLS
 
-void* kmalloc(size_t size);
+[[nodiscard]] void* kmalloc(size_t size);
 void kfree(void* ptr);
-void* kcalloc(size_t nmemb, size_t size);
-void* krealloc(void* ptr, size_t size);
+[[nodiscard]] void* kcalloc(size_t nmemb, size_t size);
+[[nodiscard]] void* krealloc(void* ptr, size_t size);
 
 __END_DECLS

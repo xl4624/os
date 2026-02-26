@@ -55,7 +55,8 @@ __attribute__((noreturn)) void kernel_main() {
     // for the shell to exec by name.
     const Module* shell = Modules::get(0);
     printf("Loading shell \"%s\" (%u bytes)...\n", shell->name, static_cast<unsigned>(shell->len));
-    Scheduler::create_process(shell->data, shell->len, shell->name);
+    assert(Scheduler::create_process(shell->data, shell->len, shell->name) &&
+           "kernel_main(): failed to create shell process");
   } else {
     printf("No multiboot modules found.\n");
   }

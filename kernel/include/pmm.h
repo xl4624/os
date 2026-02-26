@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -86,7 +87,7 @@ class Bitmap {
     }
   }
 
-  uint32_t words_[WORD_COUNT]{};
+  std::array<uint32_t, WORD_COUNT> words_{};
 };
 
 class PhysicalMemoryManager {

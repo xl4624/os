@@ -1,5 +1,6 @@
 #include "tty.h"
 
+#include <array.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,7 +12,7 @@ static constexpr size_t TAB_WIDTH = 4;
 
 // Maps ANSI color indices 0-7 to VGA color values.
 // Bright variants (ANSI 90-97 fg / 100-107 bg) are these values + 8.
-static constexpr uint8_t kAnsiToVga[8] = {
+static constexpr std::array<uint8_t, 8> kAnsiToVga = {
     0,  // Black   (30/40)
     4,  // Red     (31/41)
     2,  // Green   (32/42)
@@ -32,9 +33,7 @@ Terminal kTerminal;
 Terminal::Terminal() {
   esc_state_ = EscState::Normal;
   esc_param_count_ = 0;
-  for (size_t i = 0; i < kMaxCsiParams; ++i) {
-    esc_params_[i] = 0;
-  }
+  esc_params_.fill(0);
   for (size_t y = 0; y < VGA::HEIGHT; ++y) {
     clear_line(y);
   }
@@ -52,9 +51,7 @@ void Terminal::put_char(char c) {
     if (c == '[') {
       esc_state_ = EscState::Csi;
       esc_param_count_ = 0;
-      for (size_t i = 0; i < kMaxCsiParams; ++i) {
-        esc_params_[i] = 0;
-      }
+      esc_params_.fill(0);
     } else {
       // Not a CSI sequence: discard ESC and re-process c normally.
       esc_state_ = EscState::Normal;

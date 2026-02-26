@@ -65,7 +65,7 @@ TEST(shm, attach_maps_pages) {
   ASSERT_TRUE(AddressSpace::is_user_mapped(pd, va, /*writeable=*/true));
 
   // Detach.
-  Shm::detach(va, PAGE_SIZE);
+  ASSERT_NE(Shm::detach(va, PAGE_SIZE), -1);
   ASSERT_FALSE(AddressSpace::is_user_mapped(pd, va, /*writeable=*/false));
 
   proc->page_directory = orig_pd;
@@ -91,14 +91,14 @@ TEST(shm, detach_preserves_physical_pages_with_refs) {
 
   // Attach twice (simulating two processes by incrementing ref_count).
   vaddr_t va{0x00A00000};
-  Shm::attach(static_cast<uint32_t>(id), va);
+  ASSERT_NE(Shm::attach(static_cast<uint32_t>(id), va), -1);
   ASSERT_EQ(region->ref_count, 1u);
 
   // Manually bump ref_count to simulate a second attachment.
   ++region->ref_count;
 
   // Detach once: region should still be alive.
-  Shm::detach(va, PAGE_SIZE);
+  ASSERT_NE(Shm::detach(va, PAGE_SIZE), -1);
   ASSERT_EQ(region->ref_count, 1u);
   ASSERT_TRUE(region->in_use);
 
@@ -131,11 +131,11 @@ TEST(shm, last_detach_frees_region) {
   ASSERT_NOT_NULL(region);
 
   vaddr_t va{0x00A00000};
-  Shm::attach(static_cast<uint32_t>(id), va);
+  ASSERT_NE(Shm::attach(static_cast<uint32_t>(id), va), -1);
   ASSERT_EQ(region->ref_count, 1u);
 
   // Detach the only reference: region should be freed.
-  Shm::detach(va, PAGE_SIZE);
+  ASSERT_NE(Shm::detach(va, PAGE_SIZE), -1);
   ASSERT_FALSE(region->in_use);
 
   proc->page_directory = orig_pd;

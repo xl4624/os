@@ -110,7 +110,7 @@ TEST(fd, close_valid_fd) {
 
   auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
 
-  int32_t slot = fd_alloc(proc->fds);
+  int32_t slot = fd_alloc(proc->fds.data());
   ASSERT(slot >= 0);
   proc->fds[slot] = desc;
 
@@ -140,7 +140,7 @@ TEST(fd, dup2_copies_fd) {
 
   auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
 
-  int32_t slot = fd_alloc(proc->fds);
+  int32_t slot = fd_alloc(proc->fds.data());
   ASSERT(slot >= 0);
   proc->fds[slot] = desc;
 

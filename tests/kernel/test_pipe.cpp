@@ -15,12 +15,12 @@ namespace {
 bool make_pipe(int32_t& rfd, int32_t& wfd) {
   Process* proc = Scheduler::current();
 
-  rfd = fd_alloc(proc->fds);
+  rfd = fd_alloc(proc->fds.data());
   if (rfd < 0) {
     return false;
   }
 
-  wfd = fd_alloc_from(proc->fds, static_cast<uint32_t>(rfd) + 1);
+  wfd = fd_alloc_from(proc->fds.data(), static_cast<uint32_t>(rfd) + 1);
   if (wfd < 0) {
     return false;
   }
@@ -223,7 +223,7 @@ TEST(pipe, partial_read) {
 
   // Write 5 bytes, read 3, then read the remaining 2.
   const uint8_t msg[] = {10, 20, 30, 40, 50};
-  pipe_write(pipe, msg, 5);
+  ASSERT_NE(pipe_write(pipe, msg, 5), -1);
 
   uint8_t buf[3];
   int32_t ret = pipe_read(pipe, buf, 3);

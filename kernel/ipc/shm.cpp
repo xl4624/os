@@ -1,5 +1,6 @@
 #include "shm.h"
 
+#include <array.h>
 #include <string.h>
 
 #include "address_space.h"
@@ -9,7 +10,7 @@
 
 namespace {
 
-ShmRegion regions[kMaxShmRegions];
+std::array<ShmRegion, kMaxShmRegions> regions;
 uint32_t next_id = 0;
 
 }  // namespace

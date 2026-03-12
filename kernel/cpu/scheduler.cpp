@@ -161,7 +161,7 @@ void init() {
   idle_process->kernel_stack =
       reinterpret_cast<uint8_t*>(reinterpret_cast<uintptr_t>(stack_top) - kKernelStackSize);
   idle_process->kernel_esp = 0;  // will be set on first schedule()
-  fd_init_stdio(idle_process->fds.data());
+  fd_init_stdio(idle_process->fds);
 
   current_process = idle_process;
   initialized = true;
@@ -334,7 +334,7 @@ void init_trap_frame(TrapFrame* frame, vaddr_t entry, uint32_t user_esp) {
   frame->esp_dummy = 0;
 }
 
-Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* name) {
+Process* create_process(std::span<const uint8_t> elf_data, const char* name) {
   assert(initialized && "Scheduler::create_process(): scheduler not initialized");
 
   if (!name) {
@@ -347,7 +347,7 @@ Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* nam
     return nullptr;
   }
 
-  fd_init_stdio(p->fds.data());
+  fd_init_stdio(p->fds);
 
   auto [pd_phys, pd_virt] = AddressSpace::create();
   p->page_directory_phys = pd_phys;
@@ -355,7 +355,7 @@ Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* nam
 
   vaddr_t entry = 0;
   vaddr_t brk = 0;
-  if (!Elf::load(elf_data, elf_len, pd_virt, entry, brk)) {
+  if (!Elf::load(elf_data, pd_virt, entry, brk)) {
     printf("Scheduler: failed to load ELF for process %u\n", p->pid);
     AddressSpace::destroy(pd_virt, pd_phys);
     p->state = ProcessState::Zombie;

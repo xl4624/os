@@ -1,3 +1,4 @@
+#include <span.h>
 #include <string.h>
 
 #include "address_space.h"
@@ -209,7 +210,7 @@ TEST(scheduler, create_process) {
   make_test_elf(elf, 0x00400000);
 
   Process* p =
-      Scheduler::create_process(reinterpret_cast<const uint8_t*>(&elf), sizeof(elf), "test");
+      Scheduler::create_process(std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, "test");
   ASSERT_NOT_NULL(p);
   ASSERT_EQ(p->pid, 1u);  // first user process
   ASSERT_EQ(p->state, ProcessState::Ready);
@@ -220,11 +221,11 @@ TEST(scheduler, create_process) {
 TEST(scheduler, create_multiple_processes) {
   TestElf elf;
   make_test_elf(elf, 0x00400000);
-  const auto* data = reinterpret_cast<const uint8_t*>(&elf);
+  const std::span<const uint8_t> data{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)};
 
-  Process* p1 = Scheduler::create_process(data, sizeof(elf), "test1");
-  Process* p2 = Scheduler::create_process(data, sizeof(elf), "test2");
-  Process* p3 = Scheduler::create_process(data, sizeof(elf), "test3");
+  Process* p1 = Scheduler::create_process(data, "test1");
+  Process* p2 = Scheduler::create_process(data, "test2");
+  Process* p3 = Scheduler::create_process(data, "test3");
 
   ASSERT_NOT_NULL(p1);
   ASSERT_NOT_NULL(p2);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional.h>
+#include <span.h>
 #include <stdint.h>
 
 // Maximum file descriptors per process.
@@ -33,13 +35,13 @@ struct FileDescription {
   void ref() { ++ref_count; }
 };
 
-// Read up to count bytes. Returns bytes read, 0 for EOF, or kSyscallRestart
+// Read up to buf.size() bytes. Returns bytes read, 0 for EOF, or kSyscallRestart
 // to block. Returns -1 on error (e.g. not a readable fd).
-[[nodiscard]] int32_t file_read(FileDescription* fd, uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t file_read(FileDescription* fd, std::span<uint8_t> buf);
 
-// Write up to count bytes. Returns bytes written, kSyscallRestart to block,
+// Write up to buf.size() bytes. Returns bytes written, kSyscallRestart to block,
 // or -1 on error.
-[[nodiscard]] int32_t file_write(FileDescription* fd, const uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t file_write(FileDescription* fd, std::span<const uint8_t> buf);
 
 // Decrement ref_count and perform type-specific cleanup when it reaches 0.
 // Terminal descriptions are static singletons and are never freed.
@@ -47,10 +49,11 @@ void file_close(FileDescription* fd);
 
 // Initialise fds[0..2] to stdin/stdout/stderr (terminal descriptions).
 // Remaining slots are set to nullptr.
-void fd_init_stdio(FileDescription* fds[]);
+void fd_init_stdio(std::span<FileDescription*> fds);
 
-// Find the lowest free fd slot in fds[]. Returns index or -1 if full.
-[[nodiscard]] int32_t fd_alloc(FileDescription* fds[]);
+// Find the lowest free fd slot. Returns the index, or nullopt if full.
+[[nodiscard]] std::optional<uint32_t> fd_alloc(std::span<FileDescription*> fds);
 
-// Find the lowest free fd slot >= min_fd. Returns index or -1 if full.
-[[nodiscard]] int32_t fd_alloc_from(FileDescription* fds[], uint32_t min_fd);
+// Find the lowest free fd slot >= min_fd. Returns the index, or nullopt if full.
+[[nodiscard]] std::optional<uint32_t> fd_alloc_from(std::span<FileDescription*> fds,
+                                                     uint32_t min_fd);

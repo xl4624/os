@@ -2,9 +2,9 @@
 
 #include "file.h"
 
-int32_t pipe_read(Pipe* pipe, uint8_t* buf, uint32_t count) {
+int32_t pipe_read(Pipe* pipe, std::span<uint8_t> buf) {
   uint32_t bytes_read = 0;
-  for (uint32_t i = 0; i < count; ++i) {
+  for (size_t i = 0; i < buf.size(); ++i) {
     char c;
     if (!pipe->buffer.pop(c)) {
       break;
@@ -26,14 +26,14 @@ int32_t pipe_read(Pipe* pipe, uint8_t* buf, uint32_t count) {
   return 0;
 }
 
-int32_t pipe_write(Pipe* pipe, const uint8_t* buf, uint32_t count) {
+int32_t pipe_write(Pipe* pipe, std::span<const uint8_t> buf) {
   // No readers: broken pipe.
   if (pipe->readers == 0) {
     return -1;
   }
 
   uint32_t bytes_written = 0;
-  for (uint32_t i = 0; i < count; ++i) {
+  for (size_t i = 0; i < buf.size(); ++i) {
     if (!pipe->buffer.push(static_cast<char>(buf[i]))) {
       break;
     }

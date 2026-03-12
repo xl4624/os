@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <span.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/io.h>
@@ -55,7 +56,8 @@ __attribute__((noreturn)) void kernel_main() {
     // for the shell to exec by name.
     const Module* shell = Modules::get(0);
     printf("Loading shell \"%s\" (%u bytes)...\n", shell->name, static_cast<unsigned>(shell->len));
-    assert(Scheduler::create_process(shell->data, shell->len, shell->name) &&
+    assert(Scheduler::create_process(std::span<const uint8_t>{shell->data, shell->len},
+                                     shell->name) &&
            "kernel_main(): failed to create shell process");
   } else {
     printf("No multiboot modules found.\n");

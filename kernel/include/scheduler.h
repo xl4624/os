@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -36,7 +37,7 @@ bool is_initialized();
 // space, and sets the entry point from e_entry.
 // `name` is placed in argv[0] (argc=1, argv=["name", nullptr]).
 // Returns the new process, or nullptr on failure.
-[[nodiscard]] Process* create_process(const uint8_t* elf_data, size_t elf_len, const char* name);
+[[nodiscard]] Process* create_process(std::span<const uint8_t> elf_data, const char* name);
 
 // Allocate kUserStackPages physical pages, map them user-writable in pd,
 // and write argc=1 / argv=["name", nullptr] onto the stack top.

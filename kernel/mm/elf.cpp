@@ -8,13 +8,13 @@
 
 namespace Elf {
 
-bool validate(const uint8_t* data, size_t len) {
-  if (len < sizeof(Header)) {
-    printf("ELF: too small (%u bytes)\n", static_cast<unsigned>(len));
+bool validate(std::span<const uint8_t> data) {
+  if (data.size() < sizeof(Header)) {
+    printf("ELF: too small (%u bytes)\n", static_cast<unsigned>(data.size()));
     return false;
   }
 
-  const auto* hdr = reinterpret_cast<const Header*>(data);
+  const auto* hdr = reinterpret_cast<const Header*>(data.data());
 
   if (hdr->e_ident[kEiMag0] != kElfMag0 || hdr->e_ident[kEiMag1] != kElfMag1 ||
       hdr->e_ident[kEiMag2] != kElfMag2 || hdr->e_ident[kEiMag3] != kElfMag3) {
@@ -48,7 +48,7 @@ bool validate(const uint8_t* data, size_t len) {
   }
 
   const size_t ph_end = hdr->e_phoff + static_cast<size_t>(hdr->e_phnum) * hdr->e_phentsize;
-  if (ph_end > len) {
+  if (ph_end > data.size()) {
     printf("ELF: program headers extend past end of file\n");
     return false;
   }
@@ -56,19 +56,19 @@ bool validate(const uint8_t* data, size_t len) {
   return true;
 }
 
-bool load(const uint8_t* elf_data, size_t elf_len, PageTable* pd, vaddr_t& entry_out,
+bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out,
           vaddr_t& brk_out) {
-  if (!validate(elf_data, elf_len)) {
+  if (!validate(elf_data)) {
     return false;
   }
 
-  const auto* hdr = reinterpret_cast<const Header*>(elf_data);
+  const auto* hdr = reinterpret_cast<const Header*>(elf_data.data());
   entry_out = hdr->e_entry;
   vaddr_t highest_end = 0;
 
   for (uint16_t i = 0; i < hdr->e_phnum; ++i) {
     const auto* ph = reinterpret_cast<const ProgramHeader*>(
-        elf_data + hdr->e_phoff + static_cast<size_t>(i) * hdr->e_phentsize);
+        elf_data.data() + hdr->e_phoff + static_cast<size_t>(i) * hdr->e_phentsize);
 
     if (ph->p_type != kPtLoad) {
       continue;
@@ -79,7 +79,7 @@ bool load(const uint8_t* elf_data, size_t elf_len, PageTable* pd, vaddr_t& entry
     }
 
     // Validate that file data is within the ELF buffer.
-    if (ph->p_filesz > 0 && (ph->p_offset + ph->p_filesz > elf_len)) {
+    if (ph->p_filesz > 0 && (ph->p_offset + ph->p_filesz > elf_data.size())) {
       printf("ELF: segment %u file data out of bounds\n", i);
       return false;
     }
@@ -124,7 +124,7 @@ bool load(const uint8_t* elf_data, size_t elf_len, PageTable* pd, vaddr_t& entry
           memset(page, 0, page_start);
         }
         if (copy_len > 0) {
-          memcpy(page + page_start, elf_data + ph->p_offset + seg_offset, copy_len);
+          memcpy(page + page_start, elf_data.data() + ph->p_offset + seg_offset, copy_len);
         }
         filled = page_start + copy_len;
       }

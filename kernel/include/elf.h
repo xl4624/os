@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -86,13 +87,13 @@ static_assert(sizeof(ProgramHeader) == 32, "ELF32 program header must be 32 byte
 
 // Validate that the buffer contains a well-formed ELF32 i386 executable.
 [[nodiscard]]
-bool validate(const uint8_t* data, size_t len);
+bool validate(std::span<const uint8_t> data);
 
 // Load PT_LOAD segments from an ELF32 executable into the given page
 // directory. On success, sets entry_out to e_entry and brk_out to the
 // page-aligned end of the highest loaded segment (initial heap break).
 [[nodiscard]]
-bool load(const uint8_t* elf_data, size_t elf_len, PageTable* pd, vaddr_t& entry_out,
+bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out,
           vaddr_t& brk_out);
 
 }  // namespace Elf

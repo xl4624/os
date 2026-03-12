@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <unique_ptr.h>
 
 #include "address_space.h"
 #include "elf.h"
@@ -62,7 +63,8 @@ static int32_t sys_write(TrapFrame* regs) {
     return -1;
   }
 
-  return file_write(proc->fds[fd_num], reinterpret_cast<uint8_t*>(buf), count);
+  return file_write(proc->fds[fd_num],
+                    std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(buf), count));
 }
 
 // SYS_READ(fd=ebx, buf=ecx, count=edx)
@@ -81,7 +83,8 @@ static int32_t sys_read(TrapFrame* regs) {
     return -1;
   }
 
-  return file_read(proc->fds[fd_num], reinterpret_cast<uint8_t*>(buf), count);
+  return file_read(proc->fds[fd_num],
+                   std::span<uint8_t>(reinterpret_cast<uint8_t*>(buf), count));
 }
 
 // SYS_EXIT(code=ebx)
@@ -175,7 +178,7 @@ static int32_t sys_exec(TrapFrame* regs) {
 
   vaddr_t entry = 0;
   vaddr_t brk = 0;
-  if (!Elf::load(mod->data, mod->len, new_pd_virt, entry, brk)) {
+  if (!Elf::load(std::span<const uint8_t>{mod->data, mod->len}, new_pd_virt, entry, brk)) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;
   }
@@ -247,39 +250,37 @@ static int32_t sys_pipe(TrapFrame* regs) {
 
   Process* proc = Scheduler::current();
 
-  int32_t rfd = fd_alloc(proc->fds.data());
-  if (rfd < 0) {
+  auto rfd = fd_alloc(proc->fds);
+  if (!rfd) {
     return -1;
   }
 
-  int32_t wfd = fd_alloc_from(proc->fds.data(), static_cast<uint32_t>(rfd) + 1);
-  if (wfd < 0) {
+  auto wfd = fd_alloc_from(proc->fds, *rfd + 1);
+  if (!wfd) {
     return -1;
   }
 
-  auto* pipe = new Pipe();
+  auto pipe = std::make_unique<Pipe>();
   if (!pipe) {
     return -1;
   }
 
-  auto* rd = new FileDescription{FileType::PipeRead, 1, pipe};
-  auto* wr = new FileDescription{FileType::PipeWrite, 1, pipe};
+  auto rd = std::make_unique<FileDescription>(FileDescription{FileType::PipeRead, 1, pipe.get()});
+  auto wr = std::make_unique<FileDescription>(FileDescription{FileType::PipeWrite, 1, pipe.get()});
   if (!rd || !wr) {
-    delete rd;
-    delete wr;
-    delete pipe;
     return -1;
   }
 
   ++pipe->readers;
   ++pipe->writers;
 
-  proc->fds[rfd] = rd;
-  proc->fds[wfd] = wr;
+  proc->fds[*rfd] = rd.release();
+  proc->fds[*wfd] = wr.release();
+  (void)pipe.release();
 
   auto* user_fds = reinterpret_cast<int32_t*>(pipefd_ptr);
-  user_fds[0] = rfd;
-  user_fds[1] = wfd;
+  user_fds[0] = static_cast<int32_t>(*rfd);
+  user_fds[1] = static_cast<int32_t>(*wfd);
 
   return 0;
 }

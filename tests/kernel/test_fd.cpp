@@ -38,8 +38,9 @@ TEST(fd, alloc_returns_lowest_free) {
   FileDescription* fds[kMaxFds];
   fd_init_stdio(fds);
 
-  int32_t slot = fd_alloc(fds);
-  ASSERT_EQ(slot, 3);
+  auto slot = fd_alloc(fds);
+  ASSERT(slot.has_value());
+  ASSERT_EQ(*slot, 3u);
 }
 
 TEST(fd, alloc_after_close_reuses_slot) {
@@ -49,11 +50,12 @@ TEST(fd, alloc_after_close_reuses_slot) {
   // "Close" fd 1 by nulling it.
   fds[1] = nullptr;
 
-  int32_t slot = fd_alloc(fds);
-  ASSERT_EQ(slot, 1);
+  auto slot = fd_alloc(fds);
+  ASSERT(slot.has_value());
+  ASSERT_EQ(*slot, 1u);
 }
 
-TEST(fd, alloc_full_returns_negative) {
+TEST(fd, alloc_full_returns_nullopt) {
   FileDescription* fds[kMaxFds];
   FileDescription dummy = {FileType::TerminalRead, 1, nullptr};
 
@@ -61,16 +63,17 @@ TEST(fd, alloc_full_returns_negative) {
     fds[i] = &dummy;
   }
 
-  int32_t slot = fd_alloc(fds);
-  ASSERT_EQ(slot, -1);
+  auto slot = fd_alloc(fds);
+  ASSERT_FALSE(slot.has_value());
 }
 
 TEST(fd, alloc_from_skips_lower) {
   FileDescription* fds[kMaxFds];
   fd_init_stdio(fds);
 
-  int32_t slot = fd_alloc_from(fds, 5);
-  ASSERT_EQ(slot, 5);
+  auto slot = fd_alloc_from(fds, 5);
+  ASSERT(slot.has_value());
+  ASSERT_EQ(*slot, 5u);
 }
 
 // ===========================================================================
@@ -110,17 +113,17 @@ TEST(fd, close_valid_fd) {
 
   auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
 
-  int32_t slot = fd_alloc(proc->fds.data());
-  ASSERT(slot >= 0);
-  proc->fds[slot] = desc;
+  auto slot = fd_alloc(proc->fds);
+  ASSERT(slot.has_value());
+  proc->fds[*slot] = desc;
 
   TrapFrame frame = {};
   frame.eax = SYS_CLOSE;
-  frame.ebx = static_cast<uint32_t>(slot);
+  frame.ebx = *slot;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
 
   ASSERT_EQ(frame.eax, 0u);
-  ASSERT_NULL(proc->fds[slot]);
+  ASSERT_NULL(proc->fds[*slot]);
 }
 
 TEST(fd, close_invalid_fd) {
@@ -140,23 +143,23 @@ TEST(fd, dup2_copies_fd) {
 
   auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
 
-  int32_t slot = fd_alloc(proc->fds.data());
-  ASSERT(slot >= 0);
-  proc->fds[slot] = desc;
+  auto slot = fd_alloc(proc->fds);
+  ASSERT(slot.has_value());
+  proc->fds[*slot] = desc;
 
   TrapFrame frame = {};
   frame.eax = SYS_DUP2;
-  frame.ebx = static_cast<uint32_t>(slot);
-  frame.ecx = static_cast<uint32_t>(slot) + 1;
+  frame.ebx = *slot;
+  frame.ecx = *slot + 1;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
 
-  uint32_t newfd = static_cast<uint32_t>(slot) + 1;
+  uint32_t newfd = *slot + 1;
   ASSERT_EQ(frame.eax, newfd);
   ASSERT(proc->fds[newfd] == desc);
   ASSERT_EQ(desc->ref_count, 2u);
 
   // Cleanup: close both fds.
-  proc->fds[slot] = nullptr;
+  proc->fds[*slot] = nullptr;
   proc->fds[newfd] = nullptr;
   delete desc;
 }

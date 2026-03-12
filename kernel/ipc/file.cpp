@@ -17,31 +17,31 @@ static FileDescription g_terminal_write = {FileType::TerminalWrite, 1, nullptr};
 // File operations dispatch
 // ===========================================================================
 
-int32_t file_read(FileDescription* fd, uint8_t* buf, uint32_t count) {
+int32_t file_read(FileDescription* fd, std::span<uint8_t> buf) {
   switch (fd->type) {
     case FileType::TerminalRead: {
-      char* cbuf = reinterpret_cast<char*>(buf);
-      size_t n = kKeyboard.read(cbuf, count);
+      char* cbuf = reinterpret_cast<char*>(buf.data());
+      size_t n = kKeyboard.read(cbuf, buf.size());
       return static_cast<int32_t>(n);
     }
     case FileType::PipeRead:
-      return pipe_read(fd->pipe, buf, count);
+      return pipe_read(fd->pipe, buf);
     default:
       return -1;
   }
 }
 
-int32_t file_write(FileDescription* fd, const uint8_t* buf, uint32_t count) {
+int32_t file_write(FileDescription* fd, std::span<const uint8_t> buf) {
   switch (fd->type) {
     case FileType::TerminalWrite: {
-      const char* data = reinterpret_cast<const char*>(buf);
-      for (uint32_t i = 0; i < count; ++i) {
+      const char* data = reinterpret_cast<const char*>(buf.data());
+      for (size_t i = 0; i < buf.size(); ++i) {
         terminal_putchar(data[i]);
       }
-      return static_cast<int32_t>(count);
+      return static_cast<int32_t>(buf.size());
     }
     case FileType::PipeWrite:
-      return pipe_write(fd->pipe, buf, count);
+      return pipe_write(fd->pipe, buf);
     default:
       return -1;
   }
@@ -79,7 +79,7 @@ void file_close(FileDescription* fd) {
 // FD table helpers
 // ===========================================================================
 
-void fd_init_stdio(FileDescription* fds[]) {
+void fd_init_stdio(std::span<FileDescription*> fds) {
   fds[0] = &g_terminal_read;
   fds[1] = &g_terminal_write;
   fds[2] = &g_terminal_write;
@@ -89,18 +89,20 @@ void fd_init_stdio(FileDescription* fds[]) {
   ++g_terminal_read.ref_count;
   g_terminal_write.ref_count += 2;
 
-  for (uint32_t i = 3; i < kMaxFds; ++i) {
+  for (size_t i = 3; i < fds.size(); ++i) {
     fds[i] = nullptr;
   }
 }
 
-int32_t fd_alloc(FileDescription* fds[]) { return fd_alloc_from(fds, 0); }
+std::optional<uint32_t> fd_alloc(std::span<FileDescription*> fds) {
+  return fd_alloc_from(fds, 0);
+}
 
-int32_t fd_alloc_from(FileDescription* fds[], uint32_t min_fd) {
-  for (uint32_t i = min_fd; i < kMaxFds; ++i) {
+std::optional<uint32_t> fd_alloc_from(std::span<FileDescription*> fds, uint32_t min_fd) {
+  for (uint32_t i = min_fd; i < static_cast<uint32_t>(fds.size()); ++i) {
     if (!fds[i]) {
-      return static_cast<int32_t>(i);
+      return i;
     }
   }
-  return -1;
+  return std::nullopt;
 }

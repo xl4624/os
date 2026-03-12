@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span.h>
 #include <stdint.h>
 
 #include "ring_buffer.h"
@@ -14,13 +15,13 @@ struct Pipe {
   Pipe() : readers(0), writers(0) {}
 };
 
-// Read up to count bytes from the pipe buffer into buf.
+// Read up to buf.size() bytes from the pipe buffer into buf.
 // Returns bytes read, 0 for EOF (no writers), or kSyscallRestart to block.
-[[nodiscard]] int32_t pipe_read(Pipe* pipe, uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t pipe_read(Pipe* pipe, std::span<uint8_t> buf);
 
-// Write up to count bytes from buf into the pipe buffer.
+// Write up to buf.size() bytes from buf into the pipe buffer.
 // Returns bytes written, -1 for broken pipe (no readers), or kSyscallRestart.
-[[nodiscard]] int32_t pipe_write(Pipe* pipe, const uint8_t* buf, uint32_t count);
+[[nodiscard]] int32_t pipe_write(Pipe* pipe, std::span<const uint8_t> buf);
 
 // Called when a read-end FileDescription is freed. Decrements readers;
 // frees the Pipe if both readers and writers are zero.

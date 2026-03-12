@@ -1,5 +1,7 @@
 include ../config.mk
 
+BUILDDIR ?= $(abspath $(CURDIR)/../build)
+
 # Use host compilers for tests (not the cross compiler)
 CXX := g++
 CC  := gcc

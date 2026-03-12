@@ -208,10 +208,6 @@ TEST(span, span_of_const_int) {
   ASSERT_EQ(sum, 18);
 }
 
-// ===========================================================================
-// Mutations through span
-// ===========================================================================
-
 TEST(span, writes_propagate_to_underlying_array) {
   int arr[3] = {0, 0, 0};
   std::span<int> s(arr);
@@ -221,4 +217,67 @@ TEST(span, writes_propagate_to_underlying_array) {
   ASSERT_EQ(arr[0], 1);
   ASSERT_EQ(arr[1], 2);
   ASSERT_EQ(arr[2], 3);
+}
+
+TEST(span, copy_assignment) {
+  int a[3] = {1, 2, 3};
+  int b[2] = {4, 5};
+  std::span<int> sa(a);
+  std::span<int> sb(b);
+  sa = sb;
+  ASSERT_EQ(sa.size(), 2u);
+  ASSERT_EQ(sa.data(), b);
+}
+
+TEST(span, first_zero_is_empty) {
+  int arr[4] = {1, 2, 3, 4};
+  std::span<int> s(arr);
+  auto f = s.first(0);
+  ASSERT_EQ(f.size(), 0u);
+  ASSERT_TRUE(f.empty());
+}
+
+TEST(span, last_zero_is_empty) {
+  int arr[4] = {1, 2, 3, 4};
+  std::span<int> s(arr);
+  auto l = s.last(0);
+  ASSERT_EQ(l.size(), 0u);
+  ASSERT_TRUE(l.empty());
+}
+
+TEST(span, subspan_zero_count_is_empty) {
+  int arr[5] = {1, 2, 3, 4, 5};
+  std::span<int> s(arr);
+  auto sub = s.subspan(2, 0);
+  ASSERT_EQ(sub.size(), 0u);
+  ASSERT_TRUE(sub.empty());
+}
+
+// ===========================================================================
+// Char span
+// ===========================================================================
+
+TEST(span, char_span_from_array) {
+  char buf[6] = {'h', 'e', 'l', 'l', 'o', '\0'};
+  std::span<char> s(buf);
+  ASSERT_EQ(s.size(), 6u);
+  ASSERT_EQ(s[0], 'h');
+  ASSERT_EQ(s[4], 'o');
+}
+
+TEST(span, const_char_span_read) {
+  const char msg[] = "abc";
+  std::span<const char> s(msg, 3);
+  ASSERT_EQ(s.size(), 3u);
+  ASSERT_EQ(s[0], 'a');
+  ASSERT_EQ(s[2], 'c');
+}
+
+TEST(span, char_span_subspan) {
+  char buf[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+  std::span<char> s(buf);
+  auto mid = s.subspan(2, 4);
+  ASSERT_EQ(mid.size(), 4u);
+  ASSERT_EQ(mid[0], 'c');
+  ASSERT_EQ(mid[3], 'f');
 }

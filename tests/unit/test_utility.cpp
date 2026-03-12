@@ -118,3 +118,239 @@ TEST(utility, is_trivially_destructible) {
   ASSERT_TRUE(std::is_trivially_destructible_v<int>);
   ASSERT_FALSE(std::is_trivially_destructible_v<NonTrivial>);
 }
+
+// ===========================================================================
+// Trivially traits
+// ===========================================================================
+
+TEST(utility, is_trivially_copyable) {
+  struct Trivial {
+    int x;
+    float y;
+  };
+  struct NonTrivial {
+    NonTrivial(const NonTrivial&) {}
+  };
+  static_assert(std::is_trivially_copyable_v<int>);
+  static_assert(std::is_trivially_copyable_v<Trivial>);
+  static_assert(!std::is_trivially_copyable_v<NonTrivial>);
+  ASSERT_TRUE(std::is_trivially_copyable_v<int>);
+  ASSERT_FALSE(std::is_trivially_copyable_v<NonTrivial>);
+}
+
+TEST(utility, is_trivially_constructible) {
+  struct Trivial {
+    int x;
+  };
+  struct NonTrivial {
+    NonTrivial() : x(42) {}
+    int x;
+  };
+  static_assert(std::is_trivially_constructible_v<int>);
+  static_assert(std::is_trivially_constructible_v<Trivial>);
+  static_assert(!std::is_trivially_constructible_v<NonTrivial>);
+  ASSERT_TRUE(std::is_trivially_constructible_v<int>);
+  ASSERT_FALSE(std::is_trivially_constructible_v<NonTrivial>);
+}
+
+TEST(utility, is_trivial) {
+  struct Trivial {
+    int x;
+  };
+  struct NonTrivial {
+    NonTrivial() : x(0) {}
+    int x;
+  };
+  static_assert(std::is_trivial_v<int>);
+  static_assert(std::is_trivial_v<Trivial>);
+  static_assert(!std::is_trivial_v<NonTrivial>);
+  ASSERT_TRUE(std::is_trivial_v<int>);
+  ASSERT_FALSE(std::is_trivial_v<NonTrivial>);
+}
+
+// ===========================================================================
+// Layout / structural traits
+// ===========================================================================
+
+TEST(utility, is_standard_layout) {
+  struct Standard {
+    int x;
+    int y;
+  };
+  struct NonStandard {
+    virtual void f() {}
+  };
+  static_assert(std::is_standard_layout_v<int>);
+  static_assert(std::is_standard_layout_v<Standard>);
+  static_assert(!std::is_standard_layout_v<NonStandard>);
+  ASSERT_TRUE(std::is_standard_layout_v<Standard>);
+  ASSERT_FALSE(std::is_standard_layout_v<NonStandard>);
+}
+
+TEST(utility, is_pod) {
+  struct Pod {
+    int x;
+    float y;
+  };
+  struct NonPod {
+    virtual void f() {}
+  };
+  static_assert(std::is_pod_v<int>);
+  static_assert(std::is_pod_v<Pod>);
+  static_assert(!std::is_pod_v<NonPod>);
+  ASSERT_TRUE(std::is_pod_v<Pod>);
+  ASSERT_FALSE(std::is_pod_v<NonPod>);
+}
+
+TEST(utility, is_empty) {
+  struct Empty {};
+  struct NotEmpty {
+    int x;
+  };
+  static_assert(std::is_empty_v<Empty>);
+  static_assert(!std::is_empty_v<NotEmpty>);
+  static_assert(!std::is_empty_v<int>);
+  ASSERT_TRUE(std::is_empty_v<Empty>);
+  ASSERT_FALSE(std::is_empty_v<NotEmpty>);
+}
+
+TEST(utility, is_final) {
+  struct Base {};
+  struct Final final : Base {};
+  struct NotFinal : Base {};
+  static_assert(std::is_final_v<Final>);
+  static_assert(!std::is_final_v<NotFinal>);
+  static_assert(!std::is_final_v<int>);
+  ASSERT_TRUE(std::is_final_v<Final>);
+  ASSERT_FALSE(std::is_final_v<NotFinal>);
+}
+
+TEST(utility, is_aggregate) {
+  struct Aggregate {
+    int x;
+    int y;
+  };
+  struct NonAggregate {
+    explicit NonAggregate(int v) : x(v) {}
+    int x;
+  };
+  static_assert(std::is_aggregate_v<Aggregate>);
+  static_assert(!std::is_aggregate_v<NonAggregate>);
+  ASSERT_TRUE(std::is_aggregate_v<Aggregate>);
+  ASSERT_FALSE(std::is_aggregate_v<NonAggregate>);
+}
+
+// ===========================================================================
+// Nothrow constructibility
+// ===========================================================================
+
+TEST(utility, is_nothrow_default_constructible) {
+  struct Nothrow {
+    Nothrow() noexcept {}
+  };
+  struct Throwing {
+    Throwing() {}
+  };
+  static_assert(std::is_nothrow_default_constructible_v<int>);
+  static_assert(std::is_nothrow_default_constructible_v<Nothrow>);
+  static_assert(!std::is_nothrow_default_constructible_v<Throwing>);
+  ASSERT_TRUE(std::is_nothrow_default_constructible_v<int>);
+  ASSERT_TRUE(std::is_nothrow_default_constructible_v<Nothrow>);
+  ASSERT_FALSE(std::is_nothrow_default_constructible_v<Throwing>);
+}
+
+TEST(utility, is_nothrow_copy_constructible) {
+  struct Nothrow {
+    Nothrow() = default;
+    Nothrow(const Nothrow&) noexcept {}
+  };
+  struct Throwing {
+    Throwing() = default;
+    Throwing(const Throwing&) {}
+  };
+  static_assert(std::is_nothrow_copy_constructible_v<int>);
+  static_assert(std::is_nothrow_copy_constructible_v<Nothrow>);
+  static_assert(!std::is_nothrow_copy_constructible_v<Throwing>);
+  ASSERT_TRUE(std::is_nothrow_copy_constructible_v<int>);
+  ASSERT_FALSE(std::is_nothrow_copy_constructible_v<Throwing>);
+}
+
+TEST(utility, is_nothrow_move_constructible) {
+  struct Nothrow {
+    Nothrow() = default;
+    Nothrow(Nothrow&&) noexcept {}
+  };
+  struct Throwing {
+    Throwing() = default;
+    Throwing(Throwing&&) {}
+  };
+  static_assert(std::is_nothrow_move_constructible_v<int>);
+  static_assert(std::is_nothrow_move_constructible_v<Nothrow>);
+  static_assert(!std::is_nothrow_move_constructible_v<Throwing>);
+  ASSERT_TRUE(std::is_nothrow_move_constructible_v<int>);
+  ASSERT_FALSE(std::is_nothrow_move_constructible_v<Throwing>);
+}
+
+// ===========================================================================
+// Nothrow swappable
+// ===========================================================================
+
+struct NothrowSwappable {
+  friend void swap(NothrowSwappable&, NothrowSwappable&) noexcept {}
+};
+
+TEST(utility, is_nothrow_swappable) {
+  static_assert(std::is_nothrow_swappable_v<int>);
+  static_assert(std::is_nothrow_swappable_v<NothrowSwappable>);
+  ASSERT_TRUE(std::is_nothrow_swappable_v<int>);
+  ASSERT_TRUE(std::is_nothrow_swappable_v<NothrowSwappable>);
+}
+
+// ===========================================================================
+// invoke_result / result_of
+// ===========================================================================
+
+struct ReturnsInt {
+  int operator()() noexcept { return 42; }
+};
+
+struct TakesIntReturnsFloat {
+  float operator()(int) noexcept { return 1.0f; }
+};
+
+TEST(utility, invoke_result_nullary) {
+  static_assert(std::is_same_v<std::invoke_result_t<ReturnsInt>, int>);
+  ASSERT_TRUE((std::is_same_v<std::invoke_result_t<ReturnsInt>, int>));
+}
+
+TEST(utility, result_of_nullary) {
+  static_assert(std::is_same_v<std::result_of_t<ReturnsInt()>, int>);
+  ASSERT_TRUE((std::is_same_v<std::result_of_t<ReturnsInt()>, int>));
+}
+
+TEST(utility, invoke_result_with_arg) {
+  static_assert(std::is_same_v<std::invoke_result_t<TakesIntReturnsFloat(int)>, float>);
+  ASSERT_TRUE((std::is_same_v<std::invoke_result_t<TakesIntReturnsFloat(int)>, float>));
+}
+
+TEST(utility, result_of_with_arg) {
+  static_assert(std::is_same_v<std::result_of_t<TakesIntReturnsFloat(int)>, float>);
+  ASSERT_TRUE((std::is_same_v<std::result_of_t<TakesIntReturnsFloat(int)>, float>));
+}
+
+// ===========================================================================
+// is_invocable
+// ===========================================================================
+
+TEST(utility, is_invocable) {
+  struct Callable {
+    void operator()() noexcept {}
+  };
+  struct NotNoexcept {
+    void operator()() {}
+  };
+  static_assert(std::is_invocable_v<Callable>);
+  static_assert(!std::is_invocable_v<NotNoexcept>);
+  ASSERT_TRUE(std::is_invocable_v<Callable>);
+  ASSERT_FALSE(std::is_invocable_v<NotNoexcept>);
+}

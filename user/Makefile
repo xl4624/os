@@ -9,7 +9,10 @@ LIBS    := -L$(SYSROOT)/usr/lib -lc -lgcc
 SRCS  := $(wildcard *.c *.cpp)
 PROGS := $(addprefix $(BUILDDIR)/user/, $(addsuffix .elf, $(basename $(SRCS))))
 
+OBJS := $(addprefix $(BUILDDIR)/user/, crt0.o $(addsuffix .o, $(basename $(SRCS))))
+
 .PHONY: all clean
+.SECONDARY: $(OBJS)
 
 all: $(PROGS)
 

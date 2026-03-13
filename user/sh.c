@@ -118,6 +118,8 @@ static void expand_vars(const char* src, char* dst, int dsz) {
 typedef struct {
   char* argv[MAX_ARGS];
   int argc;
+  char* redir_in;  /* file for stdin redirection (<), or NULL */
+  char* redir_out; /* file for stdout redirection (>), or NULL */
 } Cmd;
 
 /* A pipeline of one or more commands connected by pipes. */
@@ -136,14 +138,23 @@ static char* trim(char* s) {
 
 /*
  * Parse a space-delimited command segment into cmd.
- * Modifies cmd_str in place (strtok_r writes NULs).
  */
 static void parse_cmd(char* cmd_str, Cmd* cmd) {
   cmd->argc = 0;
+  cmd->redir_in = 0;
+  cmd->redir_out = 0;
   char* save;
   char* tok = strtok_r(cmd_str, " ", &save);
   while (tok && cmd->argc < MAX_ARGS - 1) {
-    cmd->argv[cmd->argc++] = tok;
+    if (strcmp(tok, "<") == 0) {
+      tok = strtok_r(0, " ", &save);
+      if (tok) cmd->redir_in = tok;
+    } else if (strcmp(tok, ">") == 0) {
+      tok = strtok_r(0, " ", &save);
+      if (tok) cmd->redir_out = tok;
+    } else {
+      cmd->argv[cmd->argc++] = tok;
+    }
     tok = strtok_r(0, " ", &save);
   }
   cmd->argv[cmd->argc] = 0;
@@ -203,6 +214,7 @@ static int run_builtin(Cmd* cmd) {
     printf("  NAME=VALUE    set a shell variable\n");
     printf("  $NAME         expand a shell variable\n");
     printf("Pipeline:  cmd1 | cmd2\n");
+    printf("Redirect:  cmd < infile, cmd > outfile\n");
     return 1;
   }
   if (strcmp(cmd->argv[0], "exit") == 0) {
@@ -280,6 +292,25 @@ static void run_pipeline(Pipeline* pl) {
       for (int j = 0; j < npipes; j++) {
         close(pipes[j][0]);
         close(pipes[j][1]);
+      }
+      /* Apply I/O redirections (overrides pipe if both specified). */
+      if (cmd->redir_in) {
+        int fd = open(cmd->redir_in);
+        if (fd < 0) {
+          printf("sh: cannot open %s\n", cmd->redir_in);
+          _exit(1);
+        }
+        dup2(fd, 0);
+        close(fd);
+      }
+      if (cmd->redir_out) {
+        int fd = open(cmd->redir_out);
+        if (fd < 0) {
+          printf("sh: cannot open %s\n", cmd->redir_out);
+          _exit(1);
+        }
+        dup2(fd, 1);
+        close(fd);
       }
       /* Build VFS path: /bin/<command> */
       char path[PATH_MAX];

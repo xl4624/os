@@ -63,8 +63,7 @@ int32_t ramfs_read(VfsNode* node, std::span<uint8_t> buf, uint32_t offset) {
   return static_cast<int32_t>(to_read);
 }
 
-int32_t ramfs_write([[maybe_unused]] VfsNode* node,
-                    [[maybe_unused]] std::span<const uint8_t> buf,
+int32_t ramfs_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<const uint8_t> buf,
                     [[maybe_unused]] uint32_t offset) {
   return -1;  // read-only
 }

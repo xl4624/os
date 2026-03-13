@@ -49,9 +49,7 @@ class span {
 
   // Element access
 
-  [[nodiscard]] constexpr reference operator[](size_type idx) const noexcept {
-    return data_[idx];
-  }
+  [[nodiscard]] constexpr reference operator[](size_type idx) const noexcept { return data_[idx]; }
 
   [[nodiscard]] constexpr reference front() const noexcept { return data_[0]; }
   [[nodiscard]] constexpr reference back() const noexcept { return data_[size_ - 1]; }
@@ -72,9 +70,7 @@ class span {
 
   // Subspans
 
-  [[nodiscard]] constexpr span<T> first(size_type count) const noexcept {
-    return {data_, count};
-  }
+  [[nodiscard]] constexpr span<T> first(size_type count) const noexcept { return {data_, count}; }
 
   [[nodiscard]] constexpr span<T> last(size_type count) const noexcept {
     return {data_ + size_ - count, count};

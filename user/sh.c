@@ -2,13 +2,13 @@
 #include <string.h>
 #include <unistd.h>
 
-#define LINE_MAX     256
-#define PATH_MAX     128
-#define MAX_ARGS     16
-#define MAX_CMDS     8
-#define MAX_VARS     16
+#define LINE_MAX 256
+#define PATH_MAX 128
+#define MAX_ARGS 16
+#define MAX_CMDS 8
+#define MAX_VARS 16
 #define VAR_NAME_MAX 32
-#define VAR_VAL_MAX  64
+#define VAR_VAL_MAX 64
 
 // ===========================================================================
 // Shell variable store
@@ -84,8 +84,7 @@ static int readline(char* buf, int max) {
 // ===========================================================================
 
 static int is_var_char(char c) {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-         (c >= '0' && c <= '9') || c == '_';
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
 
 /* Expand $VAR references from src into dst (at most dsz bytes including NUL). */
@@ -96,7 +95,7 @@ static void expand_vars(const char* src, char* dst, int dsz) {
       dst[di++] = src[si++];
       continue;
     }
-    si++;  /* skip '$' */
+    si++; /* skip '$' */
     char vname[VAR_NAME_MAX];
     int vi = 0;
     while (is_var_char(src[si]) && vi < (int)sizeof(vname) - 1) {
@@ -172,8 +171,8 @@ static void parse_pipeline(char* line, Pipeline* pl) {
 /* Returns 1 if word is a VAR=value assignment and handles it; 0 otherwise. */
 static int try_assignment(const char* word) {
   /* Variable names must start with a letter or underscore. */
-  if (!(word[0] >= 'a' && word[0] <= 'z') &&
-      !(word[0] >= 'A' && word[0] <= 'Z') && word[0] != '_') {
+  if (!(word[0] >= 'a' && word[0] <= 'z') && !(word[0] >= 'A' && word[0] <= 'Z') &&
+      word[0] != '_') {
     return 0;
   }
   const char* eq = strchr(word, '=');

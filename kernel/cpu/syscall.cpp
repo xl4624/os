@@ -83,8 +83,7 @@ static int32_t sys_read(TrapFrame* regs) {
     return -1;
   }
 
-  return file_read(proc->fds[fd_num],
-                   std::span<uint8_t>(reinterpret_cast<uint8_t*>(buf), count));
+  return file_read(proc->fds[fd_num], std::span<uint8_t>(reinterpret_cast<uint8_t*>(buf), count));
 }
 
 // SYS_EXIT(code=ebx)
@@ -278,8 +277,10 @@ static int32_t sys_pipe(TrapFrame* regs) {
     return -1;
   }
 
-  auto rd = std::make_unique<FileDescription>(FileDescription{FileType::PipeRead, 1, pipe.get(), nullptr});
-  auto wr = std::make_unique<FileDescription>(FileDescription{FileType::PipeWrite, 1, pipe.get(), nullptr});
+  auto rd = std::make_unique<FileDescription>(
+      FileDescription{FileType::PipeRead, 1, pipe.get(), nullptr});
+  auto wr = std::make_unique<FileDescription>(
+      FileDescription{FileType::PipeWrite, 1, pipe.get(), nullptr});
   if (!rd || !wr) {
     return -1;
   }

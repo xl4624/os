@@ -56,8 +56,7 @@ bool validate(std::span<const uint8_t> data) {
   return true;
 }
 
-bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out,
-          vaddr_t& brk_out) {
+bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out, vaddr_t& brk_out) {
   if (!validate(elf_data)) {
     return false;
   }

@@ -12,8 +12,7 @@ namespace {
 const uint8_t test_data[] = "Hello, VFS!";
 constexpr size_t test_data_len = sizeof(test_data) - 1;  // exclude null
 
-int32_t counting_read(VfsNode* node, std::span<uint8_t> buf,
-                      [[maybe_unused]] uint32_t offset) {
+int32_t counting_read(VfsNode* node, std::span<uint8_t> buf, [[maybe_unused]] uint32_t offset) {
   // Return node->size bytes of 'A'.
   size_t n = buf.size();
   if (n > node->size) {
@@ -23,8 +22,7 @@ int32_t counting_read(VfsNode* node, std::span<uint8_t> buf,
   return static_cast<int32_t>(n);
 }
 
-int32_t counting_write([[maybe_unused]] VfsNode* node,
-                       std::span<const uint8_t> buf,
+int32_t counting_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
                        [[maybe_unused]] uint32_t offset) {
   return static_cast<int32_t>(buf.size());
 }

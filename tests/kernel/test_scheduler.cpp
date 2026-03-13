@@ -209,8 +209,8 @@ TEST(scheduler, create_process) {
   TestElf elf;
   make_test_elf(elf, 0x00400000);
 
-  Process* p =
-      Scheduler::create_process(std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, "test");
+  Process* p = Scheduler::create_process(
+      std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, "test");
   ASSERT_NOT_NULL(p);
   ASSERT_EQ(p->pid, 1u);  // first user process
   ASSERT_EQ(p->state, ProcessState::Ready);

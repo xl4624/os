@@ -15,8 +15,8 @@ static constexpr uint32_t kMaxPathLen = 128;
 
 // VFS node types.
 enum class VfsNodeType : uint8_t {
-  File,       // regular file (ramfs data)
-  CharDev,    // character device (e.g. /dev/tty, /dev/null)
+  File,     // regular file (ramfs data)
+  CharDev,  // character device (e.g. /dev/tty, /dev/null)
 };
 
 // Operations that a VFS node can support. Each backend (ramfs, devfs)
@@ -35,7 +35,7 @@ struct VfsFileDescription {
 
 // A single node in the VFS. Represents a file or device.
 struct VfsNode {
-  char name[kMaxPathLen];   // full path (e.g. "/dev/tty", "/bin/sh.elf")
+  char name[kMaxPathLen];  // full path (e.g. "/dev/tty", "/bin/sh.elf")
   VfsNodeType type;
   const VfsOps* ops;
 
@@ -51,8 +51,7 @@ void init();
 
 // Register a new node. Returns a pointer to the node, or nullptr if the
 // table is full or the name is too long.
-[[nodiscard]] VfsNode* register_node(const char* path, VfsNodeType type,
-                                     const VfsOps* ops);
+[[nodiscard]] VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops);
 
 // Look up a node by its full path. Returns nullptr if not found.
 [[nodiscard]] VfsNode* lookup(const char* path);

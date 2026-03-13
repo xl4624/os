@@ -93,7 +93,6 @@ bool validate(std::span<const uint8_t> data);
 // directory. On success, sets entry_out to e_entry and brk_out to the
 // page-aligned end of the highest loaded segment (initial heap break).
 [[nodiscard]]
-bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out,
-          vaddr_t& brk_out);
+bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out, vaddr_t& brk_out);
 
 }  // namespace Elf

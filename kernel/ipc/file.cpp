@@ -102,9 +102,7 @@ void fd_init_stdio(std::span<FileDescription*> fds) {
   }
 }
 
-std::optional<uint32_t> fd_alloc(std::span<FileDescription*> fds) {
-  return fd_alloc_from(fds, 0);
-}
+std::optional<uint32_t> fd_alloc(std::span<FileDescription*> fds) { return fd_alloc_from(fds, 0); }
 
 std::optional<uint32_t> fd_alloc_from(std::span<FileDescription*> fds, uint32_t min_fd) {
   for (uint32_t i = min_fd; i < static_cast<uint32_t>(fds.size()); ++i) {

@@ -34,8 +34,8 @@ enum class FileType : uint8_t {
 struct FileDescription {
   FileType type;
   uint32_t ref_count;
-  Pipe* pipe;                // non-null for PipeRead / PipeWrite only
-  VfsFileDescription* vfs;   // non-null for VfsNode only
+  Pipe* pipe;               // non-null for PipeRead / PipeWrite only
+  VfsFileDescription* vfs;  // non-null for VfsNode only
 
   void ref() { ++ref_count; }
 };
@@ -61,4 +61,4 @@ void fd_init_stdio(std::span<FileDescription*> fds);
 
 // Find the lowest free fd slot >= min_fd. Returns the index, or nullopt if full.
 [[nodiscard]] std::optional<uint32_t> fd_alloc_from(std::span<FileDescription*> fds,
-                                                     uint32_t min_fd);
+                                                    uint32_t min_fd);

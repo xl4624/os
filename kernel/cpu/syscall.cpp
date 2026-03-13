@@ -165,7 +165,7 @@ static int32_t sys_open(TrapFrame* regs) {
 }
 
 // SYS_EXEC(path=ebx)
-// Replaces the current process image with a VFS path (e.g. "/bin/sh.elf").
+// Replaces the current process image with a VFS path (e.g. "/bin/sh").
 // Returns 0 on success, -1 on failure.
 static int32_t sys_exec(TrapFrame* regs) {
   uint32_t path_ptr = regs->ebx;

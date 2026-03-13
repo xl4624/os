@@ -57,14 +57,14 @@ __attribute__((noreturn)) void kernel_main() {
   Vfs::init_devfs();
   Vfs::init_ramfs();
 
-  VfsNode* shell = Vfs::lookup("/bin/sh.elf");
+  VfsNode* shell = Vfs::lookup("/bin/sh");
   if (shell && shell->data) {
     printf("Loading shell \"%s\" (%u bytes)...\n", shell->name, static_cast<unsigned>(shell->size));
     assert(Scheduler::create_process(std::span<const uint8_t>{shell->data, shell->size},
                                      shell->name) &&
            "kernel_main(): failed to create shell process");
   } else {
-    printf("No shell found at /bin/sh.elf\n");
+    printf("No shell found at /bin/sh\n");
   }
 
   printf("Starting scheduler...\n");

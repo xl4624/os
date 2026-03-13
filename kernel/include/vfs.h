@@ -35,7 +35,7 @@ struct VfsFileDescription {
 
 // A single node in the VFS. Represents a file or device.
 struct VfsNode {
-  char name[kMaxPathLen];  // full path (e.g. "/dev/tty", "/bin/sh.elf")
+  char name[kMaxPathLen];  // full path (e.g. "/dev/tty", "/bin/sh")
   VfsNodeType type;
   const VfsOps* ops;
 

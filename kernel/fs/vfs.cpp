@@ -187,14 +187,19 @@ void init_ramfs() {
     }
 
     // Build path "/bin/<name>"
-    char path[kMaxPathLen];
-    // Ensure path fits: "/bin/" (5) + name + '\0'
+    char name[kMaxPathLen];
     size_t name_len = strlen(mod->name);
     if (name_len + 6 > kMaxPathLen) {
       continue;
     }
+    strcpy(name, mod->name);
+    if (name_len > 4 && strcmp(name + name_len - 4, ".elf") == 0) {
+      name[name_len - 4] = '\0';
+    }
+
+    char path[kMaxPathLen];
     strcpy(path, "/bin/");
-    strcpy(path + 5, mod->name);
+    strcpy(path + 5, name);
 
     auto* node = register_node(path, VfsNodeType::File, &ramfs_ops);
     if (node) {

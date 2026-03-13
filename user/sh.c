@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #define LINE_MAX     256
+#define PATH_MAX     128
 #define MAX_ARGS     16
 #define MAX_CMDS     8
 #define MAX_VARS     16
@@ -203,7 +204,6 @@ static int run_builtin(Cmd* cmd) {
     printf("  NAME=VALUE    set a shell variable\n");
     printf("  $NAME         expand a shell variable\n");
     printf("Pipeline:  cmd1 | cmd2\n");
-    printf("Note: I/O redirection requires VFS support (not yet implemented)\n");
     return 1;
   }
   if (strcmp(cmd->argv[0], "exit") == 0) {
@@ -282,8 +282,21 @@ static void run_pipeline(Pipeline* pl) {
         close(pipes[j][0]);
         close(pipes[j][1]);
       }
-      if (exec(cmd->argv[0]) < 0) {
-        printf("sh: not found: %s\n", cmd->argv[0]);
+      /* Build VFS path: /bin/<command> */
+      char path[PATH_MAX];
+      const char* name = cmd->argv[0];
+      if (name[0] == '/') {
+        /* Already an absolute path. */
+        strncpy(path, name, PATH_MAX - 1);
+        path[PATH_MAX - 1] = '\0';
+      } else {
+        /* Prepend /bin/ to bare command name. */
+        strncpy(path, "/bin/", 6);
+        strncpy(path + 5, name, PATH_MAX - 6);
+        path[PATH_MAX - 1] = '\0';
+      }
+      if (exec(path) < 0) {
+        printf("sh: not found: %s\n", name);
         _exit(1);
       }
       _exit(0);

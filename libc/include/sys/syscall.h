@@ -23,6 +23,7 @@
 #define SYS_SHMGET 12
 #define SYS_SHMAT 13
 #define SYS_SHMDT 14
-#define SYS_MAX 15
+#define SYS_OPEN 15
+#define SYS_MAX 16
 
 #endif

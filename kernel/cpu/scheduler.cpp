@@ -452,26 +452,36 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
 int32_t waitpid_current(int32_t pid, int32_t* exit_code_ptr) {
   assert(current_process != idle_process && "waitpid_current(): cannot wait on idle process");
 
-  while (true) {
-    for (uint32_t i = 1; i < next_pid; ++i) {
-      Process& child = process_table[i];
-      if (child.parent_pid == current_process->pid && child.state == ProcessState::Zombie) {
-        if (exit_code_ptr) {
-          *exit_code_ptr = child.exit_code;
-        }
-        uint32_t child_pid = child.pid;
-        memset(&child, 0, sizeof(Process));
-        return static_cast<int32_t>(child_pid);
+  bool found_child = false;
+
+  for (uint32_t i = 1; i < next_pid; ++i) {
+    Process& child = process_table[i];
+    if (child.parent_pid != current_process->pid) {
+      continue;
+    }
+    // When waiting for a specific pid, skip non-matching children.
+    if (pid > 0 && child.pid != static_cast<uint32_t>(pid)) {
+      continue;
+    }
+    if (child.state == ProcessState::Zombie) {
+      if (exit_code_ptr) {
+        *exit_code_ptr = child.exit_code;
       }
+      uint32_t child_pid = child.pid;
+      memset(&child, 0, sizeof(Process));
+      return static_cast<int32_t>(child_pid);
     }
-
-    if (pid > 0) {
-      return -1;
-    }
-
-    enqueue_blocked(current_process);
-    return 0;
+    // Child exists but is not a zombie yet.
+    found_child = true;
   }
+
+  if (!found_child) {
+    return -1;  // no matching child exists
+  }
+
+  // Child exists but hasn't exited; block and retry via syscall restart.
+  enqueue_blocked(current_process);
+  return 0;
 }
 
 Process* current() { return current_process; }

@@ -57,7 +57,7 @@ TEST(fd, alloc_after_close_reuses_slot) {
 
 TEST(fd, alloc_full_returns_nullopt) {
   FileDescription* fds[kMaxFds];
-  FileDescription dummy = {FileType::TerminalRead, 1, nullptr};
+  FileDescription dummy = {FileType::TerminalRead, 1, nullptr, nullptr};
 
   for (uint32_t i = 0; i < kMaxFds; ++i) {
     fds[i] = &dummy;
@@ -111,7 +111,7 @@ TEST(fd, write_null_fd_slot) {
 TEST(fd, close_valid_fd) {
   Process* proc = Scheduler::current();
 
-  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
+  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr, nullptr};
 
   auto slot = fd_alloc(proc->fds);
   ASSERT(slot.has_value());
@@ -141,7 +141,7 @@ TEST(fd, close_invalid_fd) {
 TEST(fd, dup2_copies_fd) {
   Process* proc = Scheduler::current();
 
-  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr};
+  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr, nullptr};
 
   auto slot = fd_alloc(proc->fds);
   ASSERT(slot.has_value());

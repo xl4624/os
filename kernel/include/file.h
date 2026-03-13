@@ -14,12 +14,16 @@ static constexpr int32_t kSyscallRestart = -0x7FFFFFFE;
 // Forward declaration for pipe endpoints.
 struct Pipe;
 
+// Forward declaration for VFS open-file state.
+struct VfsFileDescription;
+
 // Types of open file descriptions.
 enum class FileType : uint8_t {
   TerminalRead,   // stdin: reads from keyboard
   TerminalWrite,  // stdout/stderr: writes to VGA terminal
   PipeRead,       // read end of a pipe
   PipeWrite,      // write end of a pipe
+  VfsNode,        // file/device opened through the VFS
 };
 
 // Reference-counted open file description.
@@ -30,7 +34,8 @@ enum class FileType : uint8_t {
 struct FileDescription {
   FileType type;
   uint32_t ref_count;
-  Pipe* pipe;  // non-null for PipeRead / PipeWrite only
+  Pipe* pipe;                // non-null for PipeRead / PipeWrite only
+  VfsFileDescription* vfs;   // non-null for VfsNode only
 
   void ref() { ++ref_count; }
 };

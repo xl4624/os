@@ -11,7 +11,6 @@
 #include "idt.h"
 #include "interrupt.h"
 #include "keyboard.h"
-#include "modules.h"
 #include "paging.h"
 #include "pipe.h"
 #include "pmm.h"
@@ -19,6 +18,7 @@
 #include "shm.h"
 #include "tss.h"
 #include "tty.h"
+#include "vfs.h"
 
 static constexpr uint32_t SYSCALL_VECTOR = 0x80;
 
@@ -152,19 +152,32 @@ static int32_t sys_getpid([[maybe_unused]] TrapFrame* regs) {
   return static_cast<int32_t>(Scheduler::current()->pid);
 }
 
-// SYS_EXEC(name=ebx)
-// Replaces the current process image with a named module.
-// Returns 0 on success, -1 on failure.
-static int32_t sys_exec(TrapFrame* regs) {
-  uint32_t name_ptr = regs->ebx;
+// SYS_OPEN(path=ebx)
+// Opens a file by path. Returns fd on success, -1 on failure.
+static int32_t sys_open(TrapFrame* regs) {
+  uint32_t path_ptr = regs->ebx;
 
-  if (!validate_user_buffer(name_ptr, 1, /*writeable=*/false)) {
+  if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
     return -1;
   }
 
-  const char* name = reinterpret_cast<const char*>(name_ptr);
-  const Module* mod = Modules::find(name);
-  if (!mod) {
+  const char* path = reinterpret_cast<const char*>(path_ptr);
+  return Vfs::open(path);
+}
+
+// SYS_EXEC(path=ebx)
+// Replaces the current process image with a VFS path (e.g. "/bin/sh.elf").
+// Returns 0 on success, -1 on failure.
+static int32_t sys_exec(TrapFrame* regs) {
+  uint32_t path_ptr = regs->ebx;
+
+  if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
+    return -1;
+  }
+
+  const char* path = reinterpret_cast<const char*>(path_ptr);
+  VfsNode* node = Vfs::lookup(path);
+  if (!node || !node->data) {
     return -1;
   }
 
@@ -178,12 +191,12 @@ static int32_t sys_exec(TrapFrame* regs) {
 
   vaddr_t entry = 0;
   vaddr_t brk = 0;
-  if (!Elf::load(std::span<const uint8_t>{mod->data, mod->len}, new_pd_virt, entry, brk)) {
+  if (!Elf::load(std::span<const uint8_t>{node->data, node->size}, new_pd_virt, entry, brk)) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;
   }
 
-  uint32_t user_esp = Scheduler::alloc_user_stack(new_pd_virt, name);
+  uint32_t user_esp = Scheduler::alloc_user_stack(new_pd_virt, path);
   if (user_esp == 0) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;
@@ -265,8 +278,8 @@ static int32_t sys_pipe(TrapFrame* regs) {
     return -1;
   }
 
-  auto rd = std::make_unique<FileDescription>(FileDescription{FileType::PipeRead, 1, pipe.get()});
-  auto wr = std::make_unique<FileDescription>(FileDescription{FileType::PipeWrite, 1, pipe.get()});
+  auto rd = std::make_unique<FileDescription>(FileDescription{FileType::PipeRead, 1, pipe.get(), nullptr});
+  auto wr = std::make_unique<FileDescription>(FileDescription{FileType::PipeWrite, 1, pipe.get(), nullptr});
   if (!rd || !wr) {
     return -1;
   }
@@ -373,6 +386,7 @@ static syscall_fn syscall_table[SYS_MAX] = {
     sys_shmget,   // 12
     sys_shmat,    // 13
     sys_shmdt,    // 14
+    sys_open,     // 15
 };
 
 __BEGIN_DECLS

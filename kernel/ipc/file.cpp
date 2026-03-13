@@ -5,13 +5,14 @@
 #include "keyboard.h"
 #include "pipe.h"
 #include "tty.h"
+#include "vfs.h"
 
 // ===========================================================================
 // Terminal singletons
 // ===========================================================================
 
-static FileDescription g_terminal_read = {FileType::TerminalRead, 1, nullptr};
-static FileDescription g_terminal_write = {FileType::TerminalWrite, 1, nullptr};
+static FileDescription g_terminal_read = {FileType::TerminalRead, 1, nullptr, nullptr};
+static FileDescription g_terminal_write = {FileType::TerminalWrite, 1, nullptr, nullptr};
 
 // ===========================================================================
 // File operations dispatch
@@ -26,6 +27,8 @@ int32_t file_read(FileDescription* fd, std::span<uint8_t> buf) {
     }
     case FileType::PipeRead:
       return pipe_read(fd->pipe, buf);
+    case FileType::VfsNode:
+      return Vfs::read(fd, buf);
     default:
       return -1;
   }
@@ -42,6 +45,8 @@ int32_t file_write(FileDescription* fd, std::span<const uint8_t> buf) {
     }
     case FileType::PipeWrite:
       return pipe_write(fd->pipe, buf);
+    case FileType::VfsNode:
+      return Vfs::write(fd, buf);
     default:
       return -1;
   }
@@ -69,6 +74,9 @@ void file_close(FileDescription* fd) {
     case FileType::PipeWrite:
       pipe_close_write(fd->pipe);
       delete fd;
+      return;
+    case FileType::VfsNode:
+      Vfs::close(fd);
       return;
     default:
       return;

@@ -17,6 +17,7 @@
 #include "scheduler.h"
 #include "syscall.h"
 #include "tss.h"
+#include "vfs.h"
 #include "x86.h"
 
 /* Verify we are using the i686-elf cross-compile */
@@ -51,16 +52,19 @@ __attribute__((noreturn)) void kernel_main() {
   const auto* info = phys_to_virt(paddr_t{mboot_info}).ptr<multiboot_info_t>();
   Modules::init(info);
 
-  if (Modules::count() > 0) {
-    // Launch module 0 (the shell); other modules stay in the registry
-    // for the shell to exec by name.
-    const Module* shell = Modules::get(0);
-    printf("Loading shell \"%s\" (%u bytes)...\n", shell->name, static_cast<unsigned>(shell->len));
-    assert(Scheduler::create_process(std::span<const uint8_t>{shell->data, shell->len},
+  // Set up the VFS with device nodes and module-backed files.
+  Vfs::init();
+  Vfs::init_devfs();
+  Vfs::init_ramfs();
+
+  VfsNode* shell = Vfs::lookup("/bin/sh.elf");
+  if (shell && shell->data) {
+    printf("Loading shell \"%s\" (%u bytes)...\n", shell->name, static_cast<unsigned>(shell->size));
+    assert(Scheduler::create_process(std::span<const uint8_t>{shell->data, shell->size},
                                      shell->name) &&
            "kernel_main(): failed to create shell process");
   } else {
-    printf("No multiboot modules found.\n");
+    printf("No shell found at /bin/sh.elf\n");
   }
 
   printf("Starting scheduler...\n");

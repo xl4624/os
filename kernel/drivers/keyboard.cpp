@@ -153,6 +153,14 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
   // If not a command response; process as key scancode.
   KeyEvent event = scancode_to_event(scancode);
 
+  // Buffer raw key event for /dev/kbd (skip the 0xE0 prefix non-events).
+  if (event.key != Key::Unknown) {
+    kbd_event ke;
+    ke.key = event.key.value();
+    ke.pressed = event.pressed ? 1 : 0;
+    static_cast<void>(event_buffer_.push(ke));
+  }
+
   // Buffer printable characters for sys_read.
   if (event.ascii != '\0') {
     buffer_char(event.ascii);
@@ -196,6 +204,17 @@ size_t KeyboardDriver::read(char* buf, size_t count) {
   char c;
   while (n < count && input_buffer_.pop(c)) {
     buf[n++] = c;
+  }
+  return n;
+}
+
+size_t KeyboardDriver::read_events(kbd_event* buf, size_t max_events) {
+  assert((max_events == 0 || buf != nullptr) &&
+         "KeyboardDriver::read_events(): buf is null with non-zero max_events");
+  size_t n = 0;
+  kbd_event ev;
+  while (n < max_events && event_buffer_.pop(ev)) {
+    buf[n++] = ev;
   }
   return n;
 }

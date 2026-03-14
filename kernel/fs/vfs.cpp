@@ -46,6 +46,24 @@ int32_t null_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
 
 const VfsOps null_ops = {null_read, null_write};
 
+int32_t kbd_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
+                 [[maybe_unused]] uint32_t offset) {
+  size_t max_events = buf.size() / sizeof(kbd_event);
+  if (max_events == 0) {
+    return 0;
+  }
+  auto* events = reinterpret_cast<kbd_event*>(buf.data());
+  size_t n = kKeyboard.read_events(events, max_events);
+  return static_cast<int32_t>(n * sizeof(kbd_event));
+}
+
+int32_t kbd_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<const uint8_t> buf,
+                  [[maybe_unused]] uint32_t offset) {
+  return -1;  // not writable
+}
+
+const VfsOps kbd_ops = {kbd_read, kbd_write};
+
 // ===========================================================================
 // ramfs operations
 // ===========================================================================
@@ -177,6 +195,9 @@ void init_devfs() {
 
   auto* null = register_node("/dev/null", VfsNodeType::CharDev, &null_ops);
   (void)null;
+
+  auto* kbd = register_node("/dev/kbd", VfsNodeType::CharDev, &kbd_ops);
+  (void)kbd;
 }
 
 void init_ramfs() {

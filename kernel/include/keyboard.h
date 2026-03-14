@@ -2,12 +2,16 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/kbd.h>
 
 #include "ps2_command_queue.h"
 #include "ring_buffer.h"
 
 // Size of keyboard input buffer for sys_read system call
 static constexpr size_t kKeyboardInputBufferSize = 128;
+
+// Size of raw key event buffer for /dev/kbd
+static constexpr size_t kKeyEventBufferSize = 64;
 
 /**
  * Key: Represents a physical keyboard key (not modified by shift/ctrl/alt).
@@ -116,6 +120,13 @@ class KeyboardDriver {
   size_t read(char* buf, size_t count);
 
   /**
+   * Reads buffered key events into user buffer.
+   *
+   * Returns number of events read (0 if none pending).
+   */
+  size_t read_events(kbd_event* buf, size_t max_events);
+
+  /**
    * Sends PS/2 command to keyboard controller.
    */
   bool send_command(PS2Command command) { return cmd_queue_.send_command(command); }
@@ -150,8 +161,11 @@ class KeyboardDriver {
   bool alt_ = false;
   bool extended_scancode_ = false;  // Received 0xE0 prefix
 
-  // Input buffer for sys_read
+  // Input buffer for sys_read (ASCII characters)
   RingBuffer<char, kKeyboardInputBufferSize> input_buffer_;
+
+  // Raw key event buffer for /dev/kbd
+  RingBuffer<kbd_event, kKeyEventBufferSize> event_buffer_;
 
   // PS/2 command protocol handler
   PS2CommandQueue cmd_queue_;

@@ -67,7 +67,6 @@ __attribute__((noreturn)) void kernel_main() {
     printf("No shell found at /bin/sh\n");
   }
 
-  printf("Starting scheduler...\n");
   while (true) {
     asm volatile("hlt");
   }

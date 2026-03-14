@@ -5,6 +5,7 @@
 #include <sys/io.h>
 
 #include "../tests/kernel/ktest.h"
+#include "framebuffer.h"
 #include "gdt.h"
 #include "heap.h"
 #include "interrupt.h"
@@ -48,9 +49,16 @@ __attribute__((noreturn)) void kernel_main() {
 #else
   Scheduler::start();
 
-  // Load user programs from multiboot modules.
+  // Parse multiboot info for modules and framebuffer.
   const auto* info = phys_to_virt(paddr_t{mboot_info}).ptr<multiboot_info_t>();
   Modules::init(info);
+
+  // Initialise the framebuffer if the bootloader provided one.
+  if (Framebuffer::init(info)) {
+    const auto& fb = Framebuffer::info();
+    printf("Framebuffer: %ux%u %ubpp pitch=%u\n", fb.width, fb.height,
+           static_cast<unsigned>(fb.bpp), fb.pitch);
+  }
 
   // Set up the VFS with device nodes and module-backed files.
   Vfs::init();

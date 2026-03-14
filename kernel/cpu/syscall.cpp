@@ -13,6 +13,7 @@
 #include "keyboard.h"
 #include "paging.h"
 #include "pipe.h"
+#include "pit.h"
 #include "pmm.h"
 #include "scheduler.h"
 #include "shm.h"
@@ -365,6 +366,63 @@ static int32_t sys_shmdt(TrapFrame* regs) {
   return Shm::detach(vaddr, size);
 }
 
+// SYS_GETTICKS()
+// Returns the number of PIT ticks since boot (10 ms resolution).
+// The 64-bit tick count is split: low 32 bits in eax, high 32 bits in edx.
+static int32_t sys_getticks(TrapFrame* regs) {
+  uint64_t ticks = PIT::get_ticks();
+  regs->edx = static_cast<uint32_t>(ticks >> 32);
+  return static_cast<int32_t>(ticks & 0xFFFFFFFF);
+}
+
+// SYS_LSEEK(fd=ebx, offset=ecx, whence=edx)
+// Sets the file offset for a VFS-backed file descriptor.
+// whence: 0=SEEK_SET, 1=SEEK_CUR, 2=SEEK_END
+// Returns the new offset on success, -1 on error.
+static int32_t sys_lseek(TrapFrame* regs) {
+  uint32_t fd_num = regs->ebx;
+  auto offset = static_cast<int32_t>(regs->ecx);
+  uint32_t whence = regs->edx;
+
+  Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
+    return -1;
+  }
+
+  FileDescription* fd = proc->fds[fd_num];
+  if (fd->type != FileType::VfsNode || !fd->vfs) {
+    return -1;
+  }
+
+  VfsFileDescription* vfs_fd = fd->vfs;
+  if (!vfs_fd->node || vfs_fd->node->type != VfsNodeType::File) {
+    return -1;  // only regular files support seeking
+  }
+
+  int64_t base;
+  switch (whence) {
+    case 0:  // SEEK_SET
+      base = 0;
+      break;
+    case 1:  // SEEK_CUR
+      base = static_cast<int64_t>(vfs_fd->offset);
+      break;
+    case 2:  // SEEK_END
+      base = static_cast<int64_t>(vfs_fd->node->size);
+      break;
+    default:
+      return -1;
+  }
+
+  int64_t new_offset = base + offset;
+  if (new_offset < 0 || new_offset > INT32_MAX) {
+    return -1;
+  }
+
+  vfs_fd->offset = static_cast<uint32_t>(new_offset);
+  return static_cast<int32_t>(new_offset);
+}
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -372,22 +430,24 @@ static int32_t sys_shmdt(TrapFrame* regs) {
 using syscall_fn = int32_t (*)(TrapFrame*);
 
 static syscall_fn syscall_table[SYS_MAX] = {
-    sys_exit,     // 0
-    sys_read,     // 1
-    sys_write,    // 2
-    sys_sleep,    // 3
-    sys_sbrk,     // 4
-    sys_getpid,   // 5
-    sys_exec,     // 6
-    sys_fork,     // 7
-    sys_waitpid,  // 8
-    sys_pipe,     // 9
-    sys_close,    // 10
-    sys_dup2,     // 11
-    sys_shmget,   // 12
-    sys_shmat,    // 13
-    sys_shmdt,    // 14
-    sys_open,     // 15
+    sys_exit,      // 0
+    sys_read,      // 1
+    sys_write,     // 2
+    sys_sleep,     // 3
+    sys_sbrk,      // 4
+    sys_getpid,    // 5
+    sys_exec,      // 6
+    sys_fork,      // 7
+    sys_waitpid,   // 8
+    sys_pipe,      // 9
+    sys_close,     // 10
+    sys_dup2,      // 11
+    sys_shmget,    // 12
+    sys_shmat,     // 13
+    sys_shmdt,     // 14
+    sys_open,      // 15
+    sys_getticks,  // 16
+    sys_lseek,     // 17
 };
 
 __BEGIN_DECLS

@@ -10,19 +10,32 @@
 .set KERNEL_VMA,  0xC0000000
 .set ALIGN,       1<<0             /* align loaded modules on page boundaries */
 .set MEMINFO,     1<<1             /* provide memory map */
-.set FLAGS,       ALIGN | MEMINFO  /* this is the Multiboot 'flag' field */
+.set VIDEO,       1<<2             /* request video mode info from bootloader */
+.set FLAGS,       ALIGN | MEMINFO | VIDEO
 .set MAGIC,       0x1BADB002       /* 'magic number' lets bootloader find the header */
 .set CHECKSUM,    -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
 
 /*
 Multiboot header - must be within the first 8 KiB of the kernel binary.
 Placed in .multiboot section so the linker script can force it first.
+
+When MULTIBOOT_VIDEO_MODE is set, the header includes additional fields:
+  mode_type: 0 = linear graphics, 1 = EGA text
+  width/height/depth: preferred resolution (0 = no preference)
+
+The header defaults to text mode for safety. Use `set gfxpayload=WxHxD`
+in grub.cfg to switch to a linear framebuffer at boot.
 */
 .section .multiboot
 .align 4
 .long MAGIC
 .long FLAGS
 .long CHECKSUM
+.long 0, 0, 0, 0, 0   /* address fields (unused, not AOUT_KLUDGE) */
+.long 1                /* mode_type: 1 = EGA text (safe default) */
+.long 0                /* preferred width (0 = no preference) */
+.long 0                /* preferred height */
+.long 0                /* preferred depth */
 
 /* ================================================================
    Data stored in .data (linked at virtual addresses).

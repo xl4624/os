@@ -85,7 +85,7 @@ TEST(vfs, register_name_too_long) {
 }
 
 // ===========================================================================
-// Vfs::read / write (through FileDescription)
+// Vfs::read / write
 // ===========================================================================
 
 TEST(vfs, read_chardev) {
@@ -104,8 +104,7 @@ TEST(vfs, read_chardev) {
   ASSERT_EQ(buf[0], 'A');
   ASSERT_EQ(buf[4], 'A');
 
-  // CharDev does not advance offset.
-  ASSERT_EQ(vfs_fd.offset, 0u);
+  ASSERT_EQ(vfs_fd.offset, 5u);
 }
 
 TEST(vfs, write_chardev) {
@@ -120,8 +119,7 @@ TEST(vfs, write_chardev) {
   int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 4));
   ASSERT_EQ(n, 4);
 
-  // CharDev does not advance offset.
-  ASSERT_EQ(vfs_fd.offset, 0u);
+  ASSERT_EQ(vfs_fd.offset, 4u);
 }
 
 TEST(vfs, read_null_ops) {

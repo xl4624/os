@@ -24,6 +24,8 @@
 #define SYS_SHMAT 13
 #define SYS_SHMDT 14
 #define SYS_OPEN 15
-#define SYS_MAX 16
+#define SYS_GETTICKS 16
+#define SYS_LSEEK 17
+#define SYS_MAX 18
 
 #endif

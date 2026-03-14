@@ -1,7 +1,9 @@
 #include "vfs.h"
 
 #include <string.h>
+#include <sys/fb.h>
 
+#include "framebuffer.h"
 #include "keyboard.h"
 #include "modules.h"
 #include "scheduler.h"
@@ -63,6 +65,91 @@ int32_t kbd_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<con
 }
 
 const VfsOps kbd_ops = {kbd_read, kbd_write};
+
+// ===========================================================================
+// framebuffer device operations
+// ===========================================================================
+
+// Reading /dev/fb at offset 0 returns an fb_info struct, followed by raw
+// framebuffer pixel data starting at offset sizeof(fb_info).
+int32_t fb_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf, uint32_t offset) {
+  if (!Framebuffer::is_available()) {
+    return -1;
+  }
+
+  const auto& fi = Framebuffer::info();
+  size_t fb_sz = Framebuffer::size();
+
+  // Build the info header.
+  fb_info header;
+  header.width = fi.width;
+  header.height = fi.height;
+  header.pitch = fi.pitch;
+  header.size = static_cast<uint32_t>(fb_sz);
+  header.bpp = fi.bpp;
+  header.red_pos = fi.red_pos;
+  header.red_size = fi.red_size;
+  header.green_pos = fi.green_pos;
+  header.green_size = fi.green_size;
+  header.blue_pos = fi.blue_pos;
+  header.blue_size = fi.blue_size;
+  header.reserved = 0;
+
+  // Total virtual size: header + framebuffer pixels.
+  size_t total = sizeof(fb_info) + fb_sz;
+  if (offset >= total) {
+    return 0;
+  }
+
+  size_t remaining = total - offset;
+  size_t to_read = buf.size();
+  if (to_read > remaining) {
+    to_read = remaining;
+  }
+
+  // Copy from the concatenation of [header][framebuffer].
+  size_t copied = 0;
+  if (offset < sizeof(fb_info)) {
+    size_t hdr_bytes = sizeof(fb_info) - offset;
+    if (hdr_bytes > to_read) {
+      hdr_bytes = to_read;
+    }
+    memcpy(buf.data(), reinterpret_cast<const uint8_t*>(&header) + offset, hdr_bytes);
+    copied += hdr_bytes;
+  }
+
+  if (copied < to_read) {
+    size_t fb_offset = (offset > sizeof(fb_info)) ? offset - sizeof(fb_info) : 0;
+    size_t fb_bytes = to_read - copied;
+    memcpy(buf.data() + copied, Framebuffer::buffer() + fb_offset, fb_bytes);
+    copied += fb_bytes;
+  }
+
+  return static_cast<int32_t>(copied);
+}
+
+// Writing to /dev/fb copies raw pixel data into the framebuffer at offset.
+int32_t fb_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf, uint32_t offset) {
+  if (!Framebuffer::is_available()) {
+    return -1;
+  }
+
+  size_t fb_sz = Framebuffer::size();
+  if (offset >= fb_sz) {
+    return 0;
+  }
+
+  size_t remaining = fb_sz - offset;
+  size_t to_write = buf.size();
+  if (to_write > remaining) {
+    to_write = remaining;
+  }
+
+  memcpy(Framebuffer::buffer() + offset, buf.data(), to_write);
+  return static_cast<int32_t>(to_write);
+}
+
+const VfsOps fb_ops = {fb_read, fb_write};
 
 // ===========================================================================
 // ramfs operations
@@ -162,7 +249,7 @@ int32_t read(FileDescription* fd, std::span<uint8_t> buf) {
   }
 
   int32_t n = vfs_fd->node->ops->read(vfs_fd->node, buf, vfs_fd->offset);
-  if (n > 0 && vfs_fd->node->type == VfsNodeType::File) {
+  if (n > 0) {
     vfs_fd->offset += static_cast<uint32_t>(n);
   }
   return n;
@@ -175,7 +262,7 @@ int32_t write(FileDescription* fd, std::span<const uint8_t> buf) {
   }
 
   int32_t n = vfs_fd->node->ops->write(vfs_fd->node, buf, vfs_fd->offset);
-  if (n > 0 && vfs_fd->node->type == VfsNodeType::File) {
+  if (n > 0) {
     vfs_fd->offset += static_cast<uint32_t>(n);
   }
   return n;
@@ -198,6 +285,11 @@ void init_devfs() {
 
   auto* kbd = register_node("/dev/kbd", VfsNodeType::CharDev, &kbd_ops);
   (void)kbd;
+
+  if (Framebuffer::is_available()) {
+    auto* fb = register_node("/dev/fb", VfsNodeType::CharDev, &fb_ops);
+    (void)fb;
+  }
 }
 
 void init_ramfs() {

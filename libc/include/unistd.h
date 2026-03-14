@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include <sys/cdefs.h>
 
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
 __BEGIN_DECLS
 
 __attribute__((noreturn)) void _exit(int status);
@@ -20,6 +24,8 @@ int pipe(int pipefd[2]);
 unsigned int sleep(unsigned int seconds);
 void msleep(unsigned int ms);
 void* sbrk(int increment);
+unsigned long long getticks(void);
+int lseek(int fd, int offset, int whence);
 
 __END_DECLS
 

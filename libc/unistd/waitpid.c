@@ -10,10 +10,11 @@ int waitpid(int pid, int* exit_code) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 int waitpid(int pid, int* exit_code) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_WAITPID), "b"(pid), "c"(exit_code));
   return ret;
 }

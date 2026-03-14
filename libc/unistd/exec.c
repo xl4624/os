@@ -9,10 +9,11 @@ int exec(const char* name) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 int exec(const char* name) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_EXEC), "b"(name));
   return ret;
 }

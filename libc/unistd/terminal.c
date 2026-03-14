@@ -13,6 +13,7 @@ void clear_screen(void) {}
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <unistd.h>
 
 // VGA index to ANSI color code tables.
@@ -23,7 +24,7 @@ static const unsigned char bg_table[16] = {40,  44,  42,  46,  41,  45,  43,  47
 
 // Write an unsigned integer as decimal digits into buf, returning the new
 // end pointer. Does not null-terminate; always writes at least one digit.
-static char* write_uint(char* p, unsigned int n) {
+static char* write_uint(char* p, uint32_t n) {
   if (n >= 100u) *p++ = (char)('0' + (int)(n / 100u));
   if (n >= 10u) *p++ = (char)('0' + (int)((n / 10u) % 10u));
   *p++ = (char)('0' + (int)(n % 10u));
@@ -35,9 +36,9 @@ void set_cursor(unsigned int row, unsigned int col) {
   char* p = buf;
   *p++ = '\033';
   *p++ = '[';
-  p = write_uint(p, row + 1u);
+  p = write_uint(p, (uint32_t)(row + 1u));
   *p++ = ';';
-  p = write_uint(p, col + 1u);
+  p = write_uint(p, (uint32_t)(col + 1u));
   *p++ = 'H';
   (void)write(1, buf, (size_t)(p - buf));
 }
@@ -45,13 +46,13 @@ void set_cursor(unsigned int row, unsigned int col) {
 void set_color(unsigned char color) {
   char buf[32];
   char* p = buf;
-  unsigned int fg = (unsigned int)(color & 0x0Fu);
-  unsigned int bg = (unsigned int)((unsigned int)(color >> 4) & 0x0Fu);
+  uint8_t fg = (uint8_t)(color & 0x0Fu);
+  uint8_t bg = (uint8_t)((color >> 4) & 0x0Fu);
   *p++ = '\033';
   *p++ = '[';
-  p = write_uint(p, (unsigned int)bg_table[bg]);
+  p = write_uint(p, (uint32_t)bg_table[bg]);
   *p++ = ';';
-  p = write_uint(p, (unsigned int)fg_table[fg]);
+  p = write_uint(p, (uint32_t)fg_table[fg]);
   *p++ = 'm';
   (void)write(1, buf, (size_t)(p - buf));
 }

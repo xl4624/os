@@ -9,10 +9,11 @@ void* sbrk(int increment) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 void* sbrk(int increment) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SBRK), "b"(increment));
   return (void*)ret;
 }

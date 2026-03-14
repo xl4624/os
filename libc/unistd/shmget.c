@@ -9,10 +9,11 @@ int shmget(unsigned int size) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 int shmget(unsigned int size) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SHMGET), "b"(size));
   return ret;
 }

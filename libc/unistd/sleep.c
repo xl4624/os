@@ -9,11 +9,12 @@ unsigned int sleep(unsigned int seconds) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 unsigned int sleep(unsigned int seconds) {
-  unsigned int ms = seconds * 1000;
-  int ret;
+  uint32_t ms = (uint32_t)seconds * 1000u;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SLEEP), "b"(ms));
   (void)ret;
   return 0;

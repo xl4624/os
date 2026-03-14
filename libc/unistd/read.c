@@ -11,10 +11,11 @@ int read(int fd, void* buf, size_t count) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 int read(int fd, void* buf, size_t count) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_READ), "b"(fd), "c"(buf), "d"(count));
   return ret;
 }

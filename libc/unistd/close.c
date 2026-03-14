@@ -9,10 +9,11 @@ int close(int fd) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 int close(int fd) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_CLOSE), "b"(fd));
   return ret;
 }

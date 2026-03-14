@@ -10,10 +10,11 @@ int shmat(int shmid, void* vaddr) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 int shmat(int shmid, void* vaddr) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SHMAT), "b"(shmid), "c"(vaddr));
   return ret;
 }

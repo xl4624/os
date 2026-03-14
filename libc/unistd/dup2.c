@@ -10,10 +10,11 @@ int dup2(int oldfd, int newfd) {
 
 #elif defined(__is_libc)
 
+#include <stdint.h>
 #include <sys/syscall.h>
 
 int dup2(int oldfd, int newfd) {
-  int ret;
+  int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_DUP2), "b"(oldfd), "c"(newfd));
   return ret;
 }

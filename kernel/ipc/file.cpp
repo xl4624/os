@@ -36,13 +36,9 @@ int32_t file_read(FileDescription* fd, std::span<uint8_t> buf) {
 
 int32_t file_write(FileDescription* fd, std::span<const uint8_t> buf) {
   switch (fd->type) {
-    case FileType::TerminalWrite: {
-      const char* data = reinterpret_cast<const char*>(buf.data());
-      for (size_t i = 0; i < buf.size(); ++i) {
-        terminal_putchar(data[i]);
-      }
+    case FileType::TerminalWrite:
+      terminal_write({reinterpret_cast<const char*>(buf.data()), buf.size()});
       return static_cast<int32_t>(buf.size());
-    }
     case FileType::PipeWrite:
       return pipe_write(fd->pipe, buf);
     case FileType::VfsNode:

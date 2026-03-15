@@ -17,6 +17,7 @@
 #include "pmm.h"
 #include "scheduler.h"
 #include "syscall.h"
+#include "terminal.h"
 #include "tss.h"
 #include "vfs.h"
 #include "x86.h"
@@ -45,6 +46,12 @@ void kernel_init() {
 
 __attribute__((noreturn)) void kernel_main() {
 #ifdef KERNEL_TESTS
+  {
+    const auto* ktest_info = phys_to_virt(paddr_t{mboot_info}).ptr<multiboot_info_t>();
+    if (Framebuffer::init(ktest_info)) {
+      kFbTerminal.init();
+    }
+  }
   KTest::run_all();  // runs all registered tests then exits QEMU
 #else
   Scheduler::start();
@@ -53,8 +60,9 @@ __attribute__((noreturn)) void kernel_main() {
   const auto* info = phys_to_virt(paddr_t{mboot_info}).ptr<multiboot_info_t>();
   Modules::init(info);
 
-  // Initialise the framebuffer if the bootloader provided one.
+  // Initialise the framebuffer console before any printf output.
   if (Framebuffer::init(info)) {
+    kTerminal.init();
     const auto& fb = Framebuffer::info();
     printf("Framebuffer: %ux%u %ubpp pitch=%u\n", fb.width, fb.height,
            static_cast<unsigned>(fb.bpp), fb.pitch);

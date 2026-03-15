@@ -32,10 +32,10 @@ in grub.cfg to switch to a linear framebuffer at boot.
 .long FLAGS
 .long CHECKSUM
 .long 0, 0, 0, 0, 0   /* address fields (unused, not AOUT_KLUDGE) */
-.long 1                /* mode_type: 1 = EGA text (safe default) */
-.long 0                /* preferred width (0 = no preference) */
-.long 0                /* preferred height */
-.long 0                /* preferred depth */
+.long 0                /* mode_type: 0 = linear graphics */
+.long 1440             /* preferred width */
+.long 1080             /* preferred height */
+.long 32               /* preferred depth (bits per pixel) */
 
 /* ================================================================
    Data stored in .data (linked at virtual addresses).

@@ -31,7 +31,7 @@ KTEST_ISO := $(KTEST_BUILDDIR)/myos-test.iso
 
 .PHONY: all run debug lldb clean check install arch kernel libc libcpp user test ktest ktest-kernel
 
-all: $(BIN)
+all: $(ISO)
 
 run: $(ISO)
 	@qemu-system-i386 -cdrom $(ISO) -no-reboot -no-shutdown

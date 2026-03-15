@@ -27,10 +27,7 @@ int32_t tty_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
 
 int32_t tty_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
                   [[maybe_unused]] uint32_t offset) {
-  const char* data = reinterpret_cast<const char*>(buf.data());
-  for (size_t i = 0; i < buf.size(); ++i) {
-    terminal_putchar(data[i]);
-  }
+  terminal_write({reinterpret_cast<const char*>(buf.data()), buf.size()});
   return static_cast<int32_t>(buf.size());
 }
 

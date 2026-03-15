@@ -7,8 +7,8 @@
 #include "idt.h"
 #include "pic.h"
 
-handler_t isr_handlers[32] = {nullptr};
-handler_t irq_handlers[16] = {nullptr};
+static handler_t isr_handlers[32] = {nullptr};
+static handler_t irq_handlers[16] = {nullptr};
 static bool initialized = false;
 
 template <uint8_t N>
@@ -31,7 +31,7 @@ struct ISRWrapper {
                 "ISRWrapper::messages must have exactly 32 entries");
 
   static __attribute__((interrupt, noreturn)) void handle(interrupt_frame* frame) {
-    if (isr_handlers[N]) {
+    if (isr_handlers[N] != nullptr) {
       isr_handlers[N](frame);
     } else {
       printf("%s (#%d)\n", messages[N], N);
@@ -44,7 +44,7 @@ struct ISRWrapper {
 template <uint8_t N>
 struct IRQWrapper {
   static __attribute__((interrupt)) void handle(interrupt_frame* frame) {
-    if (irq_handlers[N]) {
+    if (irq_handlers[N] != nullptr) {
       irq_handlers[N](frame);
     }
     PIC::send_eoi(N);

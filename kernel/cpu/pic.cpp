@@ -65,7 +65,7 @@ void mask(uint8_t irq) {
     port = PIC1_DATA;
   } else {
     port = PIC2_DATA;
-    irq = static_cast<uint8_t>(irq - 8u);
+    irq = static_cast<uint8_t>(irq - 8U);
   }
   value = static_cast<uint8_t>(inb(port) | (1U << irq));
   outb(port, value);
@@ -80,7 +80,7 @@ void unmask(uint8_t irq) {
     port = PIC1_DATA;
   } else {
     port = PIC2_DATA;
-    irq = static_cast<uint8_t>(irq - 8u);
+    irq = static_cast<uint8_t>(irq - 8U);
   }
   value = static_cast<uint8_t>(inb(port) & static_cast<uint8_t>(~(1U << irq)));
   outb(port, value);

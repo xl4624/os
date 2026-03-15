@@ -11,6 +11,7 @@ Checks: >
   -misc-include-cleaner,
   -misc-non-private-member-variables-in-classes,
   -misc-use-anonymous-namespace,
+  -misc-use-internal-linkage,
   -modernize-avoid-c-arrays,
   -modernize-deprecated-headers,
   -modernize-use-trailing-return-type,

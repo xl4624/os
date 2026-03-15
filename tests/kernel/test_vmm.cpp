@@ -15,8 +15,9 @@ static constexpr vaddr_t BASE = 0xC0800000;
 // ===========================================================================
 
 TEST(vmm, get_phys_unmapped_returns_zero) {
-  // PDE 771 has never been touched; no page table exists for it.
-  static constexpr vaddr_t UNMAPPED = 0xC0C00000;
+  // 0xE0000000 maps to physical 512 MiB, which exceeds QEMU's 256 MiB RAM
+  // and is never mapped by map_all_physical_ram().
+  static constexpr vaddr_t UNMAPPED = 0xE0000000;
   ASSERT_EQ(VMM::get_phys(UNMAPPED), static_cast<paddr_t>(0));
 }
 
@@ -166,4 +167,20 @@ TEST(vmm, unmap_does_not_affect_neighbor) {
   VMM::unmap(VA2);
   kPmm.free(phys1);
   kPmm.free(phys2);
+}
+
+// ===========================================================================
+// VMM::map_all_physical_ram
+// ===========================================================================
+
+TEST(vmm, phys_above_8mib_is_accessible_after_map_all_physical_ram) {
+  // 9 MiB is above the boot-mapped 8 MiB window but within QEMU's 256 MiB RAM.
+  // map_all_physical_ram() must have installed a mapping for it in kernel_init().
+  static constexpr uint32_t TEST_PHYS = 9U * 1024U * 1024U;
+  const paddr_t phys{TEST_PHYS};
+  volatile uint32_t* ptr = phys_to_virt(phys).ptr<volatile uint32_t>();
+
+  const uint32_t sentinel = 0xA5A5A5A5U;
+  *ptr = sentinel;
+  ASSERT_EQ(*ptr, sentinel);
 }

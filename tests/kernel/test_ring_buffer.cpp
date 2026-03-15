@@ -9,13 +9,13 @@ TEST(ring_buffer, empty_at_start) {
   RingBuffer<int, 4> rb;
   ASSERT_TRUE(rb.is_empty());
   ASSERT_FALSE(rb.is_full());
-  ASSERT_EQ(rb.size(), 0u);
+  ASSERT_EQ(rb.size(), 0U);
 }
 
 TEST(ring_buffer, capacity_matches_template) {
-  ASSERT_EQ((RingBuffer<int, 4>::capacity()), 4u);
-  ASSERT_EQ((RingBuffer<int, 16>::capacity()), 16u);
-  ASSERT_EQ((RingBuffer<char, 1>::capacity()), 1u);
+  ASSERT_EQ((RingBuffer<int, 4>::capacity()), 4U);
+  ASSERT_EQ((RingBuffer<int, 16>::capacity()), 16U);
+  ASSERT_EQ((RingBuffer<char, 1>::capacity()), 1U);
 }
 
 // ===========================================================================
@@ -26,7 +26,7 @@ TEST(ring_buffer, push_single_succeeds) {
   RingBuffer<int, 4> rb;
   ASSERT_TRUE(rb.push(42));
   ASSERT_FALSE(rb.is_empty());
-  ASSERT_EQ(rb.size(), 1u);
+  ASSERT_EQ(rb.size(), 1U);
 }
 
 TEST(ring_buffer, pop_single_returns_value) {
@@ -70,7 +70,7 @@ TEST(ring_buffer, full_after_capacity_pushes) {
     ASSERT_TRUE(rb.push(i));
   }
   ASSERT_TRUE(rb.is_full());
-  ASSERT_EQ(rb.size(), 4u);
+  ASSERT_EQ(rb.size(), 4U);
 }
 
 TEST(ring_buffer, push_fails_when_full) {
@@ -78,7 +78,7 @@ TEST(ring_buffer, push_fails_when_full) {
   ASSERT_TRUE(rb.push(1));
   ASSERT_TRUE(rb.push(2));
   ASSERT_FALSE(rb.push(3));
-  ASSERT_EQ(rb.size(), 2u);
+  ASSERT_EQ(rb.size(), 2U);
   // Original elements are untouched.
   int val = 0;
   ASSERT_TRUE(rb.pop(val));
@@ -98,7 +98,7 @@ TEST(ring_buffer, peek_returns_front_without_removing) {
   int val = 0;
   ASSERT_TRUE(rb.peek(val));
   ASSERT_EQ(val, 7);
-  ASSERT_EQ(rb.size(), 2u);
+  ASSERT_EQ(rb.size(), 2U);
   // Second peek still returns the same front element.
   ASSERT_TRUE(rb.peek(val));
   ASSERT_EQ(val, 7);
@@ -122,7 +122,7 @@ TEST(ring_buffer, clear_resets_state) {
   rb.clear();
   ASSERT_TRUE(rb.is_empty());
   ASSERT_FALSE(rb.is_full());
-  ASSERT_EQ(rb.size(), 0u);
+  ASSERT_EQ(rb.size(), 0U);
   // Can push again after clear.
   ASSERT_TRUE(rb.push(10));
   int val = 0;
@@ -139,12 +139,12 @@ TEST(ring_buffer, wrap_around) {
   // Fill and drain three times to force multiple internal wrap-arounds.
   for (int round = 0; round < 3; ++round) {
     for (int i = 0; i < 4; ++i) {
-      ASSERT_TRUE(rb.push(round * 10 + i));
+      ASSERT_TRUE(rb.push((round * 10) + i));
     }
     for (int i = 0; i < 4; ++i) {
       int val = 0;
       ASSERT_TRUE(rb.pop(val));
-      ASSERT_EQ(val, round * 10 + i);
+      ASSERT_EQ(val, (round * 10) + i);
     }
   }
   ASSERT_TRUE(rb.is_empty());
@@ -175,15 +175,15 @@ TEST(ring_buffer, interleaved_push_pop) {
 
 TEST(ring_buffer, size_tracks_through_operations) {
   RingBuffer<int, 8> rb;
-  ASSERT_EQ(rb.size(), 0u);
+  ASSERT_EQ(rb.size(), 0U);
   ASSERT_TRUE(rb.push(1));
-  ASSERT_EQ(rb.size(), 1u);
+  ASSERT_EQ(rb.size(), 1U);
   ASSERT_TRUE(rb.push(2));
   ASSERT_TRUE(rb.push(3));
-  ASSERT_EQ(rb.size(), 3u);
+  ASSERT_EQ(rb.size(), 3U);
   int val = 0;
   ASSERT_TRUE(rb.pop(val));
-  ASSERT_EQ(rb.size(), 2u);
+  ASSERT_EQ(rb.size(), 2U);
   rb.clear();
-  ASSERT_EQ(rb.size(), 0u);
+  ASSERT_EQ(rb.size(), 0U);
 }

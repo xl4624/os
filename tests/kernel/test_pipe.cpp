@@ -8,7 +8,6 @@
 #include "pipe.h"
 #include "process.h"
 #include "scheduler.h"
-#include "syscall.h"
 
 namespace {
 
@@ -53,7 +52,7 @@ bool make_pipe(uint32_t& rfd, uint32_t& wfd) {
 
 void close_fd(uint32_t fd_num) {
   Process* proc = Scheduler::current();
-  if (fd_num < kMaxFds && proc->fds[fd_num]) {
+  if (fd_num < kMaxFds && (proc->fds[fd_num] != nullptr)) {
     file_close(proc->fds[fd_num]);
     proc->fds[fd_num] = nullptr;
   }
@@ -66,7 +65,8 @@ void close_fd(uint32_t fd_num) {
 // ===========================================================================
 
 TEST(pipe, create_returns_two_fds) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
   ASSERT(rfd != wfd);
 
@@ -85,7 +85,8 @@ TEST(pipe, create_returns_two_fds) {
 // ===========================================================================
 
 TEST(pipe, write_then_read) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();
@@ -107,7 +108,8 @@ TEST(pipe, write_then_read) {
 }
 
 TEST(pipe, read_empty_with_writers_returns_restart) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();
@@ -126,7 +128,8 @@ TEST(pipe, read_empty_with_writers_returns_restart) {
 }
 
 TEST(pipe, read_eof_no_writers) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   // Close the write end so there are no writers.
@@ -134,7 +137,7 @@ TEST(pipe, read_eof_no_writers) {
 
   Process* proc = Scheduler::current();
   Pipe* pipe = proc->fds[rfd]->pipe;
-  ASSERT_EQ(pipe->writers, 0u);
+  ASSERT_EQ(pipe->writers, 0U);
 
   uint8_t buf[4];
   int32_t ret = pipe_read(pipe, buf);
@@ -144,7 +147,8 @@ TEST(pipe, read_eof_no_writers) {
 }
 
 TEST(pipe, write_no_readers_returns_epipe) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   // Close the read end so there are no readers.
@@ -152,7 +156,7 @@ TEST(pipe, write_no_readers_returns_epipe) {
 
   Process* proc = Scheduler::current();
   Pipe* pipe = proc->fds[wfd]->pipe;
-  ASSERT_EQ(pipe->readers, 0u);
+  ASSERT_EQ(pipe->readers, 0U);
 
   const uint8_t data[] = {1, 2, 3};
   int32_t ret = pipe_write(pipe, data);
@@ -162,7 +166,8 @@ TEST(pipe, write_no_readers_returns_epipe) {
 }
 
 TEST(pipe, buffer_full_returns_restart) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();
@@ -189,35 +194,38 @@ TEST(pipe, buffer_full_returns_restart) {
 // ===========================================================================
 
 TEST(pipe, close_read_decrements_readers) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();
   Pipe* pipe = proc->fds[rfd]->pipe;
-  ASSERT_EQ(pipe->readers, 1u);
+  ASSERT_EQ(pipe->readers, 1U);
 
   close_fd(rfd);
-  ASSERT_EQ(pipe->readers, 0u);
+  ASSERT_EQ(pipe->readers, 0U);
 
   close_fd(wfd);
 }
 
 TEST(pipe, close_write_decrements_writers) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();
   Pipe* pipe = proc->fds[wfd]->pipe;
-  ASSERT_EQ(pipe->writers, 1u);
+  ASSERT_EQ(pipe->writers, 1U);
 
   close_fd(wfd);
-  ASSERT_EQ(pipe->writers, 0u);
+  ASSERT_EQ(pipe->writers, 0U);
 
   close_fd(rfd);
 }
 
 TEST(pipe, partial_read) {
-  uint32_t rfd, wfd;
+  uint32_t rfd;
+  uint32_t wfd;
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();

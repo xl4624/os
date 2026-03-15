@@ -124,7 +124,7 @@ TEST(unique_ptr, release_returns_raw_pointer) {
 TEST(unique_ptr, reset_to_new_value) {
   Widget::destroy_count = 0;
   std::unique_ptr<Widget> p(new Widget(1));
-  p.reset(new Widget(2));
+  p.reset(new Widget(2));  // NOLINT(modernize-make-unique)
   ASSERT_EQ(Widget::destroy_count, 1);
   ASSERT_EQ(p->value, 2);
 }
@@ -227,8 +227,12 @@ TEST(unique_ptr, make_unique_destructor_runs) {
 TEST(unique_ptr, array_make_unique) {
   auto p = std::make_unique<int[]>(5);
   ASSERT_NOT_NULL(p.get());
-  for (int i = 0; i < 5; ++i) p[i] = i;
-  for (int i = 0; i < 5; ++i) ASSERT_EQ(p[i], i);
+  for (int i = 0; i < 5; ++i) {
+    p[i] = i;
+  }
+  for (int i = 0; i < 5; ++i) {
+    ASSERT_EQ(p[i], i);
+  }
 }
 
 TEST(unique_ptr, array_move_construction) {

@@ -253,24 +253,28 @@ TEST(optional, make_optional_value) {
 // ===========================================================================
 
 TEST(optional, equality_both_engaged_equal) {
-  std::optional<int> a = 5, b = 5;
+  std::optional<int> a = 5;
+  std::optional<int> b = 5;
   ASSERT_TRUE(a == b);
   ASSERT_FALSE(a != b);
 }
 
 TEST(optional, equality_both_engaged_different) {
-  std::optional<int> a = 5, b = 6;
+  std::optional<int> a = 5;
+  std::optional<int> b = 6;
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }
 
 TEST(optional, equality_both_empty) {
-  std::optional<int> a, b;
+  std::optional<int> a;
+  std::optional<int> b;
   ASSERT_TRUE(a == b);
 }
 
 TEST(optional, equality_one_empty) {
-  std::optional<int> a = 5, b;
+  std::optional<int> a = 5;
+  std::optional<int> b;
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }

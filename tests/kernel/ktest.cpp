@@ -30,7 +30,7 @@ static constexpr uint16_t DEBUGCON_PORT = 0xE9;
 static void dbg_putchar(char c) { outb(DEBUGCON_PORT, static_cast<uint8_t>(c)); }
 
 static void dbg_puts(const char* s) {
-  while (*s) {
+  while (*s != 0) {
     dbg_putchar(*s++);
   }
 }
@@ -44,7 +44,7 @@ static void dbg_putint(int n) {
   char buf[12];
   int i = 0;
   do {
-    buf[i++] = static_cast<char>('0' + n % 10);
+    buf[i++] = static_cast<char>('0' + (n % 10));
     n /= 10;
   } while (n > 0);
   while (i > 0) {
@@ -74,13 +74,15 @@ void run_all() {
 
     // Parse "category/test_name"
     const char* slash = strchr(tc.name, '/');
-    if (!slash) {
+    if (slash == nullptr) {
       continue;
     }
 
-    size_t cat_len = static_cast<size_t>(slash - tc.name);
+    auto cat_len = static_cast<size_t>(slash - tc.name);
     char category[64] = {};
-    for (size_t j = 0; j < cat_len && j < 63; ++j) category[j] = tc.name[j];
+    for (size_t j = 0; j < cat_len && j < 63; ++j) {
+      category[j] = tc.name[j];
+    }
     const char* test_name = slash + 1;
 
     if (strcmp(category, current_category) != 0) {

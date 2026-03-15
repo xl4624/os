@@ -16,19 +16,23 @@ TEST(heap, alloc_returns_nonnull) {
 
 TEST(heap, alloc_is_16byte_aligned) {
   const size_t sizes[] = {1, 7, 16, 17, 64, 100, 256};
-  for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); ++i) {
-    void* p = kmalloc(sizes[i]);
+  for (unsigned int size : sizes) {
+    void* p = kmalloc(size);
     ASSERT_NOT_NULL(p);
-    ASSERT((reinterpret_cast<uintptr_t>(p) & 15u) == 0u);
+    ASSERT((reinterpret_cast<uintptr_t>(p) & 15U) == 0U);
     kfree(p);
   }
 }
 
 TEST(heap, alloc_writable) {
-  uint8_t* p = static_cast<uint8_t*>(kmalloc(64));
+  auto* p = static_cast<uint8_t*>(kmalloc(64));
   ASSERT_NOT_NULL(p);
-  for (int i = 0; i < 64; ++i) p[i] = static_cast<uint8_t>(i);
-  for (int i = 0; i < 64; ++i) ASSERT_EQ(p[i], static_cast<uint8_t>(i));
+  for (int i = 0; i < 64; ++i) {
+    p[i] = static_cast<uint8_t>(i);
+  }
+  for (int i = 0; i < 64; ++i) {
+    ASSERT_EQ(p[i], static_cast<uint8_t>(i));
+  }
   kfree(p);
 }
 
@@ -49,12 +53,12 @@ TEST(heap, alloc_zero_returns_null) {
 
 TEST(heap, alloc_in_grown_region_is_aligned) {
   // Trigger growth, then check alignment of an allocation in the new region.
-  static constexpr size_t BIG = 128u * 1024u;
+  static constexpr size_t BIG = 128U * 1024U;
   void* a = kmalloc(BIG);
   ASSERT_NOT_NULL(a);
   void* b = kmalloc(32);
   ASSERT_NOT_NULL(b);
-  ASSERT((reinterpret_cast<uintptr_t>(b) & 15u) == 0u);
+  ASSERT((reinterpret_cast<uintptr_t>(b) & 15U) == 0U);
   kfree(a);
   kfree(b);
 }
@@ -62,11 +66,13 @@ TEST(heap, alloc_in_grown_region_is_aligned) {
 TEST(heap, many_small_allocs) {
   static constexpr size_t N = 256;
   void* ptrs[N];
-  for (size_t i = 0; i < N; ++i) {
-    ptrs[i] = kmalloc(16);
-    ASSERT_NOT_NULL(ptrs[i]);
+  for (auto& ptr : ptrs) {
+    ptr = kmalloc(16);
+    ASSERT_NOT_NULL(ptr);
   }
-  for (size_t i = 0; i < N; ++i) kfree(ptrs[i]);
+  for (auto& ptr : ptrs) {
+    kfree(ptr);
+  }
 }
 
 TEST(heap, oom_returns_null) {
@@ -79,9 +85,11 @@ TEST(heap, oom_returns_null) {
 // ===========================================================================
 
 TEST(heap, calloc_zeroed) {
-  uint8_t* p = static_cast<uint8_t*>(kcalloc(8, 16));
+  auto* p = static_cast<uint8_t*>(kcalloc(8, 16));
   ASSERT_NOT_NULL(p);
-  for (int i = 0; i < 128; ++i) ASSERT_EQ(p[i], static_cast<uint8_t>(0));
+  for (int i = 0; i < 128; ++i) {
+    ASSERT_EQ(p[i], static_cast<uint8_t>(0));
+  }
   kfree(p);
 }
 
@@ -128,7 +136,7 @@ TEST(heap, coalesce_backward) {
 
 TEST(heap, grow_on_demand) {
   // Initial heap is 64 KiB; allocate more than that to trigger growth.
-  static constexpr size_t BIG = 128u * 1024u;  // 128 KiB
+  static constexpr size_t BIG = 128U * 1024U;  // 128 KiB
   void* p = kmalloc(BIG);
   ASSERT_NOT_NULL(p);
   memset(p, 0xAB, BIG);
@@ -141,7 +149,7 @@ TEST(heap, grow_on_demand) {
 TEST(heap, grow_coalesce_adjacent) {
   // Allocate two 1 MiB blocks (each triggers growth), free both,
   // then allocate a 2 MiB block - requires coalescing across blocks.
-  static constexpr size_t MB = 1u * 1024u * 1024u;
+  static constexpr size_t MB = 1U * 1024U * 1024U;
   void* a = kmalloc(MB);
   void* b = kmalloc(MB);
   ASSERT_NOT_NULL(a);
@@ -159,7 +167,7 @@ TEST(heap, fragmentation_cycle_allows_large_alloc) {
   static constexpr int N = 64;
   void* ptrs[N];
   for (int i = 0; i < N; ++i) {
-    ptrs[i] = kmalloc(static_cast<size_t>(16 + (i % 8) * 16));
+    ptrs[i] = kmalloc(static_cast<size_t>(16 + ((i % 8) * 16)));
     ASSERT_NOT_NULL(ptrs[i]);
   }
   for (int i = 0; i < N; i += 2) {

@@ -40,7 +40,7 @@ TEST(fd, alloc_returns_lowest_free) {
 
   auto slot = fd_alloc(fds);
   ASSERT(slot.has_value());
-  ASSERT_EQ(*slot, 3u);
+  ASSERT_EQ(*slot, 3U);
 }
 
 TEST(fd, alloc_after_close_reuses_slot) {
@@ -52,15 +52,15 @@ TEST(fd, alloc_after_close_reuses_slot) {
 
   auto slot = fd_alloc(fds);
   ASSERT(slot.has_value());
-  ASSERT_EQ(*slot, 1u);
+  ASSERT_EQ(*slot, 1U);
 }
 
 TEST(fd, alloc_full_returns_nullopt) {
   FileDescription* fds[kMaxFds];
   FileDescription dummy = {FileType::TerminalRead, 1, nullptr, nullptr};
 
-  for (uint32_t i = 0; i < kMaxFds; ++i) {
-    fds[i] = &dummy;
+  for (auto& fd : fds) {
+    fd = &dummy;
   }
 
   auto slot = fd_alloc(fds);
@@ -73,7 +73,7 @@ TEST(fd, alloc_from_skips_lower) {
 
   auto slot = fd_alloc_from(fds, 5);
   ASSERT(slot.has_value());
-  ASSERT_EQ(*slot, 5u);
+  ASSERT_EQ(*slot, 5U);
 }
 
 // ===========================================================================
@@ -122,7 +122,7 @@ TEST(fd, close_valid_fd) {
   frame.ebx = *slot;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
 
-  ASSERT_EQ(frame.eax, 0u);
+  ASSERT_EQ(frame.eax, 0U);
   ASSERT_NULL(proc->fds[*slot]);
 }
 
@@ -156,7 +156,7 @@ TEST(fd, dup2_copies_fd) {
   uint32_t newfd = *slot + 1;
   ASSERT_EQ(frame.eax, newfd);
   ASSERT(proc->fds[newfd] == desc);
-  ASSERT_EQ(desc->ref_count, 2u);
+  ASSERT_EQ(desc->ref_count, 2U);
 
   // Cleanup: close both fds.
   proc->fds[*slot] = nullptr;
@@ -173,7 +173,7 @@ TEST(fd, dup2_same_fd) {
   frame.ecx = 0;  // same
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
 
-  ASSERT_EQ(frame.eax, 0u);
+  ASSERT_EQ(frame.eax, 0U);
   ASSERT_NOT_NULL(proc->fds[0]);
 }
 

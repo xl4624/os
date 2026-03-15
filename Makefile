@@ -36,15 +36,15 @@ all: $(ISO)
 RUN_LOG := $(BUILDDIR)/run.log
 
 run: $(ISO)
-	@qemu-system-i386 -cdrom $(ISO) -no-reboot -no-shutdown \
+	@qemu-system-i386 -m 256 -cdrom $(ISO) -no-reboot -no-shutdown \
 		-debugcon file:$(RUN_LOG)
 	@echo "--- Log written to $(RUN_LOG) ---"
 
 debug: $(ISO)
-	@qemu-system-i386 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown
+	@qemu-system-i386 -m 256 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown
 
 lldb: $(ISO) $(BIN)
-	@qemu-system-i386 -cdrom $(ISO) -s -S -no-reboot -no-shutdown &
+	@qemu-system-i386 -m 256 -cdrom $(ISO) -s -S -no-reboot -no-shutdown &
 	@sleep 0.5
 	@lldb $(BIN) \
 		-o "protocol-server start MCP listen://localhost:59999" \
@@ -57,7 +57,7 @@ KTEST_LOG := $(KTEST_BUILDDIR)/ktest.log
 
 ktest: install $(KTEST_ISO)
 	@echo "Running kernel tests in QEMU..."
-	@qemu-system-i386 -no-reboot -display none -cdrom $(KTEST_ISO) \
+	@qemu-system-i386 -m 256 -no-reboot -display none -cdrom $(KTEST_ISO) \
 		-device isa-debug-exit,iobase=0xf4,iosize=0x04 \
 		-debugcon file:$(KTEST_LOG); \
 		status=$$?; \

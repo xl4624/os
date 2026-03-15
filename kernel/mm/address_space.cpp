@@ -8,9 +8,6 @@
 
 namespace {
 
-// Page table pages must reside in the first 8 MiB (accessible via
-// phys_to_virt). The PMM allocates lowest frames first so this holds.
-constexpr paddr_t kMappedPhysEnd = 8U * 1024U * 1024U;
 
 // Top 10 bits of a virtual address → page directory index.
 constexpr uint32_t pd_index(vaddr_t va) { return va >> (PAGE_TABLE_BITS + PAGE_OFFSET_BITS); }
@@ -28,7 +25,8 @@ namespace AddressSpace {
 PageDir create() {
   const paddr_t pd_phys = kPmm.alloc();
   assert(pd_phys && "AddressSpace::create(): out of physical memory\n");
-  if (pd_phys >= kMappedPhysEnd) {
+  const paddr_t mapped_end = paddr_t{kPmm.get_total_frames()} * PAGE_SIZE;
+  if (pd_phys >= mapped_end) {
     panic("AddressSpace::create(): page dir phys 0x%08x outside mapped region\n",
           static_cast<unsigned>(pd_phys));
   }
@@ -50,7 +48,8 @@ void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user) {
   if (!pde.present) {
     const paddr_t pt_phys = kPmm.alloc();
     assert(pt_phys && "AddressSpace::map(): out of physical memory for page table\n");
-    if (pt_phys >= kMappedPhysEnd) {
+    const paddr_t mapped_end = paddr_t{kPmm.get_total_frames()} * PAGE_SIZE;
+    if (pt_phys >= mapped_end) {
       panic("AddressSpace::map(): page table phys 0x%08x outside mapped region\n",
             static_cast<unsigned>(pt_phys));
     }

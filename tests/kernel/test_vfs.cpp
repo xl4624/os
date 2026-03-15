@@ -1,3 +1,4 @@
+#include <algorithm.h>
 #include <string.h>
 
 #include "file.h"
@@ -15,9 +16,7 @@ constexpr size_t test_data_len = sizeof(test_data) - 1;  // exclude null
 int32_t counting_read(VfsNode* node, std::span<uint8_t> buf, [[maybe_unused]] uint32_t offset) {
   // Return node->size bytes of 'A'.
   size_t n = buf.size();
-  if (n > node->size) {
-    n = node->size;
-  }
+  n = std::min(n, node->size);
   memset(buf.data(), 'A', n);
   return static_cast<int32_t>(n);
 }
@@ -104,7 +103,7 @@ TEST(vfs, read_chardev) {
   ASSERT_EQ(buf[0], 'A');
   ASSERT_EQ(buf[4], 'A');
 
-  ASSERT_EQ(vfs_fd.offset, 5u);
+  ASSERT_EQ(vfs_fd.offset, 5U);
 }
 
 TEST(vfs, write_chardev) {
@@ -119,7 +118,7 @@ TEST(vfs, write_chardev) {
   int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 4));
   ASSERT_EQ(n, 4);
 
-  ASSERT_EQ(vfs_fd.offset, 4u);
+  ASSERT_EQ(vfs_fd.offset, 4U);
 }
 
 TEST(vfs, read_null_ops) {
@@ -299,7 +298,7 @@ TEST(vfs, close_vfs_fd) {
   Process* proc = Scheduler::current();
   FileDescription* desc = proc->fds[static_cast<uint32_t>(fd_num)];
   ASSERT_NOT_NULL(desc);
-  ASSERT_EQ(desc->ref_count, 1u);
+  ASSERT_EQ(desc->ref_count, 1U);
 
   // Close via file_close (which dispatches to Vfs::close).
   file_close(desc);

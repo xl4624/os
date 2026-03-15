@@ -2,8 +2,6 @@
 
 #include "../framework/test.h"
 
-// ==== fprintf ====
-
 TEST(printf, fprintf_empty_format) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-zero-length"

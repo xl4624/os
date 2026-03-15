@@ -7,7 +7,9 @@
 
 TEST(bitmap, initially_all_clear) {
   Bitmap<32> bm;
-  for (size_t i = 0; i < 32; ++i) ASSERT_FALSE(bm.is_set(i));
+  for (size_t i = 0; i < 32; ++i) {
+    ASSERT_FALSE(bm.is_set(i));
+  }
 }
 
 TEST(bitmap, set_and_is_set) {
@@ -28,7 +30,9 @@ TEST(bitmap, clear_after_set) {
 TEST(bitmap, fill_marks_all_used) {
   Bitmap<32> bm;
   bm.fill();
-  for (size_t i = 0; i < 32; ++i) ASSERT_TRUE(bm.is_set(i));
+  for (size_t i = 0; i < 32; ++i) {
+    ASSERT_TRUE(bm.is_set(i));
+  }
 }
 
 TEST(bitmap, find_first_clear_empty) {
@@ -105,9 +109,13 @@ TEST(pmm, alloc_returns_unique_pages) {
   for (int i = 0; i < N; ++i) {
     pages[i] = kPmm.alloc();
     ASSERT_NE(pages[i], static_cast<paddr_t>(0));
-    for (int j = 0; j < i; ++j) ASSERT_NE(pages[i], pages[j]);
+    for (int j = 0; j < i; ++j) {
+      ASSERT_NE(pages[i], pages[j]);
+    }
   }
-  for (int i = 0; i < N; ++i) kPmm.free(pages[i]);
+  for (auto page : pages) {
+    kPmm.free(page);
+  }
 }
 
 TEST(pmm, free_allows_reallocation) {

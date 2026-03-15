@@ -412,7 +412,8 @@ TEST(string, strtok_r_basic) {
 TEST(string, strtok_r_multiple_strings) {
   char buf1[] = "a,b,c";
   char buf2[] = "x,y,z";
-  char *saveptr1, *saveptr2;
+  char *saveptr1;
+  char *saveptr2;
 
   char* t1 = strtok_r(buf1, ",", &saveptr1);
   char* t2 = strtok_r(buf2, ",", &saveptr2);
@@ -499,15 +500,15 @@ TEST(string, strstr_empty_haystack) {
 
 // strspn with an empty accept set must return 0 for any string.
 TEST(string, strspn_empty_accept_set) {
-  ASSERT_EQ(strspn("hello", ""), 0u);
-  ASSERT_EQ(strspn("", ""), 0u);
+  ASSERT_EQ(strspn("hello", ""), 0U);
+  ASSERT_EQ(strspn("", ""), 0U);
 }
 
 // strcspn with an empty reject set: no character is rejected, so the entire
 // string qualifies and the return value equals strlen(s).
 TEST(string, strcspn_empty_reject_set) {
-  ASSERT_EQ(strcspn("hello", ""), 5u);
-  ASSERT_EQ(strcspn("", ""), 0u);
+  ASSERT_EQ(strcspn("hello", ""), 5U);
+  ASSERT_EQ(strcspn("", ""), 0U);
 }
 
 // memchr must return a pointer to the FIRST occurrence.

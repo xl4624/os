@@ -12,6 +12,7 @@
 #include "multiboot.h"
 #include "paging.h"
 #include "pit.h"
+#include "vmm.h"
 #include "scheduler.h"
 #include "syscall.h"
 #include "terminal.h"
@@ -31,6 +32,7 @@ extern char stack_top[];
 
 void kernel_init() {
   assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
+  VMM::map_all_physical_ram();  // must be first: extends phys_to_virt() range
   GDT::init();
   TSS::init();
   TSS::set_kernel_stack(reinterpret_cast<uint32_t>(stack_top));

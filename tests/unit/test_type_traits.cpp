@@ -4,8 +4,8 @@
 
 TEST(type_traits, integral_constant) {
   static_assert(std::integral_constant<int, 42>::value == 42);
-  static_assert(std::true_type::value == true);
-  static_assert(std::false_type::value == false);
+  static_assert(std::true_type::value);
+  static_assert(!std::false_type::value);
   ASSERT_TRUE(std::true_type::value);
   ASSERT_FALSE(std::false_type::value);
   // operator() and operator T() round-trip
@@ -153,7 +153,7 @@ TEST(type_traits, decay) {
 }
 
 TEST(type_traits, is_enum) {
-  enum Color { Red, Green, Blue };
+  enum class Color { Red, Green, Blue };
   enum class Status : int { Ok, Fail };
   static_assert(std::is_enum_v<Color>);
   static_assert(std::is_enum_v<Status>);
@@ -215,6 +215,6 @@ TEST(type_traits, rank_and_extent) {
   static_assert(std::extent_v<int[5]> == 5);
   static_assert(std::extent_v<int[2][3]> == 2);
   static_assert(std::extent_v<int[2][3], 1> == 3);
-  ASSERT_EQ(std::rank_v<int[2][3]>, 2u);
-  ASSERT_EQ(std::extent_v<int[4]>, 4u);
+  ASSERT_EQ(std::rank_v<int[2][3]>, 2U);
+  ASSERT_EQ(std::extent_v<int[4]>, 4U);
 }

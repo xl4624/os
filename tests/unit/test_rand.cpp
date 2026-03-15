@@ -81,11 +81,11 @@ TEST(rand, large_sample_stays_in_bounds) {
 TEST(rand, reseed_reproduces_sequence) {
   int vals[5];
   srand(99999);
-  for (int i = 0; i < 5; ++i) {
-    vals[i] = rand();
+  for (int& val : vals) {
+    val = rand();
   }
   srand(99999);
-  for (int i = 0; i < 5; ++i) {
-    ASSERT_EQ(rand(), vals[i]);
+  for (int& val : vals) {
+    ASSERT_EQ(rand(), val);
   }
 }

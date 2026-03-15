@@ -38,6 +38,13 @@ void unmap(vaddr_t virt);
 // The low 12 bits of `virt` (the page offset) are preserved in the result.
 [[nodiscard]] paddr_t get_phys(vaddr_t virt);
 
+// Map every physical frame from 8 MiB up to kPmm.get_total_frames()*PAGE_SIZE
+// into the kernel higher-half at phys_to_virt(pa). Must be called once, early
+// in kernel_init(), before any subsystem allocates frames above 8 MiB.
+// Page tables for the new mappings are allocated from the PMM and must land in
+// the already-mapped first 8 MiB (PMM allocates lowest-first; asserted).
+void map_all_physical_ram();
+
 // Flush the entire TLB by reloading CR3 with its current value.
 // Use when switching address spaces (loading a new page directory).
 // For single-page invalidation prefer the cheaper `invlpg` instruction,

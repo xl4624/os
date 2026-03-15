@@ -16,7 +16,7 @@
 TEST(address_space, create_and_destroy) {
   auto [phys, virt] = AddressSpace::create();
   ASSERT_NOT_NULL(virt);
-  ASSERT_NE(phys, 0u);
+  ASSERT_NE(phys, 0U);
 
   // Kernel PDEs (768-1023) should be copied from boot_page_directory.
   for (uint32_t i = AddressSpace::kKernelPdeStart; i < PAGES_PER_TABLE; ++i) {
@@ -28,7 +28,7 @@ TEST(address_space, create_and_destroy) {
 
   // User PDEs (0-767) should be zeroed.
   for (uint32_t i = 0; i < AddressSpace::kKernelPdeStart; ++i) {
-    ASSERT_EQ(virt->entry[i].present, 0u);
+    ASSERT_EQ(virt->entry[i].present, 0U);
   }
 
   AddressSpace::destroy(virt, phys);
@@ -37,14 +37,14 @@ TEST(address_space, create_and_destroy) {
 TEST(address_space, map_user_page) {
   auto [pd_phys, pd] = AddressSpace::create();
   paddr_t page = kPmm.alloc();
-  ASSERT_NE(page, 0u);
+  ASSERT_NE(page, 0U);
 
   AddressSpace::map(pd, 0x00400000, page, true, true);
 
   // Verify the PDE and PTE were created.
   uint32_t pdi = 0x00400000 >> 22;
-  ASSERT_EQ(pd->entry[pdi].present, 1u);
-  ASSERT_EQ(pd->entry[pdi].user, 1u);
+  ASSERT_EQ(pd->entry[pdi].present, 1U);
+  ASSERT_EQ(pd->entry[pdi].user, 1U);
 
   AddressSpace::destroy(pd, pd_phys);
 }
@@ -78,7 +78,7 @@ TEST(address_space, copy_propagates_user_mapping) {
   // in the copy, with the same access flags.
   auto [src_phys, src_pd] = AddressSpace::create();
   paddr_t page = kPmm.alloc();
-  ASSERT_NE(page, 0u);
+  ASSERT_NE(page, 0U);
   AddressSpace::map(src_pd, 0x00400000, page, /*writeable=*/true,
                     /*user=*/true);
 
@@ -96,7 +96,7 @@ TEST(address_space, copy_uses_distinct_physical_frames) {
   // in one address space do not affect the other.
   auto [src_phys, src_pd] = AddressSpace::create();
   paddr_t page = kPmm.alloc();
-  ASSERT_NE(page, 0u);
+  ASSERT_NE(page, 0U);
   AddressSpace::map(src_pd, 0x00400000, page, /*writeable=*/true,
                     /*user=*/true);
 
@@ -107,8 +107,8 @@ TEST(address_space, copy_uses_distinct_physical_frames) {
   const uint32_t pti = (0x00400000 >> 12) & 0x3FF;
   const auto& src_pde = src_pd->entry[pdi];
   const auto& dst_pde = dst_pd->entry[pdi];
-  ASSERT_EQ(src_pde.present, 1u);
-  ASSERT_EQ(dst_pde.present, 1u);
+  ASSERT_EQ(src_pde.present, 1U);
+  ASSERT_EQ(dst_pde.present, 1U);
 
   const auto* src_pt =
       phys_to_virt(paddr_t{static_cast<uintptr_t>(src_pde.frame) << PAGE_OFFSET_BITS})
@@ -127,7 +127,7 @@ TEST(address_space, copy_replicates_page_data) {
   // Page contents from the source must be present verbatim in the copy.
   auto [src_phys, src_pd] = AddressSpace::create();
   paddr_t page = kPmm.alloc();
-  ASSERT_NE(page, 0u);
+  ASSERT_NE(page, 0U);
 
   uint8_t* src_data = phys_to_virt(page).ptr<uint8_t>();
   for (uint32_t i = 0; i < PAGE_SIZE; ++i) {
@@ -142,7 +142,7 @@ TEST(address_space, copy_replicates_page_data) {
   const uint32_t pdi = 0x00400000 >> 22;
   const uint32_t pti = (0x00400000 >> 12) & 0x3FF;
   const auto& dst_pde = dst_pd->entry[pdi];
-  ASSERT_EQ(dst_pde.present, 1u);
+  ASSERT_EQ(dst_pde.present, 1U);
 
   const auto* dst_pt =
       phys_to_virt(paddr_t{static_cast<uintptr_t>(dst_pde.frame) << PAGE_OFFSET_BITS})
@@ -164,7 +164,7 @@ TEST(address_space, copy_replicates_page_data) {
 TEST(scheduler, current_not_null) {
   Process* p = Scheduler::current();
   ASSERT_NOT_NULL(p);
-  ASSERT_EQ(p->pid, 0u);  // idle process has PID 0
+  ASSERT_EQ(p->pid, 0U);  // idle process has PID 0
 }
 
 namespace {
@@ -212,10 +212,10 @@ TEST(scheduler, create_process) {
   Process* p = Scheduler::create_process(
       std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, "test");
   ASSERT_NOT_NULL(p);
-  ASSERT_EQ(p->pid, 1u);  // first user process
+  ASSERT_EQ(p->pid, 1U);  // first user process
   ASSERT_EQ(p->state, ProcessState::Ready);
   ASSERT_NE(p->kernel_stack, nullptr);
-  ASSERT_NE(p->page_directory_phys, 0u);
+  ASSERT_NE(p->page_directory_phys, 0U);
 }
 
 TEST(scheduler, create_multiple_processes) {

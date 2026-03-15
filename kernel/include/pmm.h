@@ -101,6 +101,8 @@ class PhysicalMemoryManager {
 
   [[nodiscard]] size_t get_free_count() const { return free_count_; }
 
+  [[nodiscard]] size_t get_total_frames() const { return total_frames_; }
+
   [[nodiscard]] size_t get_used_count() const { return total_frames_ - free_count_; }
 
   // Print up to `count` frame bits (1 = used, 0 = free) starting at `from`

@@ -32,11 +32,11 @@ PageTable* page_table_for(vaddr_t virt, bool create, bool user) {
     const paddr_t pt_phys = kPmm.alloc();
     assert(pt_phys && "VMM: out of physical memory allocating page table\n");
 
-    // page_table_for is called only after kernel_init() has run, so the
-    // first 8 MiB are mapped. PMM hands out the lowest available frames
-    // first, which are always in the first 8 MiB.
-    constexpr paddr_t MAPPED_PHYS_END = 8U * 1024U * 1024U;
-    if (pt_phys >= MAPPED_PHYS_END) {
+    // PMM hands out the lowest available frames first. After
+    // map_all_physical_ram() all managed physical memory is accessible
+    // via phys_to_virt(), so any frame up to total RAM is safe.
+    const paddr_t mapped_phys_end = paddr_t{kPmm.get_total_frames()} * PAGE_SIZE;
+    if (pt_phys >= mapped_phys_end) {
       panic("VMM: new page table phys 0x%08x outside mapped region\n",
             static_cast<unsigned>(pt_phys));
     }
@@ -97,6 +97,18 @@ paddr_t get_phys(vaddr_t virt) {
   }
 
   return (paddr_t{pte.frame} << PAGE_OFFSET_BITS) | (virt & (PAGE_SIZE - 1));
+}
+
+void map_all_physical_ram() {
+  constexpr uint32_t kBootMappedEnd = 8U * 1024U * 1024U;
+  const uint32_t total_bytes =
+      static_cast<uint32_t>(kPmm.get_total_frames()) * PAGE_SIZE;
+
+  for (uint32_t off = kBootMappedEnd; off < total_bytes; off += PAGE_SIZE) {
+    const paddr_t phys{off};
+    VMM::map(phys_to_virt(phys), phys, /*writeable=*/true, /*user=*/false);
+  }
+  VMM::flush_tlb();
 }
 
 void flush_tlb() {

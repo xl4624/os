@@ -22,14 +22,14 @@ TEST(array, const_element_access) {
 
 TEST(array, size_and_empty) {
   std::array<int, 5> a = {};
-  ASSERT_EQ(a.size(), 5u);
-  ASSERT_EQ(a.max_size(), 5u);
+  ASSERT_EQ(a.size(), 5U);
+  ASSERT_EQ(a.max_size(), 5U);
   ASSERT_FALSE(a.empty());
 }
 
 TEST(array, zero_size) {
   std::array<int, 0> a = {};
-  ASSERT_EQ(a.size(), 0u);
+  ASSERT_EQ(a.size(), 0U);
   ASSERT_TRUE(a.empty());
   ASSERT_NULL(a.data());
   ASSERT_NULL(a.begin());
@@ -43,14 +43,14 @@ TEST(array, data_pointer) {
   ASSERT_EQ(p[0], 10);
   ASSERT_EQ(p[2], 30);
   // data() must point to the first element
-  ASSERT(p == &a[0]);
+  ASSERT(p == a.data());
 }
 
 TEST(array, iterator_loop) {
   std::array<int, 4> a = {1, 2, 3, 4};
   int sum = 0;
-  for (auto it = a.begin(); it != a.end(); ++it) {
-    sum += *it;
+  for (int& it : a) {
+    sum += it;
   }
   ASSERT_EQ(sum, 10);
 }
@@ -67,8 +67,8 @@ TEST(array, range_based_for) {
 TEST(array, cbegin_cend) {
   std::array<int, 3> a = {5, 6, 7};
   int sum = 0;
-  for (auto it = a.cbegin(); it != a.cend(); ++it) {
-    sum += *it;
+  for (int it : a) {
+    sum += it;
   }
   ASSERT_EQ(sum, 18);
 }
@@ -121,7 +121,7 @@ TEST(array, write_through_index) {
 
 TEST(array, write_through_data) {
   std::array<int, 3> a = {1, 2, 3};
-  a.data()[1] = 99;
+  a[1] = 99;
   ASSERT_EQ(a[1], 99);
 }
 

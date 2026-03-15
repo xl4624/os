@@ -163,7 +163,7 @@ TEST(elf, load_sets_entry_point) {
   ASSERT_TRUE(
       Elf::load(std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, pd,
                 entry, brk));
-  ASSERT_EQ(entry, 0x00401234u);
+  ASSERT_EQ(entry, 0x00401234U);
   AddressSpace::destroy(pd, pd_phys);
 }
 
@@ -178,9 +178,9 @@ TEST(elf, load_sets_brk_page_aligned) {
       Elf::load(std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, pd,
                 entry, brk));
   // brk must be page-aligned.
-  ASSERT_EQ(brk & (PAGE_SIZE - 1), 0u);
+  ASSERT_EQ(brk & (PAGE_SIZE - 1), 0U);
   // brk must be past the end of the loaded segment.
-  ASSERT_TRUE(brk >= 0x00400000u + PAGE_SIZE);
+  ASSERT_TRUE(brk >= 0x00400000U + PAGE_SIZE);
   AddressSpace::destroy(pd, pd_phys);
 }
 
@@ -288,6 +288,6 @@ TEST(elf, load_two_segments_brk_past_both) {
   ASSERT_TRUE(
       Elf::load(std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, pd,
                 entry, brk));
-  ASSERT_TRUE(brk >= 0x00500000u + PAGE_SIZE);
+  ASSERT_TRUE(brk >= 0x00500000U + PAGE_SIZE);
   AddressSpace::destroy(pd, pd_phys);
 }

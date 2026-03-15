@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "keyboard.h"
 #include "ktest.h"
 
@@ -137,7 +138,7 @@ TEST(keyboard, ascii_lowercase_letters) {
   for (uint8_t sc = 0x10; sc <= 0x19; sc++) {  // Q-P row
     Key k = Key::from_scancode(sc);
     char ch = k.ascii(false);
-    ASSERT(ch >= 'a' && ch <= 'z');
+    ASSERT(islower(ch));
   }
 }
 

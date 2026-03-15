@@ -204,7 +204,8 @@ TEST(syscall, alloc_user_stack_range) {
   auto [pd_phys, pd] = AddressSpace::create();
   ASSERT_NOT_NULL(pd);
 
-  uint32_t esp = Scheduler::alloc_user_stack(pd, "test");
+  const char* argv[] = {"test"};
+  uint32_t esp = Scheduler::alloc_user_stack(pd, argv);
   ASSERT_NE(esp, 0u);
   ASSERT_TRUE(esp < static_cast<uint32_t>(kUserStackTop));
   ASSERT_TRUE(esp >= static_cast<uint32_t>(kUserStackVA));
@@ -216,7 +217,8 @@ TEST(syscall, alloc_user_stack_pages_are_user_mapped) {
   auto [pd_phys, pd] = AddressSpace::create();
   ASSERT_NOT_NULL(pd);
 
-  uint32_t esp = Scheduler::alloc_user_stack(pd, "hello");
+  const char* argv[] = {"hello"};
+  uint32_t esp = Scheduler::alloc_user_stack(pd, argv);
   ASSERT_NE(esp, 0u);
   ASSERT_TRUE(AddressSpace::is_user_mapped(pd, esp, /*writeable=*/true));
 

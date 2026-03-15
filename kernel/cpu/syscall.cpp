@@ -1,7 +1,6 @@
 #include "syscall.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <string.h>
 #include <unique_ptr.h>
 
@@ -10,7 +9,6 @@
 #include "file.h"
 #include "idt.h"
 #include "interrupt.h"
-#include "keyboard.h"
 #include "paging.h"
 #include "pipe.h"
 #include "pit.h"
@@ -18,7 +16,6 @@
 #include "scheduler.h"
 #include "shm.h"
 #include "tss.h"
-#include "tty.h"
 #include "vfs.h"
 
 static constexpr uint32_t SYSCALL_VECTOR = 0x80;
@@ -115,8 +112,9 @@ static int32_t sys_sbrk(TrapFrame* regs) {
 
   vaddr_t new_break = old_break + static_cast<uint32_t>(increment);
 
-  // Reject if the new break would enter kernel space or wrap around.
-  if (new_break >= KERNEL_VMA || new_break < old_break) {
+  // Reject if the new break would collide with the user stack, enter kernel
+  // space, or wrap around.
+  if (new_break >= kUserStackVA || new_break < old_break) {
     return -1;
   }
 
@@ -195,9 +193,8 @@ static int32_t sys_exec(TrapFrame* regs) {
     auto* uargv = reinterpret_cast<const uint32_t*>(argv_ptr);
     while (argc < kMaxExecArgs) {
       // Validate the pointer slot itself.
-      if (!validate_user_buffer(
-              argv_ptr + static_cast<uint32_t>(argc) * 4, 4,
-              /*writeable=*/false)) {
+      if (!validate_user_buffer(argv_ptr + static_cast<uint32_t>(argc) * 4, 4,
+                                /*writeable=*/false)) {
         return -1;
       }
       uint32_t str_ptr = uargv[argc];
@@ -243,7 +240,8 @@ static int32_t sys_exec(TrapFrame* regs) {
     return -1;
   }
 
-  uint32_t user_esp = Scheduler::alloc_user_stack(new_pd_virt, argc, argv_ptrs);
+  uint32_t user_esp = Scheduler::alloc_user_stack(
+      new_pd_virt, std::span<const char*>{argv_ptrs, static_cast<size_t>(argc)});
   if (user_esp == 0) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;

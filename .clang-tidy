@@ -1,0 +1,4 @@
+Checks: 'bugprone-*'
+CheckOptions:
+  - key: bugprone-unused-return-value.AllowCastToVoid
+    value: true

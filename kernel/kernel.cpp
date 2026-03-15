@@ -49,7 +49,7 @@ __attribute__((noreturn)) void kernel_main() {
   {
     const auto* ktest_info = phys_to_virt(paddr_t{mboot_info}).ptr<multiboot_info_t>();
     if (Framebuffer::init(ktest_info)) {
-      kFbTerminal.init();
+      kTerminal.init();
     }
   }
   KTest::run_all();  // runs all registered tests then exits QEMU

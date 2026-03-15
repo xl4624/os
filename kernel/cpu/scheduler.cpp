@@ -265,7 +265,7 @@ void block_current() {
   enqueue_blocked(current_process);
 }
 
-uint32_t alloc_user_stack(PageTable* pd, int argc, const char* const* argv) {
+uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv) {
   paddr_t stack_pages[kUserStackPages];
   for (uint32_t i = 0; i < kUserStackPages; ++i) {
     paddr_t phys = kPmm.alloc();
@@ -291,11 +291,11 @@ uint32_t alloc_user_stack(PageTable* pd, int argc, const char* const* argv) {
   uint32_t user_esp = kUserStackTop;
 
   // Push all argv strings and record their user VAs.
-  static constexpr int kMaxExecArgs = 16;
-  assert(argc <= kMaxExecArgs && "alloc_user_stack(): too many arguments");
+  static constexpr size_t kMaxExecArgs = 16;
+  assert(argv.size() <= kMaxExecArgs && "alloc_user_stack(): too many arguments");
   uint32_t str_uvas[kMaxExecArgs];
 
-  for (int i = argc - 1; i >= 0; --i) {
+  for (size_t i = argv.size(); i-- > 0;) {
     size_t len = strlen(argv[i]);
     user_esp -= static_cast<uint32_t>(len + 1);
     memcpy(kptr(user_esp), argv[i], len + 1);
@@ -310,14 +310,14 @@ uint32_t alloc_user_stack(PageTable* pd, int argc, const char* const* argv) {
   *reinterpret_cast<uint32_t*>(kptr(user_esp)) = 0;
 
   // Push argv[argc-1] .. argv[0] pointers.
-  for (int i = argc - 1; i >= 0; --i) {
+  for (size_t i = argv.size(); i-- > 0;) {
     user_esp -= 4;
     *reinterpret_cast<uint32_t*>(kptr(user_esp)) = str_uvas[i];
   }
 
   // Push argc.
   user_esp -= 4;
-  *reinterpret_cast<uint32_t*>(kptr(user_esp)) = static_cast<uint32_t>(argc);
+  *reinterpret_cast<uint32_t*>(kptr(user_esp)) = static_cast<uint32_t>(argv.size());
 
   return user_esp;
 }
@@ -372,7 +372,7 @@ Process* create_process(std::span<const uint8_t> elf_data, const char* name) {
   p->heap_break = brk;
 
   const char* argv[] = {name};
-  uint32_t user_esp = alloc_user_stack(pd_virt, 1, argv);
+  uint32_t user_esp = alloc_user_stack(pd_virt, argv);
   assert(user_esp != 0 && "Scheduler::create_process(): out of physical memory for user stack");
 
   p->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));

@@ -43,8 +43,7 @@ bool is_initialized();
 // and write argc / argv onto the stack top.
 // Returns the final user_esp, or 0 on allocation failure.
 // On failure, any pages already mapped are unmapped and freed.
-[[nodiscard]] uint32_t alloc_user_stack(PageTable* pd, int argc,
-                                        const char* const* argv);
+[[nodiscard]] uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv);
 
 // Fill frame with the initial user-mode register state ready for iret.
 // GP regs are zeroed; eip/user_esp are set from parameters; eflags=0x202;

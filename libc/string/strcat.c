@@ -1,6 +1,6 @@
 #include <string.h>
 
-char* strcat(char* __restrict__ dest, const char* __restrict__ src) {
+char* strcat(char* restrict dest, const char* restrict src) {
   char* ptr = dest;
 
   while (*ptr != '\0') {

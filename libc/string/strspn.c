@@ -4,17 +4,15 @@ size_t strspn(const char* s, const char* accept) {
   size_t count = 0;
 
   for (const char* p = s; *p != '\0'; ++p) {
-    int found = 0;
-    for (const char* a = accept; *a != '\0'; ++a) {
+    for (const char* a = accept;; ++a) {
+      if (*a == '\0') {
+        return count;
+      }
       if (*p == *a) {
-        found = 1;
         break;
       }
     }
-    if (!found) {
-      break;
-    }
-    count++;
+    ++count;
   }
 
   return count;

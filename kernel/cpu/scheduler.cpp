@@ -290,7 +290,7 @@ uint32_t alloc_user_stack(PageTable* pd, int argc, const char* const* argv) {
 
   uint32_t user_esp = kUserStackTop;
 
-  // Push all argv strings (null-terminated) and record their user VAs.
+  // Push all argv strings and record their user VAs.
   static constexpr int kMaxExecArgs = 16;
   assert(argc <= kMaxExecArgs && "alloc_user_stack(): too many arguments");
   uint32_t str_uvas[kMaxExecArgs];
@@ -305,7 +305,7 @@ uint32_t alloc_user_stack(PageTable* pd, int argc, const char* const* argv) {
   // Align esp down to a 4-byte boundary.
   user_esp &= ~3u;
 
-  // Push argv[argc] = NULL (argv terminator).
+  // Push argv[argc] = NULL.
   user_esp -= 4;
   *reinterpret_cast<uint32_t*>(kptr(user_esp)) = 0;
 

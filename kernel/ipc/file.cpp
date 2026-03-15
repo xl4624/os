@@ -1,11 +1,14 @@
 #include "file.h"
 
 #include <string.h>
+#include <sys/io.h>
 
 #include "keyboard.h"
 #include "pipe.h"
 #include "tty.h"
 #include "vfs.h"
+
+static constexpr uint16_t kDebugconPort = 0xE9;
 
 // ===========================================================================
 // Terminal singletons
@@ -38,6 +41,9 @@ int32_t file_write(FileDescription* fd, std::span<const uint8_t> buf) {
   switch (fd->type) {
     case FileType::TerminalWrite:
       terminal_write({reinterpret_cast<const char*>(buf.data()), buf.size()});
+      for (size_t i = 0; i < buf.size(); ++i) {
+        outb(kDebugconPort, buf[i]);
+      }
       return static_cast<int32_t>(buf.size());
     case FileType::PipeWrite:
       return pipe_write(fd->pipe, buf);

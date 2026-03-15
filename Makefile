@@ -33,8 +33,12 @@ KTEST_ISO := $(KTEST_BUILDDIR)/myos-test.iso
 
 all: $(ISO)
 
+RUN_LOG := $(BUILDDIR)/run.log
+
 run: $(ISO)
-	@qemu-system-i386 -cdrom $(ISO) -no-reboot -no-shutdown
+	@qemu-system-i386 -cdrom $(ISO) -no-reboot -no-shutdown \
+		-debugcon file:$(RUN_LOG)
+	@echo "--- Log written to $(RUN_LOG) ---"
 
 debug: $(ISO)
 	@qemu-system-i386 -cdrom $(ISO) -s -S -monitor stdio -no-reboot -no-shutdown

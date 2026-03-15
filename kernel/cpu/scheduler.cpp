@@ -265,7 +265,7 @@ void block_current() {
   enqueue_blocked(current_process);
 }
 
-uint32_t alloc_user_stack(PageTable* pd, const char* name) {
+uint32_t alloc_user_stack(PageTable* pd, int argc, const char* const* argv) {
   paddr_t stack_pages[kUserStackPages];
   for (uint32_t i = 0; i < kUserStackPages; ++i) {
     paddr_t phys = kPmm.alloc();
@@ -290,26 +290,34 @@ uint32_t alloc_user_stack(PageTable* pd, const char* name) {
 
   uint32_t user_esp = kUserStackTop;
 
-  // Push the program name string (null-terminated).
-  size_t name_len = strlen(name);
-  user_esp -= static_cast<uint32_t>(name_len + 1);
-  memcpy(kptr(user_esp), name, name_len + 1);
-  uint32_t str_uva = user_esp;
+  // Push all argv strings (null-terminated) and record their user VAs.
+  static constexpr int kMaxExecArgs = 16;
+  assert(argc <= kMaxExecArgs && "alloc_user_stack(): too many arguments");
+  uint32_t str_uvas[kMaxExecArgs];
+
+  for (int i = argc - 1; i >= 0; --i) {
+    size_t len = strlen(argv[i]);
+    user_esp -= static_cast<uint32_t>(len + 1);
+    memcpy(kptr(user_esp), argv[i], len + 1);
+    str_uvas[i] = user_esp;
+  }
 
   // Align esp down to a 4-byte boundary.
   user_esp &= ~3u;
 
-  // Push argv[1] = NULL (argv terminator).
+  // Push argv[argc] = NULL (argv terminator).
   user_esp -= 4;
   *reinterpret_cast<uint32_t*>(kptr(user_esp)) = 0;
 
-  // Push argv[0] = pointer to the name string.
-  user_esp -= 4;
-  *reinterpret_cast<uint32_t*>(kptr(user_esp)) = str_uva;
+  // Push argv[argc-1] .. argv[0] pointers.
+  for (int i = argc - 1; i >= 0; --i) {
+    user_esp -= 4;
+    *reinterpret_cast<uint32_t*>(kptr(user_esp)) = str_uvas[i];
+  }
 
-  // Push argc = 1.
+  // Push argc.
   user_esp -= 4;
-  *reinterpret_cast<uint32_t*>(kptr(user_esp)) = 1;
+  *reinterpret_cast<uint32_t*>(kptr(user_esp)) = static_cast<uint32_t>(argc);
 
   return user_esp;
 }
@@ -363,7 +371,8 @@ Process* create_process(std::span<const uint8_t> elf_data, const char* name) {
   }
   p->heap_break = brk;
 
-  uint32_t user_esp = alloc_user_stack(pd_virt, name);
+  const char* argv[] = {name};
+  uint32_t user_esp = alloc_user_stack(pd_virt, 1, argv);
   assert(user_esp != 0 && "Scheduler::create_process(): out of physical memory for user stack");
 
   p->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));
@@ -408,9 +417,9 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
     }
   }
 
-  // Re-map shared memory in the child. AddressSpace::copy() deep-copied
-  // all user pages, but shared memory pages should reference the same
-  // physical frames. Unmap the spurious copies and re-map the originals.
+  // Re-map shared memory in the child. AddressSpace::copy() deep-copied all user pages,
+  // but shared memory pages should reference the same physical frames.
+  // Unmap the spurious copies and re-map the originals.
   for (uint32_t i = 0; i < current_process->shm_mapping_count; ++i) {
     const ShmMapping& m = current_process->shm_mappings[i];
     ShmRegion* region = Shm::find_region(m.shm_id);
@@ -432,8 +441,8 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   assert(child->kernel_stack && "fork_current(): failed to allocate kernel stack");
   memset(child->kernel_stack, 0, kKernelStackSize);
 
-  // Place a copy of the parent's TrapFrame at the top of the child's
-  // kernel stack. The child returns 0 from fork().
+  // Place a copy of the parent's TrapFrame at the top of the child's kernel stack.
+  // The child returns 0 from fork().
   auto* kstack_top = reinterpret_cast<uint32_t*>(child->kernel_stack + kKernelStackSize);
   auto* child_frame =
       reinterpret_cast<TrapFrame*>(reinterpret_cast<uintptr_t>(kstack_top) - sizeof(TrapFrame));
@@ -468,6 +477,10 @@ int32_t waitpid_current(int32_t pid, int32_t* exit_code_ptr) {
         *exit_code_ptr = child.exit_code;
       }
       uint32_t child_pid = child.pid;
+      // Free the kernel stack before clearing the slot.
+      if (child.kernel_stack) {
+        kfree(child.kernel_stack);
+      }
       memset(&child, 0, sizeof(Process));
       return static_cast<int32_t>(child_pid);
     }
@@ -476,7 +489,7 @@ int32_t waitpid_current(int32_t pid, int32_t* exit_code_ptr) {
   }
 
   if (!found_child) {
-    return -1;  // no matching child exists
+    return -1;
   }
 
   // Child exists but hasn't exited; block and retry via syscall restart.

@@ -165,17 +165,64 @@ static int32_t sys_open(TrapFrame* regs) {
   return Vfs::open(path);
 }
 
-// SYS_EXEC(path=ebx)
+// SYS_EXEC(path=ebx, argv=ecx)
 // Replaces the current process image with a VFS path (e.g. "/bin/sh").
+// argv is a NULL-terminated array of string pointers (may be NULL for argc=0).
 // Returns 0 on success, -1 on failure.
 static int32_t sys_exec(TrapFrame* regs) {
+  static constexpr int kMaxExecArgs = 16;
+  static constexpr uint32_t kMaxArgLen = 256;
+
   uint32_t path_ptr = regs->ebx;
+  uint32_t argv_ptr = regs->ecx;
 
   if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
     return -1;
   }
 
   const char* path = reinterpret_cast<const char*>(path_ptr);
+
+  // Copy argv strings from the current (old) address space into kernel
+  // buffers before we destroy it.
+  int argc = 0;
+  char arg_bufs[kMaxExecArgs][kMaxArgLen];
+  const char* argv_ptrs[kMaxExecArgs];
+
+  if (argv_ptr != 0) {
+    if (!validate_user_buffer(argv_ptr, 4, /*writeable=*/false)) {
+      return -1;
+    }
+    auto* uargv = reinterpret_cast<const uint32_t*>(argv_ptr);
+    while (argc < kMaxExecArgs) {
+      // Validate the pointer slot itself.
+      if (!validate_user_buffer(
+              argv_ptr + static_cast<uint32_t>(argc) * 4, 4,
+              /*writeable=*/false)) {
+        return -1;
+      }
+      uint32_t str_ptr = uargv[argc];
+      if (str_ptr == 0) {
+        break;
+      }
+      if (!validate_user_buffer(str_ptr, 1, /*writeable=*/false)) {
+        return -1;
+      }
+      const char* src = reinterpret_cast<const char*>(str_ptr);
+      strncpy(arg_bufs[argc], src, kMaxArgLen - 1);
+      arg_bufs[argc][kMaxArgLen - 1] = '\0';
+      argv_ptrs[argc] = arg_bufs[argc];
+      ++argc;
+    }
+  }
+
+  // If no argv was provided, use the path as argv[0].
+  if (argc == 0) {
+    strncpy(arg_bufs[0], path, kMaxArgLen - 1);
+    arg_bufs[0][kMaxArgLen - 1] = '\0';
+    argv_ptrs[0] = arg_bufs[0];
+    argc = 1;
+  }
+
   VfsNode* node = Vfs::lookup(path);
   if (!node || !node->data) {
     return -1;
@@ -196,7 +243,7 @@ static int32_t sys_exec(TrapFrame* regs) {
     return -1;
   }
 
-  uint32_t user_esp = Scheduler::alloc_user_stack(new_pd_virt, path);
+  uint32_t user_esp = Scheduler::alloc_user_stack(new_pd_virt, argc, argv_ptrs);
   if (user_esp == 0) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;

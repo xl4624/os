@@ -325,7 +325,7 @@ static void run_pipeline(Pipeline* pl) {
         strncpy(path + 5, name, PATH_MAX - 6);
         path[PATH_MAX - 1] = '\0';
       }
-      if (exec(path) < 0) {
+      if (exec(path, cmd->argv) < 0) {
         printf("sh: not found: %s\n", name);
         _exit(1);
       }

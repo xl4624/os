@@ -40,10 +40,11 @@ bool is_initialized();
 [[nodiscard]] Process* create_process(std::span<const uint8_t> elf_data, const char* name);
 
 // Allocate kUserStackPages physical pages, map them user-writable in pd,
-// and write argc=1 / argv=["name", nullptr] onto the stack top.
+// and write argc / argv onto the stack top.
 // Returns the final user_esp, or 0 on allocation failure.
 // On failure, any pages already mapped are unmapped and freed.
-[[nodiscard]] uint32_t alloc_user_stack(PageTable* pd, const char* name);
+[[nodiscard]] uint32_t alloc_user_stack(PageTable* pd, int argc,
+                                        const char* const* argv);
 
 // Fill frame with the initial user-mode register state ready for iret.
 // GP regs are zeroed; eip/user_esp are set from parameters; eflags=0x202;

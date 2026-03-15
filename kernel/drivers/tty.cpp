@@ -1,12 +1,18 @@
 #include "tty.h"
 
 #include <sys/cdefs.h>
+#include <sys/io.h>
 
 #include "terminal.h"
 
+static constexpr uint16_t kDebugconPort = 0xE9;
+
 __BEGIN_DECLS
 
-void terminal_putchar(char c) { kTerminal.write_char(c); }
+void terminal_putchar(char c) {
+  kTerminal.write_char(c);
+  outb(kDebugconPort, static_cast<uint8_t>(c));
+}
 
 void terminal_clear(void) { kTerminal.clear(); }
 

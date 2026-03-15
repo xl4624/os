@@ -15,7 +15,7 @@ int getpid(void);
 int fork(void);
 int waitpid(int pid, int* exit_code);
 int open(const char* path);
-int exec(const char* name);
+int exec(const char* path, char* const argv[]);
 int write(int fd, const void* buf, size_t count);
 int read(int fd, void* buf, size_t count);
 int close(int fd);

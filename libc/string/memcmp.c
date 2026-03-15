@@ -6,7 +6,7 @@ int memcmp(const void* s1, const void* s2, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     if (first[i] < second[i]) {
       return -1;
-    } else if (first[i] > second[i]) {
+    } else if (first[i] > second[i]) {  // NOLINT(llvm-no-else-after-return)
       return 1;
     }
   }

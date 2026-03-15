@@ -1,7 +1,7 @@
 #include <string.h>
 
 char* strtok_r(char* restrict str, const char* restrict delim, char** restrict saveptr) {
-  char* token;
+  char* token = NULL;
 
   if (str != NULL) {
     *saveptr = str;

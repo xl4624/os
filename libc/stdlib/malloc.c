@@ -42,7 +42,7 @@ static struct BlockHeader* heap_base = NULL;
 /* Round up to nearest multiple of ALIGN, minimum ALIGN. */
 static size_t align_up(size_t sz) {
   if (sz == 0) {
-      return ALIGN;
+    return ALIGN;
   }
   return (sz + ALIGN - 1) & ~(size_t)(ALIGN - 1);
 }
@@ -54,7 +54,7 @@ static struct BlockHeader* block_after(struct BlockHeader* hdr) {
 
 void* malloc(size_t size) {
   if (size == 0) {
-      return NULL;
+    return NULL;
   }
 
   size_t need = align_up(size);
@@ -65,7 +65,7 @@ void* malloc(size_t size) {
     struct BlockHeader* next = block_after(cur);
     /* Check if next is still within our heap (i.e. not past sbrk(0)). */
     if ((char*)next > (char*)sbrk(0)) {
-        break;
+      break;
     }
 
     if (cur->free && cur->size >= need) {
@@ -87,7 +87,7 @@ void* malloc(size_t size) {
   size_t request = need + HEADER_SIZE;
   void* block = sbrk((int)request);
   if (block == (void*)-1) {
-      return NULL;
+    return NULL;
   }
 
   struct BlockHeader* hdr = (struct BlockHeader*)block;
@@ -95,7 +95,7 @@ void* malloc(size_t size) {
   hdr->free = 0;
 
   if (heap_base == NULL) {
-      heap_base = hdr;
+    heap_base = hdr;
   }
 
   return (char*)hdr + HEADER_SIZE;
@@ -103,7 +103,7 @@ void* malloc(size_t size) {
 
 void free(void* ptr) {
   if (!ptr) {
-      return;
+    return;
   }
 
   struct BlockHeader* hdr = (struct BlockHeader*)((char*)ptr - HEADER_SIZE);
@@ -121,7 +121,7 @@ void free(void* ptr) {
     while (prev != NULL) {
       struct BlockHeader* pnext = block_after(prev);
       if ((char*)pnext >= (char*)sbrk(0)) {
-          break;
+        break;
       }
       if (pnext == hdr) {
         if (prev->free) {
@@ -136,19 +136,22 @@ void free(void* ptr) {
 
 void* calloc(size_t nmemb, size_t size) {
   if (nmemb != 0 && size > (size_t)-1 / nmemb) {
-      return NULL;
+    return NULL;
   }
   size_t total = nmemb * size;
+  if (total == 0) {
+    return NULL;
+  }
   void* ptr = malloc(total);
   if (ptr) {
-      memset(ptr, 0, total);
+    memset(ptr, 0, total);
   }
   return ptr;
 }
 
 void* realloc(void* ptr, size_t size) {
   if (!ptr) {
-      return malloc(size);
+    return malloc(size);
   }
   if (size == 0) {
     free(ptr);
@@ -159,12 +162,12 @@ void* realloc(void* ptr, size_t size) {
   size_t need = align_up(size);
 
   if (hdr->size >= need) {
-      return ptr;
+    return ptr;
   }
 
   void* new_ptr = malloc(size);
   if (!new_ptr) {
-      return NULL;
+    return NULL;
   }
 
   memcpy(new_ptr, ptr, hdr->size);

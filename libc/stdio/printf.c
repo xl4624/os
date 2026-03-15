@@ -82,10 +82,8 @@ static char* fill_numbuf(char* numbuf_end, unsigned long val, unsigned int base)
 
 #define NUMBUF_SIZE 24  // NOLINT(cppcoreguidelines-macro-to-enum,modernize-macro-to-enum)
 
-int vprintf(
-    const char* __restrict__ format,
-    va_list
-        ap) {  // NOLINT(misc-const-correctness,readability-non-const-parameter,readability-function-cognitive-complexity)
+// NOLINTNEXTLINE(misc-const-correctness,readability-non-const-parameter,readability-function-cognitive-complexity)
+int vprintf(const char* __restrict__ format, va_list ap) {
   char numbuf[NUMBUF_SIZE];
   int count = 0;
 
@@ -239,8 +237,9 @@ int vprintf(
       ++count;
     }
     for (; len > 0; ++data, --len) {
-      putchar(
-          *data);  // NOLINT(clang-analyzer-core.CallAndMessage,clang-analyzer-security.ArrayBound)
+      // clang-format off
+      putchar(*data); // NOLINT(clang-analyzer-core.CallAndMessage,clang-analyzer-security.ArrayBound)
+      // clang-format on
       ++count;
     }
     for (; width > 0; --width) {

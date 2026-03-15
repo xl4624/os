@@ -1,5 +1,10 @@
 Checks: >
-  *,
+  bugprone-*,
+  readability-*,
+  modernize-*,
+  performance-*,
+  misc-*,
+  clang-analyzer-*,
   -abseil-*,
   -altera-*,
   -fuchsia-*,
@@ -36,7 +41,8 @@ Checks: >
   -hicpp-special-member-functions,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
-  -misc-include-cleaner
+  -misc-include-cleaner,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
 CheckOptions:
   - key: bugprone-unused-return-value.AllowCastToVoid
     value: true

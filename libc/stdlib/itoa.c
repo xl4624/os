@@ -14,7 +14,7 @@ void itoa(int value, char* str, int base) {
   }
 
   if (value == INT_MIN) {
-    strcpy(str, "-2147483648");
+    memcpy(str, "-2147483648", sizeof("-2147483648"));
     return;
   }
 

@@ -474,26 +474,46 @@ static int32_t sys_lseek(TrapFrame* regs) {
 
 using syscall_fn = int32_t (*)(TrapFrame*);
 
-static std::array<syscall_fn, SYS_MAX> syscall_table = {
-    sys_exit,      // 0
-    sys_read,      // 1
-    sys_write,     // 2
-    sys_sleep,     // 3
-    sys_sbrk,      // 4
-    sys_getpid,    // 5
-    sys_exec,      // 6
-    sys_fork,      // 7
-    sys_waitpid,   // 8
-    sys_pipe,      // 9
-    sys_close,     // 10
-    sys_dup2,      // 11
-    sys_shmget,    // 12
-    sys_shmat,     // 13
-    sys_shmdt,     // 14
-    sys_open,      // 15
-    sys_getticks,  // 16
-    sys_lseek,     // 17
+static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
+    sys_exit,      // 0  SYS_EXIT
+    sys_fork,      // 1  SYS_FORK
+    sys_read,      // 2  SYS_READ
+    sys_write,     // 3  SYS_WRITE
+    sys_open,      // 4  SYS_OPEN
+    sys_close,     // 5  SYS_CLOSE
+    sys_waitpid,   // 6  SYS_WAITPID
+    sys_exec,      // 7  SYS_EXEC
+    sys_lseek,     // 8  SYS_LSEEK
+    sys_getpid,    // 9  SYS_GETPID
+    sys_pipe,      // 10 SYS_PIPE
+    sys_sbrk,      // 11 SYS_SBRK
+    sys_dup2,      // 12 SYS_DUP2
+    sys_sleep,     // 13 SYS_SLEEP
+    sys_shmget,    // 14 SYS_SHMGET
+    sys_shmat,     // 15 SYS_SHMAT
+    sys_shmdt,     // 16 SYS_SHMDT
+    sys_getticks,  // 17 SYS_GETTICKS
 };
+
+static_assert(syscall_table[SYS_EXIT] == sys_exit);
+static_assert(syscall_table[SYS_FORK] == sys_fork);
+static_assert(syscall_table[SYS_READ] == sys_read);
+static_assert(syscall_table[SYS_WRITE] == sys_write);
+static_assert(syscall_table[SYS_OPEN] == sys_open);
+static_assert(syscall_table[SYS_CLOSE] == sys_close);
+static_assert(syscall_table[SYS_WAITPID] == sys_waitpid);
+static_assert(syscall_table[SYS_EXEC] == sys_exec);
+static_assert(syscall_table[SYS_LSEEK] == sys_lseek);
+static_assert(syscall_table[SYS_GETPID] == sys_getpid);
+static_assert(syscall_table[SYS_PIPE] == sys_pipe);
+static_assert(syscall_table[SYS_SBRK] == sys_sbrk);
+static_assert(syscall_table[SYS_DUP2] == sys_dup2);
+static_assert(syscall_table[SYS_SLEEP] == sys_sleep);
+static_assert(syscall_table[SYS_SHMGET] == sys_shmget);
+static_assert(syscall_table[SYS_SHMAT] == sys_shmat);
+static_assert(syscall_table[SYS_SHMDT] == sys_shmdt);
+static_assert(syscall_table[SYS_GETTICKS] == sys_getticks);
+static_assert(syscall_table.size() == SYS_MAX);
 
 __BEGIN_DECLS
 

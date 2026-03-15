@@ -403,7 +403,7 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   assert(current_process != idle_process && "fork_current(): cannot fork idle process");
 
   Process* child = alloc_process();
-  if (child != nullptr) {
+  if (child == nullptr) {
     return static_cast<uint32_t>(-1);
   }
 

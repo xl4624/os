@@ -7,6 +7,24 @@
 
 #define EOF (-1)
 
+#ifdef __is_libc
+
+typedef struct {
+  int fd;
+  int eof;
+  int err;
+} FILE;
+
+extern FILE* __libc_stdin;
+extern FILE* __libc_stdout;
+extern FILE* __libc_stderr;
+
+#define stdin __libc_stdin
+#define stdout __libc_stdout
+#define stderr __libc_stderr
+
+#endif /* !__is_libc */
+
 __BEGIN_DECLS
 
 int vprintf(const char* __restrict__ format,
@@ -21,6 +39,11 @@ int putchar(int c);
 int puts(const char* s);
 
 int sscanf(const char* str, const char* format, ...);
+
+#ifdef __is_libc
+int vfprintf(FILE* file, const char* __restrict__ format, va_list ap);
+int fprintf(FILE* file, const char* __restrict__ format, ...);
+#endif /* !__is_libc */
 
 __END_DECLS
 

@@ -170,7 +170,10 @@ TEST(stdlib, snprintf_basic) {
 
 TEST(stdlib, snprintf_truncation) {
   char buf[32];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
   int n = snprintf(buf, 5, "hello world");
+#pragma GCC diagnostic pop
   ASSERT_EQ(n, 11);  // total chars that would be written
   ASSERT_STR_EQ(buf, "hell");
 }

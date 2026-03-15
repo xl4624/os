@@ -5,7 +5,10 @@
 
 __BEGIN_DECLS
 
-extern int errno;
+// Internal symbol to avoid conflicts with system libc's errno.
+extern int __libc_errno;
+
+#define errno __libc_errno
 
 #define EPERM 1
 #define ENOENT 2

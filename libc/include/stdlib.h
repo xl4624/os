@@ -21,9 +21,13 @@ int abs(int x);
 int rand(void);
 void srand(unsigned int seed);
 
-long strtol(const char* nptr, char** endptr, int base);
-unsigned long strtoul(const char* nptr, char** endptr, int base);
-int atoi(const char* nptr);
+long __libc_strtol(const char* nptr, char** endptr, int base);
+unsigned long __libc_strtoul(const char* nptr, char** endptr, int base);
+int __libc_atoi(const char* nptr);
+
+#define strtol __libc_strtol
+#define strtoul __libc_strtoul
+#define atoi __libc_atoi
 
 char* getenv(const char* name);
 int system(const char* command);

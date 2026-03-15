@@ -15,11 +15,9 @@ UNIT_TESTS := $(wildcard unit/test_*.cpp)
 UNIT_OBJS  := $(patsubst unit/%.cpp,$(BUILDDIR)/test/%.o,$(UNIT_TESTS))
 MAIN_OBJ   := $(BUILDDIR)/test/main.o
 
-# libc source files that work on host (exclude kernel-dependent ones)
-LIBC_SRCS := $(shell find ../libc/string -name '*.c') \
-             $(wildcard ../libc/stdlib/*.c)
-# Exclude errno.c and strtol.c - they conflict with system libc in tests
-LIBC_SRCS := $(filter-out ../libc/errno/errno.c ../libc/stdlib/strtol.c ../libc/stdlib/atoi.c,$(LIBC_SRCS))
+# libc source files that work on host.
+# Exclude unistd/ -- those files use int 0x80 syscalls that crash on the host.
+LIBC_SRCS := $(shell find ../libc -name '*.c' -not -path '*/unistd/*')
 LIBC_OBJS := $(patsubst ../libc/%.c,$(BUILDDIR)/test/libc/%.o,$(LIBC_SRCS))
 
 ALL_OBJS := $(UNIT_OBJS) $(MAIN_OBJ) $(LIBC_OBJS)

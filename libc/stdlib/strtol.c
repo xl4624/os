@@ -15,7 +15,7 @@ static int char_to_digit(char c) {
   return -1;
 }
 
-unsigned long strtoul(const char* nptr, char** endptr, int base) {
+unsigned long __libc_strtoul(const char* nptr, char** endptr, int base) {
   const char* s = nptr;
 
   while (*s == ' ' || *s == '\t' || *s == '\n' || *s == '\r' || *s == '\f' || *s == '\v') {
@@ -76,7 +76,7 @@ unsigned long strtoul(const char* nptr, char** endptr, int base) {
   return result;
 }
 
-long strtol(const char* nptr, char** endptr, int base) {
+long __libc_strtol(const char* nptr, char** endptr, int base) {
   const char* s = nptr;
 
   while (*s == ' ' || *s == '\t' || *s == '\n' || *s == '\r' || *s == '\f' || *s == '\v') {

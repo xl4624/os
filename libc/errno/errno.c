@@ -1,3 +1,3 @@
 #include <errno.h>
 
-int errno = 0;
+int __libc_errno = 0;

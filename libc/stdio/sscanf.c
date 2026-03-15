@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,11 +9,11 @@ static int is_space(char c) {
 
 static int to_digit(char c, int base) {
   int d;
-  if (c >= '0' && c <= '9') {
+  if (isdigit(c)) {
     d = c - '0';
-  } else if (c >= 'a' && c <= 'z') {
+  } else if (islower(c)) {
     d = c - 'a' + 10;
-  } else if (c >= 'A' && c <= 'Z') {
+  } else if (isupper(c)) {
     d = c - 'A' + 10;
   } else {
     return -1;

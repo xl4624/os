@@ -311,8 +311,16 @@ int snprintf(char* buf, size_t size, const char* __restrict__ format, ...) {
   return ret;
 }
 
+static void emit_buf_unlimited(char c, void* ctx) {
+  char** p = (char**)ctx;
+  *(*p)++ = c;
+}
+
 int vsprintf(char* buf, const char* __restrict__ format, va_list ap) {
-  return vsnprintf(buf, (size_t)-1, format, ap);
+  char* p = buf;
+  int ret = vformat(emit_buf_unlimited, &p, format, ap);
+  *p = '\0';
+  return ret;
 }
 
 int sprintf(char* buf, const char* __restrict__ format, ...) {
@@ -322,3 +330,50 @@ int sprintf(char* buf, const char* __restrict__ format, ...) {
   va_end(ap);
   return ret;
 }
+
+#ifdef __is_libc
+
+// ==== FILE descriptor-based emitter (vfprintf/fprintf) ====
+
+#include <unistd.h>
+
+#define FD_BUF_SIZE 64
+
+struct fd_ctx {
+  int fd;
+  char buf[FD_BUF_SIZE];
+  int len;
+};
+
+static void fd_ctx_flush(struct fd_ctx* ctx) {
+  if (ctx->len > 0) {
+    (void)write(ctx->fd, ctx->buf, (size_t)ctx->len);
+    ctx->len = 0;
+  }
+}
+
+static void emit_fd(char c, void* ctx_) {
+  struct fd_ctx* ctx = (struct fd_ctx*)ctx_;
+  ctx->buf[ctx->len++] = c;
+  if (ctx->len == FD_BUF_SIZE) {
+    fd_ctx_flush(ctx);
+  }
+}
+
+// NOLINTNEXTLINE(misc-const-correctness)
+int vfprintf(FILE* file, const char* __restrict__ format, va_list ap) {
+  struct fd_ctx ctx = {file->fd, {0}, 0};
+  int ret = vformat(emit_fd, &ctx, format, ap);
+  fd_ctx_flush(&ctx);
+  return ret;
+}
+
+int fprintf(FILE* file, const char* __restrict__ format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  int ret = vfprintf(file, format, ap);
+  va_end(ap);
+  return ret;
+}
+
+#endif /* !__is_libc */

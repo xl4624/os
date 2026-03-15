@@ -1,9 +1,8 @@
 #include "pmm.h"
 
+#include <algorithm.h>
 #include <assert.h>
 #include <stddef.h>
-
-#include <algorithm.h>
 
 #include "multiboot.h"
 #include "paging.h"

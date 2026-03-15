@@ -1,3 +1,6 @@
+#include <string.h>
+#include <strings.h>
+
 #include "../framework/test.h"
 
 TEST(string, memcmp_equal) {
@@ -512,4 +515,40 @@ TEST(string, memchr_multiple_occurrences_returns_first) {
   char buf[] = "abcabc";
   ASSERT(memchr(buf, 'a', 6) == buf);
   ASSERT(memchr(buf, 'b', 6) == buf + 1);
+}
+
+TEST(string, strcasecmp_equal) { ASSERT(strcasecmp("hello", "HELLO") == 0); }
+
+TEST(string, strcasecmp_less) { ASSERT(strcasecmp("abc", "XYZ") < 0); }
+
+TEST(string, strcasecmp_greater) { ASSERT(strcasecmp("xyz", "ABC") > 0); }
+
+TEST(string, strcasecmp_empty) { ASSERT(strcasecmp("", "") == 0); }
+
+TEST(string, strcasecmp_prefix) { ASSERT(strcasecmp("abc", "ABCD") < 0); }
+
+TEST(string, strncasecmp_equal) { ASSERT(strncasecmp("hello", "HELLO", 5) == 0); }
+
+TEST(string, strncasecmp_less) { ASSERT(strncasecmp("abc", "XYZ", 3) < 0); }
+
+TEST(string, strncasecmp_limit) { ASSERT(strncasecmp("abc", "ABCDE", 3) == 0); }
+
+TEST(string, strdup_basic) {
+  char* s = strdup("hello");
+  ASSERT(s != nullptr);
+  ASSERT(strcmp(s, "hello") == 0);
+  free(s);
+}
+
+TEST(string, strdup_empty) {
+  char* s = strdup("");
+  ASSERT(s != nullptr);
+  ASSERT(strcmp(s, "") == 0);
+  free(s);
+}
+
+TEST(string, strdup_null) {
+  char* s = strdup("test");
+  ASSERT(s != nullptr);
+  free(s);
 }

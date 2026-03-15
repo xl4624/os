@@ -123,3 +123,40 @@ TEST(stdlib, itoa_all_hex_letters) {
 }
 
 TEST(stdlib, abs_int_max) { ASSERT_EQ(abs(2147483647), 2147483647); }
+
+TEST(stdlib, atoi_basic) { ASSERT(atoi("123") == 123); }
+
+TEST(stdlib, atoi_negative) { ASSERT(atoi("-456") == -456); }
+
+TEST(stdlib, atoi_zero) { ASSERT(atoi("0") == 0); }
+
+TEST(stdlib, atoi_with_spaces) { ASSERT(atoi("  789") == 789); }
+
+TEST(stdlib, atoi_invalid) { ASSERT(atoi("abc") == 0); }
+
+TEST(stdlib, strtol_basic) { ASSERT(strtol("123", nullptr, 10) == 123); }
+
+TEST(stdlib, strtol_negative) { ASSERT(strtol("-456", nullptr, 10) == -456); }
+
+TEST(stdlib, strtol_hex) { ASSERT(strtol("ff", nullptr, 16) == 255); }
+
+TEST(stdlib, strtol_hex_prefix) { ASSERT(strtol("0xff", nullptr, 0) == 255); }
+
+TEST(stdlib, strtol_octal_prefix) { ASSERT(strtol("0777", nullptr, 0) == 0777); }
+
+TEST(stdlib, strtol_base_0_auto) {
+  ASSERT(strtol("0x10", nullptr, 0) == 16);
+  ASSERT(strtol("010", nullptr, 0) == 8);
+  ASSERT(strtol("10", nullptr, 0) == 10);
+}
+
+TEST(stdlib, strtol_endptr) {
+  const char* s = "123abc";
+  char* end;
+  ASSERT(strtol(s, &end, 10) == 123);
+  ASSERT(end == s + 3);
+}
+
+TEST(stdlib, strtoul_basic) { ASSERT(strtoul("123", nullptr, 10) == 123); }
+
+TEST(stdlib, strtoul_hex) { ASSERT(strtoul("ff", nullptr, 16) == 255); }

@@ -77,7 +77,7 @@ void enqueue_ready(Process* p) {
   assert(p != nullptr && "enqueue_ready(): null process");
   p->next = nullptr;
   p->state = ProcessState::Ready;
-  if (!ready_tail) {
+  if (ready_tail == nullptr) {
     ready_head = ready_tail = p;
   } else {
     ready_tail->next = p;
@@ -86,12 +86,12 @@ void enqueue_ready(Process* p) {
 }
 
 Process* dequeue_ready() {
-  if (!ready_head) {
+  if (ready_head == nullptr) {
     return nullptr;
   }
   Process* p = ready_head;
   ready_head = ready_head->next;
-  if (!ready_head) {
+  if (ready_head == nullptr) {
     ready_tail = nullptr;
   }
   p->next = nullptr;
@@ -109,10 +109,10 @@ void wake_sleepers() {
   Process* prev = nullptr;
   Process* p = blocked_head;
 
-  while (p) {
+  while (p != nullptr) {
     Process* next = p->next;
     if (now >= p->wake_tick) {
-      if (prev) {
+      if (prev != nullptr) {
         prev->next = next;
       } else {
         blocked_head = next;
@@ -193,7 +193,7 @@ uint32_t schedule(uint32_t esp) {
   wake_sleepers();
 
   Process* next = dequeue_ready();
-  if (!next) {
+  if (next == nullptr) {
     // Nothing ready - stay on current if it's still running, or idle.
     if (current_process->state == ProcessState::Running) {
       return esp;
@@ -224,7 +224,7 @@ void exit_current(uint32_t exit_code) {
 
   // Close all file descriptors before destroying the address space.
   for (auto& fd : current_process->fds) {
-    if (fd) {
+    if (fd != nullptr) {
       file_close(fd);
       fd = nullptr;
     }
@@ -250,7 +250,7 @@ void exit_current(uint32_t exit_code) {
 void sleep_current(uint32_t ms) {
   assert(current_process != idle_process && "sleep_current(): cannot sleep idle process");
 
-  current_process->wake_tick = PIT::get_ticks() + (static_cast<uint64_t>(ms) + 9) / 10;
+  current_process->wake_tick = PIT::get_ticks() + ((static_cast<uint64_t>(ms) + 9) / 10);
   enqueue_blocked(current_process);
   // The schedule() call will switch away from us.
 }
@@ -268,7 +268,7 @@ void block_current() {
 uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv) {
   paddr_t stack_pages[kUserStackPages];
   for (uint32_t i = 0; i < kUserStackPages; ++i) {
-    paddr_t phys = kPmm.alloc();
+    const paddr_t phys = kPmm.alloc();
     if (phys == 0) {
       for (uint32_t j = 0; j < i; ++j) {
         AddressSpace::unmap(pd, kUserStackVA + j * PAGE_SIZE);
@@ -283,8 +283,8 @@ uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv) {
   // Translate a user virtual address into a kernel pointer via the
   // physical pages we just allocated.
   auto kptr = [&](uint32_t uva) -> uint8_t* {
-    uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
-    uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;
+    const uint32_t idx = (uva - kUserStackVA) / PAGE_SIZE;
+    const uint32_t off = (uva - kUserStackVA) % PAGE_SIZE;
     return phys_to_virt(stack_pages[idx]).ptr<uint8_t>() + off;
   };
 
@@ -296,14 +296,14 @@ uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv) {
   uint32_t str_uvas[kMaxExecArgs];
 
   for (size_t i = argv.size(); i-- > 0;) {
-    size_t len = strlen(argv[i]);
+    const size_t len = strlen(argv[i]);
     user_esp -= static_cast<uint32_t>(len + 1);
     memcpy(kptr(user_esp), argv[i], len + 1);
     str_uvas[i] = user_esp;
   }
 
   // Align esp down to a 4-byte boundary.
-  user_esp &= ~3u;
+  user_esp &= ~3U;
 
   // Push argv[argc] = NULL.
   user_esp -= 4;
@@ -345,12 +345,12 @@ void init_trap_frame(TrapFrame* frame, vaddr_t entry, uint32_t user_esp) {
 Process* create_process(std::span<const uint8_t> elf_data, const char* name) {
   assert(initialized && "Scheduler::create_process(): scheduler not initialized");
 
-  if (!name) {
+  if (name == nullptr) {
     name = "";
   }
 
   Process* p = alloc_process();
-  if (!p) {
+  if (p == nullptr) {
     printf("Scheduler: failed to allocate process\n");
     return nullptr;
   }
@@ -372,7 +372,7 @@ Process* create_process(std::span<const uint8_t> elf_data, const char* name) {
   p->heap_break = brk;
 
   const char* argv[] = {name};
-  uint32_t user_esp = alloc_user_stack(pd_virt, argv);
+  const uint32_t user_esp = alloc_user_stack(pd_virt, argv);
   assert(user_esp != 0 && "Scheduler::create_process(): out of physical memory for user stack");
 
   p->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));
@@ -399,7 +399,7 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   assert(current_process != idle_process && "fork_current(): cannot fork idle process");
 
   Process* child = alloc_process();
-  if (!child) {
+  if (child != nullptr) {
     return static_cast<uint32_t>(-1);
   }
 
@@ -412,7 +412,7 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   // Inherit the parent's file descriptor table.
   child->fds = current_process->fds;
   for (auto* fd : child->fds) {
-    if (fd) {
+    if (fd != nullptr) {
       fd->ref();
     }
   }
@@ -423,7 +423,7 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   for (uint32_t i = 0; i < current_process->shm_mapping_count; ++i) {
     const ShmMapping& m = current_process->shm_mappings[i];
     ShmRegion* region = Shm::find_region(m.shm_id);
-    if (!region) {
+    if (region == nullptr) {
       continue;
     }
 
@@ -473,12 +473,12 @@ int32_t waitpid_current(int32_t pid, int32_t* exit_code_ptr) {
       continue;
     }
     if (child.state == ProcessState::Zombie) {
-      if (exit_code_ptr) {
+      if (exit_code_ptr != nullptr) {
         *exit_code_ptr = child.exit_code;
       }
-      uint32_t child_pid = child.pid;
+      const uint32_t child_pid = child.pid;
       // Free the kernel stack before clearing the slot.
-      if (child.kernel_stack) {
+      if (child.kernel_stack != nullptr) {
         kfree(child.kernel_stack);
       }
       child = Process{};

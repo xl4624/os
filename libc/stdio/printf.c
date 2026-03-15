@@ -45,17 +45,21 @@
 #include <string.h>
 
 // clang-format off
-#define FLAG_ALT         (1 << 0)
-#define FLAG_ZERO        (1 << 1)
-#define FLAG_LEFTJUSTIFY (1 << 2)
-#define FLAG_SPACE       (1 << 3)
-#define FLAG_PLUS        (1 << 4)
+enum {
+FLAG_ALT =         (1 << 0),
+FLAG_ZERO =        (1 << 1),
+FLAG_LEFTJUSTIFY = (1 << 2),
+FLAG_SPACE =       (1 << 3),
+FLAG_PLUS =        (1 << 4)
+};
 static const char flag_chars[] = "#0- +";
 
-#define FLAG_NUMERIC     (1 << 5)
-#define FLAG_SIGNED      (1 << 6)
-#define FLAG_NEGATIVE    (1 << 7)
-#define FLAG_ALT2        (1 << 8)
+enum {
+FLAG_NUMERIC =     (1 << 5),
+FLAG_SIGNED =      (1 << 6),
+FLAG_NEGATIVE =    (1 << 7),
+FLAG_ALT2 =        (1 << 8)
+};
 // clang-format on
 
 static char* fill_numbuf(char* numbuf_end, unsigned long val, unsigned int base) {
@@ -76,9 +80,12 @@ static char* fill_numbuf(char* numbuf_end, unsigned long val, unsigned int base)
   return numbuf_end;
 }
 
-#define NUMBUF_SIZE 24
+#define NUMBUF_SIZE 24  // NOLINT(cppcoreguidelines-macro-to-enum,modernize-macro-to-enum)
 
-int vprintf(const char* __restrict__ format, va_list ap) {
+int vprintf(
+    const char* __restrict__ format,
+    va_list
+        ap) {  // NOLINT(misc-const-correctness,readability-non-const-parameter,readability-function-cognitive-complexity)
   char numbuf[NUMBUF_SIZE];
   int count = 0;
 
@@ -103,7 +110,7 @@ int vprintf(const char* __restrict__ format, va_list ap) {
     int width = -1;
     if (*format >= '1' && *format <= '9') {
       for (width = 0; *format >= '0' && *format <= '9'; ++format) {
-        width = 10 * width + *format - '0';
+        width = (10 * width) + *format - '0';
       }
     } else if (*format == '*') {
       width = va_arg(ap, int);
@@ -116,7 +123,7 @@ int vprintf(const char* __restrict__ format, va_list ap) {
       ++format;
       if (*format >= '0' && *format <= '9') {
         for (precision = 0; *format >= '0' && *format <= '9'; ++format) {
-          precision = 10 * precision + *format - '0';
+          precision = (10 * precision) + *format - '0';
         }
       } else if (*format == '*') {
         precision = va_arg(ap, int);
@@ -175,7 +182,7 @@ int vprintf(const char* __restrict__ format, va_list ap) {
         break;
       default:
         data = numbuf;
-        numbuf[0] = (*format ? *format : '%');
+        numbuf[0] = (char)(*format ? *format : '%');
         numbuf[1] = '\0';
         if (!*format) {
           --format;
@@ -201,7 +208,7 @@ int vprintf(const char* __restrict__ format, va_list ap) {
       prefix = (base == -16 ? "0x" : "0X");
     }
 
-    int len;
+    int len = 0;
     if (precision >= 0 && !(flags & FLAG_NUMERIC)) {
       len = (int)strnlen(data, (size_t)precision);
     } else if (precision == 0 && num == 0) {
@@ -209,7 +216,7 @@ int vprintf(const char* __restrict__ format, va_list ap) {
     } else {
       len = (int)strlen(data);
     }
-    int zeros;
+    int zeros = 0;
     if ((flags & FLAG_NUMERIC) && precision >= 0) {
       zeros = precision > len ? precision - len : 0;
     } else if ((flags & FLAG_NUMERIC) && (flags & FLAG_ZERO) && !(flags & FLAG_LEFTJUSTIFY) &&
@@ -232,7 +239,8 @@ int vprintf(const char* __restrict__ format, va_list ap) {
       ++count;
     }
     for (; len > 0; ++data, --len) {
-      putchar(*data);
+      putchar(
+          *data);  // NOLINT(clang-analyzer-core.CallAndMessage,clang-analyzer-security.ArrayBound)
       ++count;
     }
     for (; width > 0; --width) {
@@ -244,7 +252,7 @@ int vprintf(const char* __restrict__ format, va_list ap) {
 }
 
 int printf(const char* __restrict__ format, ...) {
-  va_list ap;
+  va_list ap;  // NOLINT(cppcoreguidelines-init-variables)
   va_start(ap, format);
   int ret = vprintf(format, ap);
   va_end(ap);

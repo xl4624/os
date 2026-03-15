@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#if defined(__is_libk)
+#ifdef __is_libk
 
 int getchar(void) {
   // TODO: implement non-blocking getchar using kKeyboard
@@ -12,7 +12,7 @@ int getchar(void) {
 #include <unistd.h>
 
 int getchar(void) {
-  char c;
+  char c = 0;
   int n = read(0, &c, 1);
   if (n <= 0) {
     return EOF;

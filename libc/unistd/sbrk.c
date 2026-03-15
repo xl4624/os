@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#if defined(__is_libk)
+#ifdef __is_libk
 
 void* sbrk(int increment) {
   (void)increment;

@@ -19,7 +19,7 @@ char* strchr(const char* s, int c);
 int strcmp(const char* s1, const char* s2);
 // int strcoll(const char *, const char *);
 // int strcoll_l(const char *, const char *, locale_t);
-char* strcpy(char* __restrict__ dst, const char* __restrict__ src);
+char* strcpy(char* __restrict__ dest, const char* __restrict__ src);
 size_t strcspn(const char* s, const char* reject);
 // char *strdup(const char *);
 // char *strerror(int);

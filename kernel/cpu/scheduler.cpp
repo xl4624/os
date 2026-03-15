@@ -2,8 +2,11 @@
 
 #include <array.h>
 #include <assert.h>
+#include <cstdint.h>
+#include <span.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/cdefs.h>
 
 #include "address_space.h"
 #include "elf.h"
@@ -15,6 +18,7 @@
 #include "pic.h"
 #include "pit.h"
 #include "pmm.h"
+#include "process.h"
 #include "shm.h"
 #include "tss.h"
 

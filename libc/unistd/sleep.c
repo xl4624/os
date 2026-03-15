@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#if defined(__is_libk)
+#ifdef __is_libk
 
 unsigned int sleep(unsigned int seconds) {
   (void)seconds;
@@ -13,7 +13,7 @@ unsigned int sleep(unsigned int seconds) {
 #include <sys/syscall.h>
 
 unsigned int sleep(unsigned int seconds) {
-  uint32_t ms = (uint32_t)seconds * 1000u;
+  uint32_t ms = (uint32_t)seconds * 1000U;
   int32_t ret;
   asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SLEEP), "b"(ms));
   (void)ret;

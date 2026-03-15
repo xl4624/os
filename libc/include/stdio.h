@@ -9,7 +9,7 @@
 __BEGIN_DECLS
 
 int vprintf(const char* __restrict__ format,
-            va_list ap);  // NOLINT(misc-const-correctness,readability-non-const-parameter)
+            va_list ap);  // NOLINT(misc-const-correctness)
 int printf(const char* __restrict__ format, ...);
 int getchar(void);
 int putchar(int c);

@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#if defined(__is_libk)
+#ifdef __is_libk
 
 int close(int fd) {
   (void)fd;

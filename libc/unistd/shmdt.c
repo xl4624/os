@@ -1,6 +1,6 @@
 #include <sys/shm.h>
 
-#if defined(__is_libk)
+#ifdef __is_libk
 
 int shmdt(void* vaddr, unsigned int size) {
   (void)vaddr;

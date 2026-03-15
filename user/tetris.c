@@ -55,15 +55,15 @@ static const unsigned short pieces[NUM_PIECES][4] = {
     {0x4460, 0x0E80, 0xC440, 0x2E00},
 };
 
-/* VGA color for each piece type (index 0-6) */
+/* Color for each piece type (index 0-6) */
 static const unsigned char piece_colors[NUM_PIECES] = {
-    VGA_CYAN,        /* I */
-    VGA_LIGHT_BROWN, /* O */
-    VGA_MAGENTA,     /* T */
-    VGA_GREEN,       /* S */
-    VGA_RED,         /* Z */
-    VGA_BLUE,        /* J */
-    VGA_BROWN,       /* L */
+    TERM_CYAN,          /* I */
+    TERM_BRIGHT_YELLOW, /* O */
+    TERM_MAGENTA,       /* T */
+    TERM_GREEN,         /* S */
+    TERM_RED,           /* Z */
+    TERM_BLUE,          /* J */
+    TERM_YELLOW,        /* L */
 };
 
 /* Score table: 1 line=100, 2=300, 3=500, 4=800 */
@@ -175,10 +175,10 @@ static void lock_and_spawn(void) {
 static void draw_cell(int row, int col, int color) {
   set_cursor(BOARD_ROW + row, BOARD_COL + col * CELL_CHARS);
   if (color) {
-    set_color(VGA_COLOR(color, color));
+    set_color(TERM_COLOR(color, color));
     write(1, "  ", CELL_CHARS);
   } else {
-    set_color(VGA_COLOR(VGA_DARK_GREY, VGA_BLACK));
+    set_color(TERM_COLOR(TERM_BRIGHT_BLACK, TERM_BLACK));
     write(1, " .", CELL_CHARS);
   }
 }
@@ -230,7 +230,7 @@ static void draw_ghost(int show) {
       }
       if (show) {
         set_cursor(BOARD_ROW + br, BOARD_COL + bc * CELL_CHARS);
-        set_color(VGA_COLOR(VGA_DARK_GREY, VGA_BLACK));
+        set_color(TERM_COLOR(TERM_BRIGHT_BLACK, TERM_BLACK));
         write(1, "[]", CELL_CHARS);
       } else {
         draw_cell(br, bc, board[br][bc]);
@@ -251,7 +251,7 @@ static void show_active(void) {
 }
 
 static void draw_border(void) {
-  set_color(VGA_COLOR(VGA_WHITE, VGA_BLACK));
+  set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
 
   /* Top border */
   set_cursor(BOARD_ROW - 1, BOARD_COL - 1);
@@ -279,7 +279,7 @@ static void draw_border(void) {
 }
 
 static void draw_info(void) {
-  set_color(VGA_COLOR(VGA_WHITE, VGA_BLACK));
+  set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
 
   set_cursor(BOARD_ROW, INFO_COL);
   printf("SCORE: %d    ", score);
@@ -294,7 +294,7 @@ static void draw_info(void) {
   /* Clear next piece preview area */
   for (int r = 0; r < 4; r++) {
     set_cursor(BOARD_ROW + 5 + r, INFO_COL);
-    set_color(VGA_COLOR(VGA_BLACK, VGA_BLACK));
+    set_color(TERM_COLOR(TERM_BLACK, TERM_BLACK));
     write(1, "        ", 8);
   }
 
@@ -303,13 +303,13 @@ static void draw_info(void) {
     for (int c = 0; c < 4; c++) {
       if (piece_cell(next_type, 0, r, c)) {
         set_cursor(BOARD_ROW + 5 + r, INFO_COL + c * CELL_CHARS);
-        set_color(VGA_COLOR(piece_colors[next_type], piece_colors[next_type]));
+        set_color(TERM_COLOR(piece_colors[next_type], piece_colors[next_type]));
         write(1, "  ", CELL_CHARS);
       }
     }
   }
 
-  set_color(VGA_COLOR(VGA_LIGHT_GREY, VGA_BLACK));
+  set_color(TERM_COLOR(TERM_WHITE, TERM_BLACK));
   set_cursor(BOARD_ROW + 11, INFO_COL);
   printf("CONTROLS:");
   set_cursor(BOARD_ROW + 12, INFO_COL);
@@ -403,10 +403,10 @@ static void init_game(void) {
 }
 
 static void show_game_over(void) {
-  set_color(VGA_COLOR(VGA_LIGHT_RED, VGA_BLACK));
+  set_color(TERM_COLOR(TERM_BRIGHT_RED, TERM_BLACK));
   set_cursor(BOARD_ROW + BOARD_H / 2 - 1, BOARD_COL + 2);
   printf("  GAME OVER!  ");
-  set_color(VGA_COLOR(VGA_WHITE, VGA_BLACK));
+  set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
   set_cursor(BOARD_ROW + BOARD_H / 2 + 1, BOARD_COL + 2);
   printf("  Score: %d  ", score);
   set_cursor(BOARD_ROW + BOARD_H / 2 + 2, BOARD_COL + 2);
@@ -430,7 +430,7 @@ static int run_game(void) {
     if (input == INPUT_P) {
       paused = !paused;
       if (paused) {
-        set_color(VGA_COLOR(VGA_WHITE, VGA_BLACK));
+        set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
         set_cursor(BOARD_ROW + BOARD_H / 2, BOARD_COL + 4);
         printf("  PAUSED  ");
       } else {
@@ -515,8 +515,6 @@ static int run_game(void) {
       }
     }
 
-    /* Hide cursor in a corner */
-    set_cursor(VGA_HEIGHT - 1, VGA_WIDTH - 1);
     msleep(FRAME_MS);
   }
 
@@ -543,7 +541,7 @@ static int run_game(void) {
 int main(void) {
   /* Seed RNG: wait for first keypress, use loop counter as seed */
   clear_screen();
-  set_color(VGA_COLOR(VGA_WHITE, VGA_BLACK));
+  set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
   set_cursor(10, 25);
   printf("=== TETRIS ===");
   set_cursor(12, 20);
@@ -561,6 +559,8 @@ int main(void) {
   }
   srand(seed_counter);
 
+  hide_cursor();
+
   for (;;) {
     init_game();
     if (!run_game()) {
@@ -568,8 +568,9 @@ int main(void) {
     }
   }
 
+  show_cursor();
   clear_screen();
-  set_color(VGA_COLOR(VGA_LIGHT_GREY, VGA_BLACK));
+  set_color(TERM_COLOR(TERM_WHITE, TERM_BLACK));
   set_cursor(0, 0);
   printf("Thanks for playing!\n");
   return 0;

@@ -22,7 +22,7 @@ constexpr vaddr_t kFbVirtBase{0xFD000000};
 namespace Framebuffer {
 
 bool init(const multiboot_info* mboot) {
-  if (!(mboot->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
+  if ((mboot->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO) == 0U) {
     return false;
   }
 
@@ -72,7 +72,7 @@ void putpixel(uint32_t x, uint32_t y, uint32_t color) {
   if (x >= fb_info.width || y >= fb_info.height) {
     return;
   }
-  uint32_t offset = y * fb_info.pitch + x * (fb_info.bpp / 8);
+  uint32_t offset = (y * fb_info.pitch) + (x * (fb_info.bpp / 8));
   auto* pixel = reinterpret_cast<uint32_t*>(fb_buffer + offset);
   *pixel = color;
 }
@@ -90,8 +90,8 @@ void blit(const uint32_t* src, uint32_t dst_x, uint32_t dst_y, uint32_t w, uint3
       copy_w = fb_info.width - dst_x;
     }
 
-    uint32_t fb_offset = y * fb_info.pitch + dst_x * bytes_per_pixel;
-    memcpy(fb_buffer + fb_offset, src + row * w, copy_w * bytes_per_pixel);
+    uint32_t fb_offset = (y * fb_info.pitch) + (dst_x * bytes_per_pixel);
+    memcpy(fb_buffer + fb_offset, src + (row * w), copy_w * bytes_per_pixel);
   }
 }
 

@@ -25,7 +25,7 @@ static inline size_t align16(size_t sz) {
   if (sz == 0) {
     return 16;
   }
-  return (sz + 15u) & ~static_cast<size_t>(15u);
+  return (sz + 15U) & ~static_cast<size_t>(15U);
 }
 
 // Pointer to the block immediately following hdr in address order.
@@ -41,7 +41,7 @@ static BlockHeader* find_prev_block(const BlockHeader* base, const uint8_t* end,
   if (target == base) {
     return nullptr;
   }
-  BlockHeader* cur = const_cast<BlockHeader*>(base);
+  auto* cur = const_cast<BlockHeader*>(base);
   while (reinterpret_cast<uint8_t*>(cur) < end) {
     BlockHeader* nxt = block_after(cur);
     if (nxt == target) {
@@ -69,11 +69,11 @@ bool Heap::grow(size_t min_bytes) {
   const size_t pages_needed = (min_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
 
   const uintptr_t limit = kVirtBase + kMaxSize;
-  uintptr_t va = reinterpret_cast<uintptr_t>(end_);
+  auto va = reinterpret_cast<uintptr_t>(end_);
 
   // Refuse to grow if it would exceed the heap's maximum virtual address
   // limit.
-  if (va + pages_needed * PAGE_SIZE > limit) {
+  if (va + (pages_needed * PAGE_SIZE) > limit) {
     return false;
   }
 
@@ -120,7 +120,7 @@ void Heap::init() {
   for (size_t i = 0; i < kInitialPages; ++i) {
     paddr_t phys = kPmm.alloc();
     assert(phys && "Heap::init: out of physical memory\n");
-    vaddr_t va = kVirtBase + i * PAGE_SIZE;
+    vaddr_t va = kVirtBase + (i * PAGE_SIZE);
     VMM::map(va, phys);
     end_ += PAGE_SIZE;
   }
@@ -171,7 +171,7 @@ void* Heap::alloc(size_t size) {
   BlockHeader* cur = base_;
   while (reinterpret_cast<uint8_t*>(cur) < end_) {
     if (cur->free && static_cast<size_t>(cur->size) >= need) {
-      if (static_cast<size_t>(cur->size) >= need + sizeof(BlockHeader) + 16u) {
+      if (static_cast<size_t>(cur->size) >= need + sizeof(BlockHeader) + 16U) {
         auto* rem = reinterpret_cast<BlockHeader*>(reinterpret_cast<uint8_t*>(cur) +
                                                    sizeof(BlockHeader) + need);
         rem->size = static_cast<uint32_t>(cur->size - need - sizeof(BlockHeader));
@@ -193,7 +193,7 @@ void* Heap::alloc(size_t size) {
 }
 
 void Heap::free(void* ptr) {
-  if (!ptr) {
+  if (ptr == nullptr) {
     return;
   }
 
@@ -217,7 +217,7 @@ void Heap::free(void* ptr) {
   }
 
   BlockHeader* prv = find_prev_block(base_, end_, hdr);
-  if (prv && prv->free) {
+  if ((prv != nullptr) && prv->free) {
     prv->size += static_cast<uint32_t>(sizeof(BlockHeader)) + hdr->size;
   }
 }
@@ -229,7 +229,7 @@ void* Heap::calloc(size_t nmemb, size_t size) {
   }
   const size_t total = nmemb * size;
   void* ptr = alloc(total);
-  if (ptr) {
+  if (ptr != nullptr) {
     memset(ptr, 0, total);
   }
   return ptr;
@@ -237,7 +237,7 @@ void* Heap::calloc(size_t nmemb, size_t size) {
 
 void* Heap::realloc(void* ptr, size_t size) {
   assert(base_ != nullptr && "Heap::realloc(): called before Heap::init()");
-  if (!ptr) {
+  if (ptr == nullptr) {
     return alloc(size);
   }
   if (size == 0) {
@@ -255,7 +255,7 @@ void* Heap::realloc(void* ptr, size_t size) {
   }
 
   void* new_ptr = alloc(size);
-  if (!new_ptr) {
+  if (new_ptr == nullptr) {
     return nullptr;
   }
 

@@ -41,8 +41,8 @@ int32_t file_write(FileDescription* fd, std::span<const uint8_t> buf) {
   switch (fd->type) {
     case FileType::TerminalWrite:
       terminal_write({reinterpret_cast<const char*>(buf.data()), buf.size()});
-      for (size_t i = 0; i < buf.size(); ++i) {
-        outb(kDebugconPort, buf[i]);
+      for (unsigned char i : buf) {
+        outb(kDebugconPort, i);
       }
       return static_cast<int32_t>(buf.size());
     case FileType::PipeWrite:
@@ -108,7 +108,7 @@ std::optional<uint32_t> fd_alloc(std::span<FileDescription*> fds) { return fd_al
 
 std::optional<uint32_t> fd_alloc_from(std::span<FileDescription*> fds, uint32_t min_fd) {
   for (uint32_t i = min_fd; i < static_cast<uint32_t>(fds.size()); ++i) {
-    if (!fds[i]) {
+    if (fds[i] == nullptr) {
       return i;
     }
   }

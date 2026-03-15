@@ -4,12 +4,12 @@
 
 int32_t pipe_read(Pipe* pipe, std::span<uint8_t> buf) {
   uint32_t bytes_read = 0;
-  for (size_t i = 0; i < buf.size(); ++i) {
+  for (unsigned char & i : buf) {
     char c;
     if (!pipe->buffer.pop(c)) {
       break;
     }
-    buf[i] = static_cast<uint8_t>(c);
+    i = static_cast<uint8_t>(c);
     ++bytes_read;
   }
 
@@ -33,8 +33,8 @@ int32_t pipe_write(Pipe* pipe, std::span<const uint8_t> buf) {
   }
 
   uint32_t bytes_written = 0;
-  for (size_t i = 0; i < buf.size(); ++i) {
-    if (!pipe->buffer.push(static_cast<char>(buf[i]))) {
+  for (unsigned char i : buf) {
+    if (!pipe->buffer.push(static_cast<char>(i))) {
       break;
     }
     ++bytes_written;
@@ -55,7 +55,7 @@ static void pipe_maybe_free(Pipe* pipe) {
 }
 
 void pipe_close_read(Pipe* pipe) {
-  if (!pipe) {
+  if (pipe == nullptr) {
     return;
   }
   if (pipe->readers > 0) {
@@ -65,7 +65,7 @@ void pipe_close_read(Pipe* pipe) {
 }
 
 void pipe_close_write(Pipe* pipe) {
-  if (!pipe) {
+  if (pipe == nullptr) {
     return;
   }
   if (pipe->writers > 0) {

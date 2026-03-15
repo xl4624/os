@@ -47,7 +47,7 @@ bool validate(std::span<const uint8_t> data) {
     return false;
   }
 
-  const size_t ph_end = hdr->e_phoff + static_cast<size_t>(hdr->e_phnum) * hdr->e_phentsize;
+  const size_t ph_end = hdr->e_phoff + (static_cast<size_t>(hdr->e_phnum) * hdr->e_phentsize);
   if (ph_end > data.size()) {
     printf("ELF: program headers extend past end of file\n");
     return false;
@@ -67,7 +67,7 @@ bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out, 
 
   for (uint16_t i = 0; i < hdr->e_phnum; ++i) {
     const auto* ph = reinterpret_cast<const ProgramHeader*>(
-        elf_data.data() + hdr->e_phoff + static_cast<size_t>(i) * hdr->e_phentsize);
+        elf_data.data() + hdr->e_phoff + (static_cast<size_t>(i) * hdr->e_phentsize));
 
     if (ph->p_type != kPtLoad) {
       continue;

@@ -26,6 +26,7 @@
 #define SYS_OPEN 15
 #define SYS_GETTICKS 16
 #define SYS_LSEEK 17
-#define SYS_MAX 18
+#define SYS_FB_FLIP 18
+#define SYS_MAX 19
 
 #endif

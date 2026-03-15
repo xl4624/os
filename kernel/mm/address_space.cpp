@@ -10,7 +10,7 @@ namespace {
 
 // Page table pages must reside in the first 8 MiB (accessible via
 // phys_to_virt). The PMM allocates lowest frames first so this holds.
-constexpr paddr_t kMappedPhysEnd = 8u * 1024u * 1024u;
+constexpr paddr_t kMappedPhysEnd = 8U * 1024U * 1024U;
 
 // Top 10 bits of a virtual address → page directory index.
 constexpr uint32_t pd_index(vaddr_t va) { return va >> (PAGE_TABLE_BITS + PAGE_OFFSET_BITS); }
@@ -57,7 +57,7 @@ void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user) {
 
     auto* pt = phys_to_virt(pt_phys).ptr<PageTable>();
     memset(pt, 0, sizeof(PageTable));
-    pde = PageEntry(pt_phys, /*writeable=*/true, /*user=*/user);
+    pde = PageEntry(pt_phys, /*is_writeable=*/true, /*is_user=*/user);
   }
 
   const paddr_t pt_phys = frame_to_phys(pde.frame);
@@ -149,7 +149,7 @@ PageDir copy(const PageTable* src_pd) {
       auto* dst = phys_to_virt(new_page).ptr<uint8_t>();
       memcpy(dst, src, PAGE_SIZE);
 
-      const vaddr_t va{(pdi << 22u) | (pti << PAGE_OFFSET_BITS)};
+      const vaddr_t va{(pdi << 22U) | (pti << PAGE_OFFSET_BITS)};
       map(new_pd, va, new_page, pte.rw != 0, pte.user != 0);
     }
   }
@@ -168,8 +168,7 @@ void destroy(PageTable* pd, paddr_t pd_phys) {
     const paddr_t pt_phys = frame_to_phys(pde.frame);
     auto* pt = phys_to_virt(pt_phys).ptr<PageTable>();
 
-    for (uint32_t pti = 0; pti < PAGES_PER_TABLE; ++pti) {
-      PageEntry& pte = pt->entry[pti];
+    for (auto& pte : pt->entry) {
       if (pte.present) {
         kPmm.free(frame_to_phys(pte.frame));
       }

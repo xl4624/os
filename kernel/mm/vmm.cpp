@@ -35,7 +35,7 @@ PageTable* page_table_for(vaddr_t virt, bool create, bool user) {
     // page_table_for is called only after kernel_init() has run, so the
     // first 8 MiB are mapped. PMM hands out the lowest available frames
     // first, which are always in the first 8 MiB.
-    constexpr paddr_t MAPPED_PHYS_END = 8u * 1024u * 1024u;
+    constexpr paddr_t MAPPED_PHYS_END = 8U * 1024U * 1024U;
     if (pt_phys >= MAPPED_PHYS_END) {
       panic("VMM: new page table phys 0x%08x outside mapped region\n",
             static_cast<unsigned>(pt_phys));
@@ -45,7 +45,7 @@ PageTable* page_table_for(vaddr_t virt, bool create, bool user) {
     auto* pt = phys_to_virt(pt_phys).ptr<PageTable>();
     memset(pt, 0, sizeof(PageTable));
 
-    pde = PageEntry(pt_phys, /*writeable=*/true, /*user=*/user);
+    pde = PageEntry(pt_phys, /*is_writeable=*/true, /*is_user=*/user);
     return pt;
   }
 
@@ -71,7 +71,7 @@ void unmap(vaddr_t virt) {
   assert(!(virt & (PAGE_SIZE - 1)) && "VMM::unmap(): virt address is not page-aligned");
 
   PageTable* pt = page_table_for(virt, /*create=*/false, false);
-  if (!pt) {
+  if (pt == nullptr) {
     return;
   }
 
@@ -87,7 +87,7 @@ void unmap(vaddr_t virt) {
 
 paddr_t get_phys(vaddr_t virt) {
   const PageTable* pt = page_table_for(virt, /*create=*/false, false);
-  if (!pt) {
+  if (pt == nullptr) {
     return 0;
   }
 

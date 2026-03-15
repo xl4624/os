@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <span.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/io.h>
 
 #include "../tests/kernel/ktest.h"
@@ -9,12 +8,10 @@
 #include "gdt.h"
 #include "heap.h"
 #include "interrupt.h"
-#include "keyboard.h"
 #include "modules.h"
 #include "multiboot.h"
 #include "paging.h"
 #include "pit.h"
-#include "pmm.h"
 #include "scheduler.h"
 #include "syscall.h"
 #include "terminal.h"

@@ -35,7 +35,7 @@ int32_t create(uint32_t size) {
       break;
     }
   }
-  if (!region) {
+  if (region == nullptr) {
     return -1;
   }
 
@@ -63,7 +63,7 @@ int32_t create(uint32_t size) {
 
 int32_t attach(uint32_t shmid, vaddr_t vaddr) {
   ShmRegion* region = find_region(shmid);
-  if (!region) {
+  if (region == nullptr) {
     return -1;
   }
 
@@ -125,7 +125,7 @@ int32_t detach(vaddr_t vaddr, uint32_t size) {
     proc->shm_mappings[i] = proc->shm_mappings[--proc->shm_mapping_count];
 
     // Decrement ref count. If last reference, free physical pages.
-    if (region && region->ref_count > 0) {
+    if ((region != nullptr) && region->ref_count > 0) {
       --region->ref_count;
       if (region->ref_count == 0) {
         for (uint32_t p = 0; p < region->num_pages; ++p) {
@@ -155,7 +155,7 @@ void detach_all(Process* proc) {
     // Remove mapping.
     proc->shm_mappings[0] = proc->shm_mappings[--proc->shm_mapping_count];
 
-    if (region && region->ref_count > 0) {
+    if ((region != nullptr) && region->ref_count > 0) {
       --region->ref_count;
       if (region->ref_count == 0) {
         for (uint32_t p = 0; p < region->num_pages; ++p) {

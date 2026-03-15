@@ -226,7 +226,7 @@ KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
     return KeyEvent{Key{}, false, '\0', shift_, ctrl_, alt_};
   }
 
-  const bool pressed = !(scancode & kReleaseBit);
+  const bool pressed = (scancode & kReleaseBit) == 0;
   scancode &= ~kReleaseBit;
 
   Key key =

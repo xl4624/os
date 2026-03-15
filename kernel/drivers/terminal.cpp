@@ -33,7 +33,7 @@ static constexpr uint32_t kPalette[16] = {
 
 Terminal kTerminal;
 
-uint32_t Terminal::color_to_rgb(uint8_t vga_color) { return kPalette[vga_color & 0x0F]; }
+uint32_t Terminal::color_to_rgb(uint8_t color_index) { return kPalette[color_index & 0x0F]; }
 
 bool Terminal::init() {
   if (!Framebuffer::is_available()) {
@@ -51,9 +51,11 @@ bool Terminal::init() {
 }
 
 void Terminal::draw_glyph(char c, uint8_t color, size_t row, size_t col) {
-  if (!active_) return;
+  if (!active_) {
+    return;
+  }
 
-  uint8_t ch = static_cast<uint8_t>(c);
+  auto ch = static_cast<uint8_t>(c);
   if (ch >= 128) {
     ch = 0;  // replace non-ASCII with blank
   }
@@ -61,28 +63,30 @@ void Terminal::draw_glyph(char c, uint8_t color, size_t row, size_t col) {
   uint32_t fg = color_to_rgb(color & 0x0F);
   uint32_t bg = color_to_rgb((color >> 4) & 0x0F);
 
-  uint32_t px = static_cast<uint32_t>(col * kFontWidth);
-  uint32_t py = static_cast<uint32_t>(row * kFontHeight);
+  auto px = static_cast<uint32_t>(col * kFontWidth);
+  auto py = static_cast<uint32_t>(row * kFontHeight);
   uint32_t bytes_per_pixel = bpp_ / 8;
 
   const uint8_t* glyph = kFont8x16[ch];
 
   for (uint32_t gy = 0; gy < kFontHeight; ++gy) {
     uint8_t row_bits = glyph[gy];
-    uint8_t* dest = fb_ + (py + gy) * pitch_ + px * bytes_per_pixel;
+    uint8_t* dest = fb_ + ((py + gy) * pitch_) + (px * bytes_per_pixel);
 
     for (uint32_t gx = 0; gx < kFontWidth; ++gx) {
       uint32_t pixel = (row_bits & (0x80 >> gx)) ? fg : bg;
-      auto* p = reinterpret_cast<uint32_t*>(dest + gx * bytes_per_pixel);
+      auto* p = reinterpret_cast<uint32_t*>(dest + (gx * bytes_per_pixel));
       *p = pixel;
     }
   }
 }
 
 void Terminal::draw_cursor() {
-  if (!cursor_visible_) return;
+  if (!cursor_visible_) {
+    return;
+  }
   // Draw an inverted block at the cursor position.
-  uint8_t inv_color = static_cast<uint8_t>(((color_ & 0x0F) << 4) | ((color_ >> 4) & 0x0F));
+  auto inv_color = static_cast<uint8_t>(((color_ & 0x0F) << 4) | ((color_ >> 4) & 0x0F));
   char ch = cells_[row_][col_].ch;
   if (ch == 0) {
     ch = ' ';
@@ -101,7 +105,7 @@ void Terminal::erase_cursor() {
 
 void Terminal::write(const char* data) {
   erase_cursor();
-  while (*data) {
+  while (*data != 0) {
     put_char(*data++);
   }
   draw_cursor();
@@ -139,7 +143,7 @@ void Terminal::put_char(char c) {
     if (c == '?' && esc_param_count_ == 0 && esc_params_[0] == 0) {
       csi_private_ = true;
     } else if (c >= '0' && c <= '9') {
-      esc_params_[esc_param_count_] = static_cast<uint16_t>(esc_params_[esc_param_count_] * 10u +
+      esc_params_[esc_param_count_] = static_cast<uint16_t>((esc_params_[esc_param_count_] * 10U) +
                                                             static_cast<uint16_t>(c - '0'));
     } else if (c == ';') {
       if (esc_param_count_ < kMaxCsiParams - 1) {
@@ -201,7 +205,7 @@ void Terminal::handle_key(KeyEvent event) {
     return;
   }
 
-  if (event.ascii) {
+  if (event.ascii != 0) {
     erase_cursor();
     put_char(event.ascii);
     draw_cursor();
@@ -211,10 +215,14 @@ void Terminal::handle_key(KeyEvent event) {
   erase_cursor();
   switch (event.key.value()) {
     case Key::Up:
-      if (row_ > 0) --row_;
+      if (row_ > 0) {
+        --row_;
+      }
       break;
     case Key::Down:
-      if (row_ < kRows - 1) ++row_;
+      if (row_ < kRows - 1) {
+        ++row_;
+      }
       break;
     case Key::Left:
       if (col_ > 0) {
@@ -250,20 +258,20 @@ void Terminal::scroll() {
   if (active_) {
     // Scroll framebuffer pixels: shift rows up by kFontHeight pixels.
     uint32_t row_bytes = static_cast<uint32_t>(kFontHeight) * pitch_;
-    uint32_t total_rows = static_cast<uint32_t>(kRows - 1);
+    auto total_rows = static_cast<uint32_t>(kRows - 1);
     memmove(fb_, fb_ + row_bytes, total_rows * row_bytes);
 
     // Clear the bottom row of pixels with background color.
     uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
-    uint32_t start_y = static_cast<uint32_t>((kRows - 1) * kFontHeight);
+    auto start_y = static_cast<uint32_t>((kRows - 1) * kFontHeight);
     for (uint32_t y = start_y; y < start_y + kFontHeight; ++y) {
-      auto* row_ptr = reinterpret_cast<uint32_t*>(fb_ + y * pitch_);
+      auto* row_ptr = reinterpret_cast<uint32_t*>(fb_ + (y * pitch_));
       for (uint32_t x = 0; x < kColumns * kFontWidth; ++x) {
         row_ptr[x] = bg;
       }
       // Clear any remaining pixels to the right of the text area.
       uint32_t fb_width = Framebuffer::info().width;
-      for (uint32_t x = static_cast<uint32_t>(kColumns * kFontWidth); x < fb_width; ++x) {
+      for (auto x = static_cast<uint32_t>(kColumns * kFontWidth); x < fb_width; ++x) {
         row_ptr[x] = bg;
       }
     }
@@ -286,9 +294,9 @@ void Terminal::clear() {
 
   // Clear all cells and fill the framebuffer with the background color.
   uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
-  for (size_t r = 0; r < kRows; ++r) {
-    for (size_t c = 0; c < kColumns; ++c) {
-      cells_[r][c] = {0, color_};
+  for (auto& row : cells_) {
+    for (Cell& cell : row) {
+      cell = {0, color_};
     }
   }
 
@@ -297,7 +305,7 @@ void Terminal::clear() {
     uint32_t fb_width = Framebuffer::info().width;
     uint32_t fb_height = Framebuffer::info().height;
     for (uint32_t y = 0; y < fb_height; ++y) {
-      auto* row_ptr = reinterpret_cast<uint32_t*>(fb_ + y * pitch_);
+      auto* row_ptr = reinterpret_cast<uint32_t*>(fb_ + (y * pitch_));
       for (uint32_t x = 0; x < fb_width; ++x) {
         row_ptr[x] = bg;
       }
@@ -324,15 +332,19 @@ void Terminal::set_position(size_t row, size_t col) {
 void Terminal::dispatch_csi(char final_byte) {
   uint16_t p0 = esc_params_[0];
   uint16_t p1 = esc_params_[1];
-  size_t n = (p0 == 0) ? 1u : static_cast<size_t>(p0);
+  size_t n = (p0 == 0) ? 1U : static_cast<size_t>(p0);
 
   switch (final_byte) {
     case 'H':
     case 'f': {
-      size_t row = static_cast<size_t>((p0 == 0 ? 1 : p0) - 1);
-      size_t col = static_cast<size_t>((p1 == 0 ? 1 : p1) - 1);
-      if (row >= kRows) row = kRows - 1;
-      if (col >= kColumns) col = kColumns - 1;
+      auto row = static_cast<size_t>((p0 == 0 ? 1 : p0) - 1);
+      auto col = static_cast<size_t>((p1 == 0 ? 1 : p1) - 1);
+      if (row >= kRows) {
+        row = kRows - 1;
+      }
+      if (col >= kColumns) {
+        col = kColumns - 1;
+      }
       row_ = row;
       col_ = col;
       break;
@@ -341,10 +353,10 @@ void Terminal::dispatch_csi(char final_byte) {
       row_ -= MIN(n, row_);
       break;
     case 'B':
-      row_ = MIN(row_ + n, kRows - 1u);
+      row_ = MIN(row_ + n, kRows - 1U);
       break;
     case 'C':
-      col_ = MIN(col_ + n, kColumns - 1u);
+      col_ = MIN(col_ + n, kColumns - 1U);
       break;
     case 'D':
       col_ -= MIN(n, col_);
@@ -365,7 +377,7 @@ void Terminal::dispatch_csi(char final_byte) {
       }
       break;
     case 'm':
-      apply_sgr(static_cast<uint8_t>(esc_param_count_ + 1u));
+      apply_sgr(static_cast<uint8_t>(esc_param_count_ + 1U));
       break;
     default:
       break;
@@ -373,18 +385,21 @@ void Terminal::dispatch_csi(char final_byte) {
 }
 
 void Terminal::apply_sgr(uint8_t nparams) {
-  uint8_t fg = color_ & 0x0Fu;
-  uint8_t bg = (color_ >> 4) & 0x0Fu;
+  uint8_t fg = color_ & 0x0FU;
+  uint8_t bg = (color_ >> 4) & 0x0FU;
+
+  static constexpr uint8_t kAnsiToVgaFg[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+  static constexpr uint8_t kAnsiToVgaBg[8] = {0, 4, 2, 6, 1, 5, 3, 7};
 
   for (uint8_t i = 0; i < nparams; ++i) {
     uint16_t code = esc_params_[i];
     if (code == 0) {
-      fg = 7;  // White (Light Grey)
-      bg = 0;  // Black
+      fg = 7;
+      bg = 0;
     } else if (code >= 30 && code <= 37) {
-      fg = static_cast<uint8_t>(code - 30);
+      fg = kAnsiToVgaFg[code - 30];
     } else if (code >= 40 && code <= 47) {
-      bg = static_cast<uint8_t>(code - 40);
+      bg = kAnsiToVgaBg[code - 40];
     } else if (code >= 90 && code <= 97) {
       fg = static_cast<uint8_t>(code - 90 + 8);
     } else if (code >= 100 && code <= 107) {

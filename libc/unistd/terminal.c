@@ -18,7 +18,7 @@ static char* write_uint(char* p, uint32_t n) {
   return p;
 }
 
-static void set_cursor(unsigned int row, unsigned int col) {
+void set_cursor(unsigned int row, unsigned int col) {
   char buf[16];
   char* p = buf;
   *p++ = '\033';
@@ -30,7 +30,7 @@ static void set_cursor(unsigned int row, unsigned int col) {
   (void)write(1, buf, (size_t)(p - buf));
 }
 
-static void set_color(unsigned char color) {
+void set_color(unsigned char color) {
   char buf[16];
   char* p = buf;
   uint8_t fg = (uint8_t)(color & 0x0FU);
@@ -46,10 +46,10 @@ static void set_color(unsigned char color) {
   (void)write(1, buf, (size_t)(p - buf));
 }
 
-static void show_cursor(void) { (void)write(1, "\033[?25h", 6); }
+void show_cursor(void) { (void)write(1, "\033[?25h", 6); }
 
-static void hide_cursor(void) { (void)write(1, "\033[?25l", 6); }
+void hide_cursor(void) { (void)write(1, "\033[?25l", 6); }
 
-static void clear_screen(void) { (void)write(1, "\033[2J\033[H", 7); }
+void clear_screen(void) { (void)write(1, "\033[2J\033[H", 7); }
 
 #endif

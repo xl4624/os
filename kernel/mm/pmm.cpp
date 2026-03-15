@@ -32,7 +32,7 @@ PhysicalMemoryManager::PhysicalMemoryManager() {
 
   // Pass 1: find the highest available address to derive total_frames_.
   uint64_t highest_addr = 0;
-  for (auto* e = mmap_base; vaddr_t{e}.raw() < mmap_virt_end.raw(); e = mmap_next(e)) {
+  for (const auto* e = mmap_base; vaddr_t{e}.raw() < mmap_virt_end.raw(); e = mmap_next(e)) {
     if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
       const uint64_t end = e->addr + e->len;
       if (end > highest_addr) {
@@ -46,7 +46,7 @@ PhysicalMemoryManager::PhysicalMemoryManager() {
       (frames_64 > static_cast<uint64_t>(MAX_FRAMES)) ? MAX_FRAMES : static_cast<size_t>(frames_64);
 
   // Pass 2: mark all AVAILABLE regions as free.
-  for (auto* e = mmap_base; vaddr_t{e}.raw() < mmap_virt_end.raw(); e = mmap_next(e)) {
+  for (const auto* e = mmap_base; vaddr_t{e}.raw() < mmap_virt_end.raw(); e = mmap_next(e)) {
     if (e->type == MULTIBOOT_MEMORY_AVAILABLE &&
         e->addr < static_cast<uint64_t>(total_frames_) * PAGE_SIZE) {
       mark_free_range(paddr_t{static_cast<uintptr_t>(e->addr)}, static_cast<size_t>(e->len));
@@ -72,7 +72,7 @@ PhysicalMemoryManager::PhysicalMemoryManager() {
   mark_used_range(mbi_phys & ~paddr_t{PAGE_SIZE - 1}, PAGE_SIZE);
 
   // Multiboot modules.
-  if ((info->flags & MULTIBOOT_INFO_MODS) && info->mods_count > 0) {
+  if (((info->flags & MULTIBOOT_INFO_MODS) != 0U) && info->mods_count > 0) {
     const auto* mods = phys_to_virt(paddr_t{info->mods_addr}).ptr<multiboot_module_t>();
     for (uint32_t i = 0; i < info->mods_count; ++i) {
       const paddr_t mod_start =

@@ -63,7 +63,7 @@ bool PS2CommandQueue::process_byte(uint8_t data) {
           process_next();
         }
         return true;
-      } else if (data == kPS2Resend) {
+      } else if (data == kPS2Resend) {  // NOLINT(readability-else-after-return
         PS2CommandEntry entry{};
         if (!queue_.peek(entry)) {
           state_ = PS2State::Idle;

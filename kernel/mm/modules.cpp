@@ -13,7 +13,7 @@ Module module_table[kMaxModules];
 // If there is no '/', returns the full string.
 const char* basename(const char* path) {
   const char* last = path;
-  for (const char* p = path; *p; ++p) {
+  for (const char* p = path; *p != 0; ++p) {
     if (*p == '/') {
       last = p + 1;
     }
@@ -26,7 +26,7 @@ const char* basename(const char* path) {
 namespace Modules {
 
 void init(const multiboot_info_t* info) {
-  if (!(info->flags & MULTIBOOT_INFO_MODS) || info->mods_count == 0) {
+  if (((info->flags & MULTIBOOT_INFO_MODS) == 0U) || info->mods_count == 0) {
     return;
   }
 

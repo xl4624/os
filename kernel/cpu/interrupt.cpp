@@ -105,13 +105,13 @@ void register_handler(IRQ irq, handler_t handler) {
 
 __BEGIN_DECLS
 
-void interrupt_enable() { asm volatile("sti"); }
+void interrupt_enable() { __asm__ volatile("sti"); }
 
-void interrupt_disable() { asm volatile("cli"); }
+void interrupt_disable() { __asm__ volatile("cli"); }
 
 __attribute__((noreturn)) void halt_and_catch_fire() {
   interrupt_disable();
-  asm volatile("hlt");
+  __asm__ volatile("hlt");
   __builtin_unreachable();
 }
 

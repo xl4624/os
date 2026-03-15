@@ -15,7 +15,7 @@ void init() {
   idtp.size = sizeof(idt) - 1;
   idtp.offset = reinterpret_cast<uintptr_t>(idt.data());
   memset(idt.data(), 0, sizeof(idt));
-  asm volatile("lidt %0" : : "m"(idtp));
+  __asm__ volatile("lidt %0" : : "m"(idtp));
 }
 
 void set_entry(size_t index, uintptr_t handler, Gate gate, Ring ring) {

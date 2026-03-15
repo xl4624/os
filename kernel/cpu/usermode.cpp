@@ -14,7 +14,7 @@ void jump(uint32_t entry, uint32_t user_stack_top) {
   assert(user_stack_top != 0 && "Usermode::jump(): user stack top is zero");
   assert(user_stack_top <= KERNEL_VMA &&
          "Usermode::jump(): user stack top is in kernel address space");
-  asm volatile(
+  __asm__ volatile(
       // Load user data segment selectors into ds, es, fs, gs.
       "mov %[uds], %%ax\n"
       "mov %%ax, %%ds\n"

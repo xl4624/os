@@ -15,7 +15,7 @@ int exec(const char* path, char* const argv[]) {
 
 int exec(const char* path, char* const argv[]) {
   int32_t ret;
-  asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_EXEC), "b"(path), "c"(argv));
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_EXEC), "b"(path), "c"(argv));
   return ret;
 }
 

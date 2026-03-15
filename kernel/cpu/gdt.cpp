@@ -54,7 +54,7 @@ void init() {
   gdtp.offset = reinterpret_cast<uintptr_t>(gdt.data());
 
   // Load the GDTR
-  asm volatile(
+  __asm__ volatile(
       "lgdt %0\n"
       "mov %1, %%ax\n"
       "mov %%ax, %%ds\n"

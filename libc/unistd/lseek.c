@@ -4,6 +4,6 @@
 
 int lseek(int fd, int offset, int whence) {
   int32_t ret;
-  asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_LSEEK), "b"(fd), "c"(offset), "d"(whence));
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_LSEEK), "b"(fd), "c"(offset), "d"(whence));
   return ret;
 }

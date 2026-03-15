@@ -14,7 +14,7 @@ int shmget(unsigned int size) {
 
 int shmget(unsigned int size) {
   int32_t ret;
-  asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SHMGET), "b"(size));
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_SHMGET), "b"(size));
   return ret;
 }
 

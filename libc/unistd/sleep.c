@@ -15,7 +15,7 @@ unsigned int sleep(unsigned int seconds) {
 unsigned int sleep(unsigned int seconds) {
   uint32_t ms = (uint32_t)seconds * 1000U;
   int32_t ret;
-  asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_SLEEP), "b"(ms));
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_SLEEP), "b"(ms));
   (void)ret;
   return 0;
 }

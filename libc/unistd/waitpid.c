@@ -15,7 +15,7 @@ int waitpid(int pid, int* exit_code) {
 
 int waitpid(int pid, int* exit_code) {
   int32_t ret;
-  asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_WAITPID), "b"(pid), "c"(exit_code));
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_WAITPID), "b"(pid), "c"(exit_code));
   return ret;
 }
 

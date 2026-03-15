@@ -27,7 +27,7 @@ void init() {
 
   // Load the Task Register. The GDT descriptor for the TSS was installed
   // by GDT::init() at selector TSS_SELECTOR.
-  asm volatile("ltr %0" ::"rm"(static_cast<uint16_t>(GDT::TSS_SELECTOR)) : "memory");
+  __asm__ volatile("ltr %0" ::"rm"(static_cast<uint16_t>(GDT::TSS_SELECTOR)) : "memory");
 
   initialized = true;
 }

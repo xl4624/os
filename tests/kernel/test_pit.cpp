@@ -8,7 +8,7 @@
 TEST(pit, ticks_advance) {
   uint64_t t0 = PIT::get_ticks();
   // Wait for at least one timer interrupt via hlt.
-  asm volatile("hlt");
+  __asm__ volatile("hlt");
   uint64_t t1 = PIT::get_ticks();
   ASSERT(t1 > t0);
 }

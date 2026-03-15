@@ -81,7 +81,7 @@ void unmap(PageTable* pd, vaddr_t virt) {
 
   kPmm.free(frame_to_phys(pte.frame));
   memset(&pte, 0, sizeof(pte));
-  asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
+  __asm__ volatile("invlpg (%0)" ::"r"(virt) : "memory");
 }
 
 void unmap_nofree(PageTable* pd, vaddr_t virt) {
@@ -99,7 +99,7 @@ void unmap_nofree(PageTable* pd, vaddr_t virt) {
   }
 
   memset(&pte, 0, sizeof(pte));
-  asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
+  __asm__ volatile("invlpg (%0)" ::"r"(virt) : "memory");
 }
 
 void sync_kernel_mappings(PageTable* pd) {
@@ -107,7 +107,7 @@ void sync_kernel_mappings(PageTable* pd) {
          (PAGES_PER_TABLE - kKernelPdeStart) * sizeof(PageEntry));
 }
 
-void load(paddr_t pd_phys) { asm volatile("mov %0, %%cr3" ::"r"(pd_phys) : "memory"); }
+void load(paddr_t pd_phys) { __asm__ volatile("mov %0, %%cr3" ::"r"(pd_phys) : "memory"); }
 
 bool is_user_mapped(const PageTable* pd, vaddr_t va, bool writeable) {
   const PageEntry& pde = pd->entry[pd_index(va)];

@@ -11,7 +11,7 @@ int getpid(void) { return 0; }
 
 int getpid(void) {
   int32_t pid;
-  asm volatile("int $0x80" : "=a"(pid) : "a"(SYS_GETPID));
+  __asm__ volatile("int $0x80" : "=a"(pid) : "a"(SYS_GETPID));
   return pid;
 }
 

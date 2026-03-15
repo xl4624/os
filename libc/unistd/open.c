@@ -4,6 +4,6 @@
 
 int open(const char* path) {
   int32_t ret;
-  asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_OPEN), "b"(path));
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_OPEN), "b"(path));
   return ret;
 }

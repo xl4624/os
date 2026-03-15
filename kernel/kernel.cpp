@@ -84,7 +84,7 @@ __attribute__((noreturn)) void kernel_main() {
   }
 
   while (true) {
-    asm volatile("hlt");
+    __asm__ volatile("hlt");
   }
 #endif
   __builtin_unreachable();

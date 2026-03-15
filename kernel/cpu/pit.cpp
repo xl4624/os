@@ -48,7 +48,7 @@ void sleep_ticks(uint64_t n) {
   assert(initialized && "PIT::sleep_ticks(): called before PIT::init()");
   const uint64_t target = ticks + n;
   while (ticks < target) {
-    asm volatile("hlt");
+    __asm__ volatile("hlt");
   }
 }
 

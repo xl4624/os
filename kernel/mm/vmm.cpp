@@ -64,7 +64,7 @@ void map(vaddr_t virt, paddr_t phys, bool writeable, bool user) {
   PageTable* pt = page_table_for(virt, /*create=*/true, user);
   pt->entry[pt_index(virt)] = PageEntry(phys, writeable, user);
 
-  asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
+  __asm__ volatile("invlpg (%0)" ::"r"(virt) : "memory");
 }
 
 void unmap(vaddr_t virt) {
@@ -82,7 +82,7 @@ void unmap(vaddr_t virt) {
 
   pte = PageEntry{};
 
-  asm volatile("invlpg (%0)" ::"r"(virt) : "memory");
+  __asm__ volatile("invlpg (%0)" ::"r"(virt) : "memory");
 }
 
 paddr_t get_phys(vaddr_t virt) {
@@ -101,7 +101,7 @@ paddr_t get_phys(vaddr_t virt) {
 
 void flush_tlb() {
   uint32_t cr3;
-  asm volatile(
+  __asm__ volatile(
       "mov %%cr3, %0\n"
       "mov %0, %%cr3\n"
       : "=r"(cr3)

@@ -14,7 +14,7 @@ int close(int fd) {
 
 int close(int fd) {
   int32_t ret;
-  asm volatile("int $0x80" : "=a"(ret) : "a"(SYS_CLOSE), "b"(fd));
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_CLOSE), "b"(fd));
   return ret;
 }
 

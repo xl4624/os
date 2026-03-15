@@ -481,7 +481,7 @@ int32_t waitpid_current(int32_t pid, int32_t* exit_code_ptr) {
       if (child.kernel_stack) {
         kfree(child.kernel_stack);
       }
-      memset(&child, 0, sizeof(Process));
+      child = Process{};
       return static_cast<int32_t>(child_pid);
     }
     // Child exists but is not a zombie yet.

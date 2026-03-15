@@ -48,12 +48,12 @@ static bool validate_user_buffer(uint32_t ptr, uint32_t len, bool writeable) {
 // SYS_WRITE(fd=ebx, buf=ecx, count=edx)
 // Returns number of bytes written, or -1 on error.
 static int32_t sys_write(TrapFrame* regs) {
-  uint32_t fd_num = regs->ebx;
-  uint32_t buf = regs->ecx;
-  uint32_t count = regs->edx;
+  const uint32_t fd_num = regs->ebx;
+  const uint32_t buf = regs->ecx;
+  const uint32_t count = regs->edx;
 
-  Process* proc = Scheduler::current();
-  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
+  const Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
     return -1;
   }
 
@@ -68,12 +68,12 @@ static int32_t sys_write(TrapFrame* regs) {
 // SYS_READ(fd=ebx, buf=ecx, count=edx)
 // Returns number of bytes read, or -1 on error.
 static int32_t sys_read(TrapFrame* regs) {
-  uint32_t fd_num = regs->ebx;
-  uint32_t buf = regs->ecx;
-  uint32_t count = regs->edx;
+  const uint32_t fd_num = regs->ebx;
+  const uint32_t buf = regs->ecx;
+  const uint32_t count = regs->edx;
 
-  Process* proc = Scheduler::current();
-  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
+  const Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
     return -1;
   }
 
@@ -86,14 +86,14 @@ static int32_t sys_read(TrapFrame* regs) {
 
 // SYS_EXIT(code=ebx)
 static int32_t sys_exit(TrapFrame* regs) {
-  uint32_t code = regs->ebx;
+  const uint32_t code = regs->ebx;
   Scheduler::exit_current(code);
   return 0;  // not reached by the exiting process
 }
 
 // SYS_SLEEP(ms=ebx)
 static int32_t sys_sleep(TrapFrame* regs) {
-  uint32_t ms = regs->ebx;
+  const uint32_t ms = regs->ebx;
   Scheduler::sleep_current(ms);
   return 0;
 }
@@ -104,13 +104,13 @@ static int32_t sys_sbrk(TrapFrame* regs) {
   auto increment = static_cast<int32_t>(regs->ebx);
   Process* proc = Scheduler::current();
 
-  vaddr_t old_break = proc->heap_break;
+  const vaddr_t old_break = proc->heap_break;
 
   if (increment == 0) {
     return static_cast<int32_t>(old_break);
   }
 
-  vaddr_t new_break = old_break + static_cast<uint32_t>(increment);
+  const vaddr_t new_break = old_break + static_cast<uint32_t>(increment);
 
   // Reject if the new break would collide with the user stack, enter kernel
   // space, or wrap around.
@@ -120,11 +120,11 @@ static int32_t sys_sbrk(TrapFrame* regs) {
 
   if (increment > 0) {
     // Map any new pages between old_break and new_break.
-    vaddr_t old_page = (old_break + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-    vaddr_t new_page = (new_break + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    const vaddr_t old_page = (old_break + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    const vaddr_t new_page = (new_break + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     for (vaddr_t va = old_page; va < new_page; va += PAGE_SIZE) {
-      paddr_t phys = kPmm.alloc();
+      const paddr_t phys = kPmm.alloc();
       if (phys == 0) {
         for (vaddr_t undo = old_page; undo < va; undo += PAGE_SIZE) {
           AddressSpace::unmap(proc->page_directory, undo);
@@ -153,7 +153,7 @@ static int32_t sys_getpid([[maybe_unused]] TrapFrame* regs) {
 // SYS_OPEN(path=ebx)
 // Opens a file by path. Returns fd on success, -1 on failure.
 static int32_t sys_open(TrapFrame* regs) {
-  uint32_t path_ptr = regs->ebx;
+  const uint32_t path_ptr = regs->ebx;
 
   if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
     return -1;
@@ -171,8 +171,8 @@ static int32_t sys_exec(TrapFrame* regs) {
   static constexpr int kMaxExecArgs = 16;
   static constexpr uint32_t kMaxArgLen = 256;
 
-  uint32_t path_ptr = regs->ebx;
-  uint32_t argv_ptr = regs->ecx;
+  const uint32_t path_ptr = regs->ebx;
+  const uint32_t argv_ptr = regs->ecx;
 
   if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
     return -1;
@@ -190,14 +190,14 @@ static int32_t sys_exec(TrapFrame* regs) {
     if (!validate_user_buffer(argv_ptr, 4, /*writeable=*/false)) {
       return -1;
     }
-    auto* uargv = reinterpret_cast<const uint32_t*>(argv_ptr);
+    const auto* uargv = reinterpret_cast<const uint32_t*>(argv_ptr);
     while (argc < kMaxExecArgs) {
       // Validate the pointer slot itself.
-      if (!validate_user_buffer(argv_ptr + static_cast<uint32_t>(argc) * 4, 4,
+      if (!validate_user_buffer(argv_ptr + (static_cast<uint32_t>(argc) * 4), 4,
                                 /*writeable=*/false)) {
         return -1;
       }
-      uint32_t str_ptr = uargv[argc];
+      const uint32_t str_ptr = uargv[argc];
       if (str_ptr == 0) {
         break;
       }
@@ -220,8 +220,8 @@ static int32_t sys_exec(TrapFrame* regs) {
     argc = 1;
   }
 
-  VfsNode* node = Vfs::lookup(path);
-  if (!node || !node->data) {
+  const VfsNode* node = Vfs::lookup(path);
+  if (node == nullptr || node->data == nullptr) {
     return -1;
   }
 
@@ -229,25 +229,25 @@ static int32_t sys_exec(TrapFrame* regs) {
   assert(proc != nullptr && "sys_exec(): no current process");
 
   auto [new_pd_phys, new_pd_virt] = AddressSpace::create();
-  if (!new_pd_virt) {
+  if (new_pd_virt == nullptr) {
     return -1;
   }
 
-  vaddr_t entry = 0;
-  vaddr_t brk = 0;
+  vaddr_t entry = 0;  // NOLINT(misc-const-correctness) -- output param
+  vaddr_t brk = 0;   // NOLINT(misc-const-correctness) -- output param
   if (!Elf::load(std::span<const uint8_t>{node->data, node->size}, new_pd_virt, entry, brk)) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;
   }
 
-  uint32_t user_esp = Scheduler::alloc_user_stack(
+  const uint32_t user_esp = Scheduler::alloc_user_stack(
       new_pd_virt, std::span<const char*>{argv_ptrs, static_cast<size_t>(argc)});
   if (user_esp == 0) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;
   }
 
-  paddr_t old_pd_phys = proc->page_directory_phys;
+  const paddr_t old_pd_phys = proc->page_directory_phys;
   PageTable* old_pd = proc->page_directory;
 
   proc->page_directory_phys = new_pd_phys;
@@ -258,7 +258,7 @@ static int32_t sys_exec(TrapFrame* regs) {
   AddressSpace::sync_kernel_mappings(new_pd_virt);
   TSS::set_kernel_stack(reinterpret_cast<uint32_t>(proc->kernel_stack) + kKernelStackSize);
 
-  if (old_pd) {
+  if (old_pd != nullptr) {
     // Temporarily switch to the boot page directory to safely free the old
     // one, then reload the new page directory before returning to user mode.
     AddressSpace::load(virt_to_phys(vaddr_t{&boot_page_directory}));
@@ -288,7 +288,7 @@ static int32_t sys_fork(TrapFrame* regs) {
 // Returns 0 if blocked (will be restarted by scheduler), or -1 on error.
 static int32_t sys_waitpid(TrapFrame* regs) {
   auto pid = static_cast<int32_t>(regs->ebx);
-  uint32_t exit_code_ptr = regs->ecx;
+  const uint32_t exit_code_ptr = regs->ecx;
   int32_t* exit_code = nullptr;
   if (exit_code_ptr != 0) {
     exit_code = reinterpret_cast<int32_t*>(exit_code_ptr);
@@ -300,7 +300,7 @@ static int32_t sys_waitpid(TrapFrame* regs) {
 // Creates a pipe and writes the read/write fd pair into the user-supplied
 // int[2] array. Returns 0 on success, -1 on failure.
 static int32_t sys_pipe(TrapFrame* regs) {
-  uint32_t pipefd_ptr = regs->ebx;
+  const uint32_t pipefd_ptr = regs->ebx;
 
   if (!validate_user_buffer(pipefd_ptr, 2 * sizeof(int32_t), /*writeable=*/true)) {
     return -1;
@@ -348,10 +348,10 @@ static int32_t sys_pipe(TrapFrame* regs) {
 // SYS_CLOSE(fd=ebx)
 // Closes a file descriptor. Returns 0 on success, -1 on error.
 static int32_t sys_close(TrapFrame* regs) {
-  uint32_t fd_num = regs->ebx;
+  const uint32_t fd_num = regs->ebx;
   Process* proc = Scheduler::current();
 
-  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
+  if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
     return -1;
   }
 
@@ -363,11 +363,11 @@ static int32_t sys_close(TrapFrame* regs) {
 // SYS_DUP2(oldfd=ebx, newfd=ecx)
 // Duplicates oldfd onto newfd. Returns newfd on success, -1 on error.
 static int32_t sys_dup2(TrapFrame* regs) {
-  uint32_t oldfd = regs->ebx;
-  uint32_t newfd = regs->ecx;
+  const uint32_t oldfd = regs->ebx;
+  const uint32_t newfd = regs->ecx;
   Process* proc = Scheduler::current();
 
-  if (oldfd >= kMaxFds || newfd >= kMaxFds || !proc->fds[oldfd]) {
+  if (oldfd >= kMaxFds || newfd >= kMaxFds || proc->fds[oldfd] == nullptr) {
     return -1;
   }
 
@@ -376,7 +376,7 @@ static int32_t sys_dup2(TrapFrame* regs) {
   }
 
   // Close existing description at newfd if open.
-  if (proc->fds[newfd]) {
+  if (proc->fds[newfd] != nullptr) {
     file_close(proc->fds[newfd]);
   }
 
@@ -389,7 +389,7 @@ static int32_t sys_dup2(TrapFrame* regs) {
 // Allocates physical pages for a shared memory region.
 // Returns shmid on success, -1 on failure.
 static int32_t sys_shmget(TrapFrame* regs) {
-  uint32_t size = regs->ebx;
+  const uint32_t size = regs->ebx;
   return Shm::create(size);
 }
 
@@ -397,8 +397,8 @@ static int32_t sys_shmget(TrapFrame* regs) {
 // Maps a shared memory region into the caller's address space.
 // Returns 0 on success, -1 on failure.
 static int32_t sys_shmat(TrapFrame* regs) {
-  uint32_t shmid = regs->ebx;
-  vaddr_t vaddr{regs->ecx};
+  const uint32_t shmid = regs->ebx;
+  const vaddr_t vaddr{regs->ecx};
   return Shm::attach(shmid, vaddr);
 }
 
@@ -406,8 +406,8 @@ static int32_t sys_shmat(TrapFrame* regs) {
 // Unmaps a shared memory region from the caller's address space.
 // Returns 0 on success, -1 on failure.
 static int32_t sys_shmdt(TrapFrame* regs) {
-  vaddr_t vaddr{regs->ebx};
-  uint32_t size = regs->ecx;
+  const vaddr_t vaddr{regs->ebx};
+  const uint32_t size = regs->ecx;
   return Shm::detach(vaddr, size);
 }
 
@@ -415,7 +415,7 @@ static int32_t sys_shmdt(TrapFrame* regs) {
 // Returns the number of PIT ticks since boot (10 ms resolution).
 // The 64-bit tick count is split: low 32 bits in eax, high 32 bits in edx.
 static int32_t sys_getticks(TrapFrame* regs) {
-  uint64_t ticks = PIT::get_ticks();
+  const uint64_t ticks = PIT::get_ticks();
   regs->edx = static_cast<uint32_t>(ticks >> 32);
   return static_cast<int32_t>(ticks & 0xFFFFFFFF);
 }
@@ -425,26 +425,26 @@ static int32_t sys_getticks(TrapFrame* regs) {
 // whence: 0=SEEK_SET, 1=SEEK_CUR, 2=SEEK_END
 // Returns the new offset on success, -1 on error.
 static int32_t sys_lseek(TrapFrame* regs) {
-  uint32_t fd_num = regs->ebx;
-  auto offset = static_cast<int32_t>(regs->ecx);
-  uint32_t whence = regs->edx;
+  const uint32_t fd_num = regs->ebx;
+  const auto offset = static_cast<int32_t>(regs->ecx);
+  const uint32_t whence = regs->edx;
 
-  Process* proc = Scheduler::current();
-  if (fd_num >= kMaxFds || !proc->fds[fd_num]) {
+  const Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
     return -1;
   }
 
-  FileDescription* fd = proc->fds[fd_num];
-  if (fd->type != FileType::VfsNode || !fd->vfs) {
+  const FileDescription* fd = proc->fds[fd_num];
+  if (fd->type != FileType::VfsNode || fd->vfs == nullptr) {
     return -1;
   }
 
   VfsFileDescription* vfs_fd = fd->vfs;
-  if (!vfs_fd->node || vfs_fd->node->type != VfsNodeType::File) {
+  if (vfs_fd->node == nullptr || vfs_fd->node->type != VfsNodeType::File) {
     return -1;  // only regular files support seeking
   }
 
-  int64_t base;
+  int64_t base = 0;
   switch (whence) {
     case 0:  // SEEK_SET
       base = 0;
@@ -459,7 +459,7 @@ static int32_t sys_lseek(TrapFrame* regs) {
       return -1;
   }
 
-  int64_t new_offset = base + offset;
+  const int64_t new_offset = base + offset;
   if (new_offset < 0 || new_offset > INT32_MAX) {
     return -1;
   }
@@ -474,7 +474,7 @@ static int32_t sys_lseek(TrapFrame* regs) {
 
 using syscall_fn = int32_t (*)(TrapFrame*);
 
-static syscall_fn syscall_table[SYS_MAX] = {
+static std::array<syscall_fn, SYS_MAX> syscall_table = {
     sys_exit,      // 0
     sys_read,      // 1
     sys_write,     // 2
@@ -505,14 +505,14 @@ void syscall_entry();
 uint32_t syscall_dispatch(uint32_t esp) {
   auto* regs = reinterpret_cast<TrapFrame*>(esp);
   assert(regs != nullptr && "syscall_dispatch(): regs pointer is null");
-  uint32_t num = regs->eax;
+  const uint32_t num = regs->eax;
 
   if (num >= SYS_MAX) {
     regs->eax = static_cast<uint32_t>(-1);
     return Scheduler::schedule(esp);
   }
 
-  int32_t ret = syscall_table[num](regs);
+  const int32_t ret = syscall_table[num](regs);
 
   if (ret == kSyscallRestart) {
     // Rewind EIP past the "int $0x80" instruction (opcode CD 80, 2 bytes)

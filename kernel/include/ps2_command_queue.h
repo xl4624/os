@@ -77,22 +77,19 @@ class PS2CommandQueue {
    * Queues a command without parameters.
    * Returns true if queued, false if queue is full.
    */
-  [[nodiscard]]
-  bool send_command(PS2Command command);
+  [[nodiscard]] bool send_command(PS2Command command);
 
   /**
    * Queues a command with a parameter byte.
    * Returns true if queued, false if queue is full.
    */
-  [[nodiscard]]
-  bool send_command_with_param(PS2Command command, uint8_t parameter);
+  [[nodiscard]] bool send_command_with_param(PS2Command command, uint8_t parameter);
 
   /**
    * Returns true when no commands are pending and state machine is idle.
    * Use this to wait for command completion before continuing.
    */
-  [[nodiscard]]
-  bool is_idle() const;
+  [[nodiscard]] bool is_idle() const;
 
   /**
    * Clears all pending commands and resets state machine.
@@ -108,8 +105,7 @@ class PS2CommandQueue {
    *
    * Returns true if consumed as command response, false if it's a scancode.
    */
-  [[nodiscard]]
-  bool process_byte(uint8_t data);
+  [[nodiscard]] bool process_byte(uint8_t data);
 
  private:
   /**
@@ -127,8 +123,7 @@ class PS2CommandQueue {
   /**
    * Returns true when keyboard controller input buffer is empty.
    */
-  [[nodiscard]]
-  bool can_send() const;
+  [[nodiscard]] static bool can_send();
 
   RingBuffer<PS2CommandEntry, kPS2CommandQueueSize> queue_;
   PS2State state_;

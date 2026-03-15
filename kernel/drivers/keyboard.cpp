@@ -91,23 +91,23 @@ static_assert(sizeof(kAsciiTable) / sizeof(AsciiPair) == Key::COUNT,
 
 Key Key::from_scancode(uint8_t scancode) {
   if (scancode < kScancodeTableSize) {
-    return Key(kScancodeTable[scancode]);
+    return {kScancodeTable[scancode]};
   }
-  return Key(Unknown);
+  return {Unknown};
 }
 
 Key Key::from_extended_scancode(uint8_t scancode) {
   switch (scancode) {
     case kExtUp:
-      return Key(Up);
+      return {Up};
     case kExtDown:
-      return Key(Down);
+      return {Down};
     case kExtLeft:
-      return Key(Left);
+      return {Left};
     case kExtRight:
-      return Key(Right);
+      return {Right};
     default:
-      return Key(Unknown);
+      return {Unknown};
   }
 }
 
@@ -138,7 +138,7 @@ bool Key::is_modifier() const {
 KeyboardDriver kKeyboard;
 
 static void keyboard_handler([[maybe_unused]] interrupt_frame* frame) {
-  uint8_t scancode = inb(kDataPort);
+  const uint8_t scancode = inb(kDataPort);
   kKeyboard.process_scancode(scancode);
 }
 
@@ -151,7 +151,7 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
   }
 
   // If not a command response; process as key scancode.
-  KeyEvent event = scancode_to_event(scancode);
+  const KeyEvent event = scancode_to_event(scancode);
 
   // Buffer raw key event for /dev/kbd (skip the 0xE0 prefix non-events).
   if (event.key != Key::Unknown) {
@@ -229,7 +229,7 @@ KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
   const bool pressed = (scancode & kReleaseBit) == 0;
   scancode &= ~kReleaseBit;
 
-  Key key =
+  const Key key =
       extended_scancode_ ? Key::from_extended_scancode(scancode) : Key::from_scancode(scancode);
   extended_scancode_ = false;
 

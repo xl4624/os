@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include <algorithm.h>
+
 #include "multiboot.h"
 #include "paging.h"
 #include "panic.h"
@@ -35,9 +37,7 @@ PhysicalMemoryManager::PhysicalMemoryManager() {
   for (const auto* e = mmap_base; vaddr_t{e}.raw() < mmap_virt_end.raw(); e = mmap_next(e)) {
     if (e->type == MULTIBOOT_MEMORY_AVAILABLE) {
       const uint64_t end = e->addr + e->len;
-      if (end > highest_addr) {
-        highest_addr = end;
-      }
+      highest_addr = std::max(end, highest_addr);
     }
   }
 

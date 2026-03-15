@@ -60,21 +60,21 @@ void Terminal::draw_glyph(char c, uint8_t color, size_t row, size_t col) {
     ch = 0;  // replace non-ASCII with blank
   }
 
-  uint32_t fg = color_to_rgb(color & 0x0F);
-  uint32_t bg = color_to_rgb((color >> 4) & 0x0F);
+  const uint32_t fg = color_to_rgb(color & 0x0F);
+  const uint32_t bg = color_to_rgb((color >> 4) & 0x0F);
 
   auto px = static_cast<uint32_t>(col * kFontWidth);
   auto py = static_cast<uint32_t>(row * kFontHeight);
-  uint32_t bytes_per_pixel = bpp_ / 8;
+  const uint32_t bytes_per_pixel = bpp_ / 8;
 
   const uint8_t* glyph = kFont8x16[ch];
 
   for (uint32_t gy = 0; gy < kFontHeight; ++gy) {
-    uint8_t row_bits = glyph[gy];
+    const uint8_t row_bits = glyph[gy];
     uint8_t* dest = fb_ + ((py + gy) * pitch_) + (px * bytes_per_pixel);
 
     for (uint32_t gx = 0; gx < kFontWidth; ++gx) {
-      uint32_t pixel = (row_bits & (0x80 >> gx)) ? fg : bg;
+      const uint32_t pixel = ((row_bits & (0x80 >> gx)) != 0) ? fg : bg;
       auto* p = reinterpret_cast<uint32_t*>(dest + (gx * bytes_per_pixel));
       *p = pixel;
     }
@@ -113,7 +113,7 @@ void Terminal::write(const char* data) {
 
 void Terminal::write(std::span<const char> data) {
   erase_cursor();
-  for (char c : data) {
+  for (const char c : data) {
     put_char(c);
   }
   draw_cursor();
@@ -257,12 +257,12 @@ void Terminal::scroll() {
 
   if (active_) {
     // Scroll framebuffer pixels: shift rows up by kFontHeight pixels.
-    uint32_t row_bytes = static_cast<uint32_t>(kFontHeight) * pitch_;
+    const uint32_t row_bytes = static_cast<uint32_t>(kFontHeight) * pitch_;
     auto total_rows = static_cast<uint32_t>(kRows - 1);
     memmove(fb_, fb_ + row_bytes, total_rows * row_bytes);
 
     // Clear the bottom row of pixels with background color.
-    uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
+    const uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
     auto start_y = static_cast<uint32_t>((kRows - 1) * kFontHeight);
     for (uint32_t y = start_y; y < start_y + kFontHeight; ++y) {
       auto* row_ptr = reinterpret_cast<uint32_t*>(fb_ + (y * pitch_));
@@ -270,7 +270,7 @@ void Terminal::scroll() {
         row_ptr[x] = bg;
       }
       // Clear any remaining pixels to the right of the text area.
-      uint32_t fb_width = Framebuffer::info().width;
+      const uint32_t fb_width = Framebuffer::info().width;
       for (auto x = static_cast<uint32_t>(kColumns * kFontWidth); x < fb_width; ++x) {
         row_ptr[x] = bg;
       }
@@ -293,7 +293,7 @@ void Terminal::clear() {
   color_ = 0x07;  // light grey on black
 
   // Clear all cells and fill the framebuffer with the background color.
-  uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
+  const uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
   for (auto& row : cells_) {
     for (Cell& cell : row) {
       cell = {0, color_};
@@ -302,8 +302,8 @@ void Terminal::clear() {
 
   // Fill the entire framebuffer with background.
   if (active_) {
-    uint32_t fb_width = Framebuffer::info().width;
-    uint32_t fb_height = Framebuffer::info().height;
+    const uint32_t fb_width = Framebuffer::info().width;
+    const uint32_t fb_height = Framebuffer::info().height;
     for (uint32_t y = 0; y < fb_height; ++y) {
       auto* row_ptr = reinterpret_cast<uint32_t*>(fb_ + (y * pitch_));
       for (uint32_t x = 0; x < fb_width; ++x) {
@@ -330,9 +330,9 @@ void Terminal::set_position(size_t row, size_t col) {
 }
 
 void Terminal::dispatch_csi(char final_byte) {
-  uint16_t p0 = esc_params_[0];
-  uint16_t p1 = esc_params_[1];
-  size_t n = (p0 == 0) ? 1U : static_cast<size_t>(p0);
+  const uint16_t p0 = esc_params_[0];
+  const uint16_t p1 = esc_params_[1];
+  const size_t n = (p0 == 0) ? 1U : static_cast<size_t>(p0);
 
   switch (final_byte) {
     case 'H':
@@ -392,7 +392,7 @@ void Terminal::apply_sgr(uint8_t nparams) {
   static constexpr uint8_t kAnsiToVgaBg[8] = {0, 4, 2, 6, 1, 5, 3, 7};
 
   for (uint8_t i = 0; i < nparams; ++i) {
-    uint16_t code = esc_params_[i];
+    const uint16_t code = esc_params_[i];
     if (code == 0) {
       fg = 7;
       bg = 0;

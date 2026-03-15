@@ -7,6 +7,7 @@
 __BEGIN_DECLS
 
 __attribute__((noreturn)) void abort(void);
+__attribute__((noreturn)) void exit(int status);
 void itoa(int value, char* str, int base);
 
 void* malloc(size_t size);
@@ -19,6 +20,13 @@ void* realloc(void* ptr, size_t size);
 int abs(int x);
 int rand(void);
 void srand(unsigned int seed);
+
+long strtol(const char* nptr, char** endptr, int base);
+unsigned long strtoul(const char* nptr, char** endptr, int base);
+int atoi(const char* nptr);
+
+char* getenv(const char* name);
+int system(const char* command);
 
 __END_DECLS
 

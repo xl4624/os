@@ -90,8 +90,7 @@ struct vaddr_t {
   return paddr_t{vaddr.raw() - KERNEL_VMA};
 }
 
-[[nodiscard]]
-static constexpr vaddr_t phys_to_virt(paddr_t paddr) {
+[[nodiscard]] static constexpr vaddr_t phys_to_virt(paddr_t paddr) {
   return vaddr_t{paddr.raw() + KERNEL_VMA};
 }
 

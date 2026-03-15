@@ -24,34 +24,22 @@ class RingBuffer {
   /**
    * Returns true if buffer contains no elements.
    */
-  [[nodiscard]]
-  bool is_empty() const {
-    return count_ == 0;
-  }
+  [[nodiscard]] bool is_empty() const { return count_ == 0; }
 
   /**
    * Returns true if buffer has reached capacity.
    */
-  [[nodiscard]]
-  bool is_full() const {
-    return count_ == Capacity;
-  }
+  [[nodiscard]] bool is_full() const { return count_ == Capacity; }
 
   /**
    * Returns current number of stored elements.
    */
-  [[nodiscard]]
-  size_t size() const {
-    return count_;
-  }
+  [[nodiscard]] size_t size() const { return count_; }
 
   /**
    * Returns maximum number of elements buffer can hold.
    */
-  [[nodiscard]]
-  static constexpr size_t capacity() {
-    return Capacity;
-  }
+  [[nodiscard]] static constexpr size_t capacity() { return Capacity; }
 
   /**
    * Removes all elements. Does not destruct stored objects.
@@ -66,8 +54,7 @@ class RingBuffer {
    * Adds element to back of queue.
    * Returns true if successful, false if buffer is full (element not added).
    */
-  [[nodiscard]]
-  bool push(const T& value) {
+  [[nodiscard]] bool push(const T& value) {
     if (is_full()) {
       return false;
     }
@@ -81,8 +68,7 @@ class RingBuffer {
    * Removes and returns front element.
    * Returns true if successful, false if buffer is empty.
    */
-  [[nodiscard]]
-  bool pop(T& out) {
+  [[nodiscard]] bool pop(T& out) {
     if (is_empty()) {
       return false;
     }
@@ -96,8 +82,7 @@ class RingBuffer {
    * Returns front element without removing it.
    * Returns true if successful, false if buffer is empty.
    */
-  [[nodiscard]]
-  bool peek(T& out) const {
+  [[nodiscard]] bool peek(T& out) const {
     if (is_empty()) {
       return false;
     }

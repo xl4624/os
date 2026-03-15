@@ -1,5 +1,6 @@
 #include "modules.h"
 
+#include <algorithm.h>
 #include <string.h>
 
 #include "paging.h"
@@ -33,9 +34,7 @@ void init(const multiboot_info_t* info) {
   const auto* mods = phys_to_virt(paddr_t{info->mods_addr}).ptr<multiboot_module_t>();
 
   uint32_t n = info->mods_count;
-  if (n > kMaxModules) {
-    n = kMaxModules;
-  }
+  n = std::min(n, kMaxModules);
 
   for (uint32_t i = 0; i < n; ++i) {
     const char* name = "";

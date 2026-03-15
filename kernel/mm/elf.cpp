@@ -97,7 +97,7 @@ bool load(std::span<const uint8_t> elf_data, PageTable* pd, vaddr_t& entry_out, 
     }
 
     for (vaddr_t va = seg_start; va < seg_end; va += PAGE_SIZE) {
-      paddr_t phys = kPmm.alloc();
+      const paddr_t phys = kPmm.alloc();
       if (phys == 0) {
         printf("ELF: out of physical memory\n");
         return false;

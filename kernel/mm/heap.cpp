@@ -83,7 +83,7 @@ bool Heap::grow(size_t min_bytes) {
   BlockHeader* last = find_last_block();
 
   for (size_t i = 0; i < pages_needed; ++i) {
-    paddr_t phys = kPmm.alloc();
+    const paddr_t phys = kPmm.alloc();
     assert(phys && "Heap::grow: out of physical memory\n");
 
     VMM::map(vaddr_t{va}, phys);
@@ -118,9 +118,9 @@ void Heap::init() {
   end_ = reinterpret_cast<uint8_t*>(kVirtBase);
 
   for (size_t i = 0; i < kInitialPages; ++i) {
-    paddr_t phys = kPmm.alloc();
+    const paddr_t phys = kPmm.alloc();
     assert(phys && "Heap::init: out of physical memory\n");
-    vaddr_t va = kVirtBase + (i * PAGE_SIZE);
+    const vaddr_t va = kVirtBase + (i * PAGE_SIZE);
     VMM::map(va, phys);
     end_ += PAGE_SIZE;
   }
@@ -144,7 +144,7 @@ void Heap::dump() const {
 
   BlockHeader* cur = base_;
   while (reinterpret_cast<uint8_t*>(cur) < end_) {
-    void* payload = reinterpret_cast<uint8_t*>(cur) + sizeof(BlockHeader);
+    void const* payload = reinterpret_cast<uint8_t*>(cur) + sizeof(BlockHeader);
     printf("  [%p] payload=%p size=%6u %s\n", reinterpret_cast<void*>(cur), payload,
            static_cast<unsigned>(cur->size), cur->free ? "FREE" : "USED");
     if (cur->free) {

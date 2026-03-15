@@ -1,5 +1,6 @@
 #include "vfs.h"
 
+#include <algorithm.h>
 #include <string.h>
 #include <sys/fb.h>
 
@@ -21,7 +22,7 @@ VfsNode node_table[kMaxVfsNodes];
 int32_t tty_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
                  [[maybe_unused]] uint32_t offset) {
   char* cbuf = reinterpret_cast<char*>(buf.data());
-  size_t n = kKeyboard.read(cbuf, buf.size());
+  const size_t n = kKeyboard.read(cbuf, buf.size());
   return static_cast<int32_t>(n);
 }
 
@@ -47,12 +48,12 @@ const VfsOps null_ops = {null_read, null_write};
 
 int32_t kbd_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
                  [[maybe_unused]] uint32_t offset) {
-  size_t max_events = buf.size() / sizeof(kbd_event);
+  const size_t max_events = buf.size() / sizeof(kbd_event);
   if (max_events == 0) {
     return 0;
   }
   auto* events = reinterpret_cast<kbd_event*>(buf.data());
-  size_t n = kKeyboard.read_events(events, max_events);
+  const size_t n = kKeyboard.read_events(events, max_events);
   return static_cast<int32_t>(n * sizeof(kbd_event));
 }
 
@@ -75,7 +76,7 @@ int32_t fb_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf, uint32_t
   }
 
   const auto& fi = Framebuffer::info();
-  size_t fb_sz = Framebuffer::size();
+  const size_t fb_sz = Framebuffer::size();
 
   // Build the info header.
   fb_info header;
@@ -93,31 +94,27 @@ int32_t fb_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf, uint32_t
   header.reserved = 0;
 
   // Total virtual size: header + framebuffer pixels.
-  size_t total = sizeof(fb_info) + fb_sz;
+  const size_t total = sizeof(fb_info) + fb_sz;
   if (offset >= total) {
     return 0;
   }
 
-  size_t remaining = total - offset;
+  const size_t remaining = total - offset;
   size_t to_read = buf.size();
-  if (to_read > remaining) {
-    to_read = remaining;
-  }
+  to_read = std::min(to_read, remaining);
 
   // Copy from the concatenation of [header][framebuffer].
   size_t copied = 0;
   if (offset < sizeof(fb_info)) {
     size_t hdr_bytes = sizeof(fb_info) - offset;
-    if (hdr_bytes > to_read) {
-      hdr_bytes = to_read;
-    }
+    hdr_bytes = std::min(hdr_bytes, to_read);
     memcpy(buf.data(), reinterpret_cast<const uint8_t*>(&header) + offset, hdr_bytes);
     copied += hdr_bytes;
   }
 
   if (copied < to_read) {
-    size_t fb_offset = (offset > sizeof(fb_info)) ? offset - sizeof(fb_info) : 0;
-    size_t fb_bytes = to_read - copied;
+    const size_t fb_offset = (offset > sizeof(fb_info)) ? offset - sizeof(fb_info) : 0;
+    const size_t fb_bytes = to_read - copied;
     memcpy(buf.data() + copied, Framebuffer::buffer() + fb_offset, fb_bytes);
     copied += fb_bytes;
   }
@@ -131,16 +128,14 @@ int32_t fb_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf, u
     return -1;
   }
 
-  size_t fb_sz = Framebuffer::size();
+  const size_t fb_sz = Framebuffer::size();
   if (offset >= fb_sz) {
     return 0;
   }
 
-  size_t remaining = fb_sz - offset;
+  const size_t remaining = fb_sz - offset;
   size_t to_write = buf.size();
-  if (to_write > remaining) {
-    to_write = remaining;
-  }
+  to_write = std::min(to_write, remaining);
 
   memcpy(Framebuffer::buffer() + offset, buf.data(), to_write);
   return static_cast<int32_t>(to_write);
@@ -156,11 +151,9 @@ int32_t ramfs_read(VfsNode* node, std::span<uint8_t> buf, uint32_t offset) {
   if (offset >= node->size) {
     return 0;  // EOF
   }
-  size_t remaining = node->size - offset;
+  const size_t remaining = node->size - offset;
   size_t to_read = buf.size();
-  if (to_read > remaining) {
-    to_read = remaining;
-  }
+  to_read = std::min(to_read, remaining);
   memcpy(buf.data(), node->data + offset, to_read);
   return static_cast<int32_t>(to_read);
 }
@@ -210,12 +203,12 @@ VfsNode* lookup(const char* path) {
 
 int32_t open(const char* path) {
   VfsNode* node = lookup(path);
-  if (!node) {
+  if (node == nullptr) {
     return -1;
   }
 
   Process* proc = Scheduler::current();
-  if (!proc) {
+  if (proc == nullptr) {
     return -1;
   }
 
@@ -225,12 +218,12 @@ int32_t open(const char* path) {
   }
 
   auto* vfs_fd = new VfsFileDescription{node, 0};
-  if (!vfs_fd) {
+  if (vfs_fd == nullptr) {
     return -1;
   }
 
   auto* desc = new FileDescription{FileType::VfsNode, 1, nullptr, vfs_fd};
-  if (!desc) {
+  if (desc == nullptr) {
     delete vfs_fd;
     return -1;
   }
@@ -241,11 +234,12 @@ int32_t open(const char* path) {
 
 int32_t read(FileDescription* fd, std::span<uint8_t> buf) {
   auto* vfs_fd = fd->vfs;
-  if (!vfs_fd || !vfs_fd->node || !vfs_fd->node->ops || !vfs_fd->node->ops->read) {
+  if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
+      (vfs_fd->node->ops->read == nullptr)) {
     return -1;
   }
 
-  int32_t n = vfs_fd->node->ops->read(vfs_fd->node, buf, vfs_fd->offset);
+  const int32_t n = vfs_fd->node->ops->read(vfs_fd->node, buf, vfs_fd->offset);
   if (n > 0) {
     vfs_fd->offset += static_cast<uint32_t>(n);
   }
@@ -254,11 +248,12 @@ int32_t read(FileDescription* fd, std::span<uint8_t> buf) {
 
 int32_t write(FileDescription* fd, std::span<const uint8_t> buf) {
   auto* vfs_fd = fd->vfs;
-  if (!vfs_fd || !vfs_fd->node || !vfs_fd->node->ops || !vfs_fd->node->ops->write) {
+  if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
+      (vfs_fd->node->ops->write == nullptr)) {
     return -1;
   }
 
-  int32_t n = vfs_fd->node->ops->write(vfs_fd->node, buf, vfs_fd->offset);
+  const int32_t n = vfs_fd->node->ops->write(vfs_fd->node, buf, vfs_fd->offset);
   if (n > 0) {
     vfs_fd->offset += static_cast<uint32_t>(n);
   }
@@ -266,7 +261,7 @@ int32_t write(FileDescription* fd, std::span<const uint8_t> buf) {
 }
 
 void close(FileDescription* fd) {
-  if (fd->vfs) {
+  if (fd->vfs != nullptr) {
     delete fd->vfs;
     fd->vfs = nullptr;
   }
@@ -292,13 +287,13 @@ void init_devfs() {
 void init_ramfs() {
   for (uint32_t i = 0; i < Modules::count(); ++i) {
     const Module* mod = Modules::get(i);
-    if (!mod) {
+    if (mod == nullptr) {
       continue;
     }
 
     // Build path "/bin/<name>"
     char name[kMaxPathLen];
-    size_t name_len = strlen(mod->name);
+    const size_t name_len = strlen(mod->name);
     if (name_len + 6 > kMaxPathLen) {
       continue;
     }
@@ -312,7 +307,7 @@ void init_ramfs() {
     strcpy(path + 5, name);
 
     auto* node = register_node(path, VfsNodeType::File, &ramfs_ops);
-    if (node) {
+    if (node != nullptr) {
       node->data = mod->data;
       node->size = mod->len;
     }

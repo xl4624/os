@@ -44,6 +44,8 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef void (*emit_fn)(char c, void* ctx);
+
 // clang-format off
 enum {
 FLAG_ALT =         (1 << 0),
@@ -83,13 +85,13 @@ static char* fill_numbuf(char* numbuf_end, unsigned long val, unsigned int base)
 #define NUMBUF_SIZE 24
 
 // NOLINTNEXTLINE(misc-const-correctness)
-int vprintf(const char* __restrict__ format, va_list ap) {
+static int vformat(emit_fn emit, void* ctx, const char* __restrict__ format, va_list ap) {
   char numbuf[NUMBUF_SIZE];
   int count = 0;
 
   for (; *format; ++format) {
     if (*format != '%') {
-      putchar(*format);
+      emit(*format, ctx);
       ++count;
       continue;
     }
@@ -225,35 +227,98 @@ int vprintf(const char* __restrict__ format, va_list ap) {
     }
     width -= len + zeros + (int)strlen(prefix);
     for (; !(flags & FLAG_LEFTJUSTIFY) && width > 0; --width) {
-      putchar(' ');
+      emit(' ', ctx);
       ++count;
     }
     for (; *prefix; ++prefix) {
-      putchar(*prefix);
+      emit(*prefix, ctx);
       ++count;
     }
     for (; zeros > 0; --zeros) {
-      putchar('0');
+      emit('0', ctx);
       ++count;
     }
     for (; len > 0; ++data, --len) {
       // clang-format off
-      putchar(*data); // NOLINT(clang-analyzer-core.CallAndMessage,clang-analyzer-security.ArrayBound)
+      emit(*data, ctx); // NOLINT(clang-analyzer-core.CallAndMessage,clang-analyzer-security.ArrayBound)
       // clang-format on
       ++count;
     }
     for (; width > 0; --width) {
-      putchar(' ');
+      emit(' ', ctx);
       ++count;
     }
   }
   return count;
 }
 
+// ==== putchar-based emitter (printf/vprintf) ====
+
+static void emit_putchar(char c, void* ctx) {
+  (void)ctx;
+  putchar(c);
+}
+
+// NOLINTNEXTLINE(misc-const-correctness)
+int vprintf(const char* __restrict__ format, va_list ap) {
+  return vformat(emit_putchar, 0, format, ap);
+}
+
 int printf(const char* __restrict__ format, ...) {
   va_list ap;
   va_start(ap, format);
   int ret = vprintf(format, ap);
+  va_end(ap);
+  return ret;
+}
+
+// ==== buffer-based emitter (snprintf/sprintf/vsprintf) ====
+
+struct buf_ctx {
+  char* buf;
+  size_t size;
+  size_t pos;
+};
+
+static void emit_buf(char c, void* ctx) {
+  struct buf_ctx* b = (struct buf_ctx*)ctx;
+  if (b->pos + 1 < b->size) {
+    b->buf[b->pos] = c;
+  }
+  b->pos++;
+}
+
+int vsnprintf(char* buf, size_t size, const char* __restrict__ format, va_list ap) {
+  struct buf_ctx b;
+  b.buf = buf;
+  b.size = size;
+  b.pos = 0;
+
+  int ret = vformat(emit_buf, &b, format, ap);
+
+  if (size > 0) {
+    size_t end = b.pos < size ? b.pos : size - 1;
+    buf[end] = '\0';
+  }
+  return ret;
+}
+
+int snprintf(char* buf, size_t size, const char* __restrict__ format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  int ret = vsnprintf(buf, size, format, ap);
+  va_end(ap);
+  return ret;
+}
+
+int vsprintf(char* buf, const char* __restrict__ format, va_list ap) {
+  return vsnprintf(buf, (size_t)-1, format, ap);
+}
+
+int sprintf(char* buf, const char* __restrict__ format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  int ret = vsprintf(buf, format, ap);
   va_end(ap);
   return ret;
 }

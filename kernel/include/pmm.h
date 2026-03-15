@@ -29,8 +29,7 @@ class Bitmap {
     words_[word_of(bit)] &= ~mask_of(bit);
   }
 
-  [[nodiscard]]
-  bool is_set(size_t bit) const {
+  [[nodiscard]] bool is_set(size_t bit) const {
     check_bounds(bit, "is_set");
     return (words_[word_of(bit)] & mask_of(bit)) != 0;
   }
@@ -43,8 +42,7 @@ class Bitmap {
   }
 
   // Returns the index of the first clear bit, or N if all bits are set.
-  [[nodiscard]]
-  size_t find_first_clear() const {
+  [[nodiscard]] size_t find_first_clear() const {
     for (size_t w = 0; w < WORD_COUNT; ++w) {
       if (words_[w] != ~uint32_t{0}) {
         return w * BITS_PER_WORD + static_cast<size_t>(__builtin_ctz(~words_[w]));
@@ -96,8 +94,7 @@ class PhysicalMemoryManager {
   ~PhysicalMemoryManager() = default;
 
   // Returns the physical address of a free page frame, or 0 if out of memory.
-  [[nodiscard]]
-  paddr_t alloc();
+  [[nodiscard]] paddr_t alloc();
 
   // Releases a previously allocated page frame.
   void free(paddr_t addr);

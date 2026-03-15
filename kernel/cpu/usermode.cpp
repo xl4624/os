@@ -7,8 +7,7 @@
 
 namespace Usermode {
 
-[[noreturn]]
-void jump(uint32_t entry, uint32_t user_stack_top) {
+[[noreturn]] void jump(uint32_t entry, uint32_t user_stack_top) {
   assert(entry != 0 && "Usermode::jump(): entry point is null");
   assert(entry < KERNEL_VMA && "Usermode::jump(): entry point is in kernel address space");
   assert(user_stack_top != 0 && "Usermode::jump(): user stack top is zero");

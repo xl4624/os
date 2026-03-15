@@ -4,7 +4,7 @@
 
 int32_t pipe_read(Pipe* pipe, std::span<uint8_t> buf) {
   uint32_t bytes_read = 0;
-  for (unsigned char & i : buf) {
+  for (unsigned char& i : buf) {
     char c;
     if (!pipe->buffer.pop(c)) {
       break;
@@ -33,7 +33,7 @@ int32_t pipe_write(Pipe* pipe, std::span<const uint8_t> buf) {
   }
 
   uint32_t bytes_written = 0;
-  for (unsigned char i : buf) {
+  for (unsigned const char i : buf) {
     if (!pipe->buffer.push(static_cast<char>(i))) {
       break;
     }

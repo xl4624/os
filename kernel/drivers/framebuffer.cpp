@@ -45,11 +45,11 @@ bool init(const multiboot_info* mboot) {
 
   // The framebuffer physical address from multiboot is 64 bits, but in a
   // 32-bit OS we can only address the low 4 GiB.
-  paddr_t fb_phys{static_cast<uint32_t>(mboot->framebuffer_addr)};
+  const paddr_t fb_phys{static_cast<uint32_t>(mboot->framebuffer_addr)};
 
   // Map the entire framebuffer into the kernel virtual address space.
   // The framebuffer is device memory (MMIO) so we map each page.
-  size_t pages = (fb_size + PAGE_SIZE - 1) / PAGE_SIZE;
+  const size_t pages = (fb_size + PAGE_SIZE - 1) / PAGE_SIZE;
   for (size_t i = 0; i < pages; ++i) {
     VMM::map(kFbVirtBase + i * PAGE_SIZE, fb_phys + i * PAGE_SIZE,
              /*writeable=*/true, /*user=*/false);
@@ -72,15 +72,15 @@ void putpixel(uint32_t x, uint32_t y, uint32_t color) {
   if (x >= fb_info.width || y >= fb_info.height) {
     return;
   }
-  uint32_t offset = (y * fb_info.pitch) + (x * (fb_info.bpp / 8));
+  const uint32_t offset = (y * fb_info.pitch) + (x * (fb_info.bpp / 8));
   auto* pixel = reinterpret_cast<uint32_t*>(fb_buffer + offset);
   *pixel = color;
 }
 
 void blit(const uint32_t* src, uint32_t dst_x, uint32_t dst_y, uint32_t w, uint32_t h) {
-  uint32_t bytes_per_pixel = fb_info.bpp / 8;
+  const uint32_t bytes_per_pixel = fb_info.bpp / 8;
   for (uint32_t row = 0; row < h; ++row) {
-    uint32_t y = dst_y + row;
+    const uint32_t y = dst_y + row;
     if (y >= fb_info.height) {
       break;
     }
@@ -90,7 +90,7 @@ void blit(const uint32_t* src, uint32_t dst_x, uint32_t dst_y, uint32_t w, uint3
       copy_w = fb_info.width - dst_x;
     }
 
-    uint32_t fb_offset = (y * fb_info.pitch) + (dst_x * bytes_per_pixel);
+    const uint32_t fb_offset = (y * fb_info.pitch) + (dst_x * bytes_per_pixel);
     memcpy(fb_buffer + fb_offset, src + (row * w), copy_w * bytes_per_pixel);
   }
 }

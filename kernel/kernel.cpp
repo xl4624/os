@@ -20,7 +20,7 @@
 #include "x86.h"
 
 /* Verify we are using the i686-elf cross-compile */
-#if !defined(__i386__)
+#ifndef __i386__
 #error "ix86-elf cross compiler required"
 #endif
 
@@ -71,7 +71,7 @@ __attribute__((noreturn)) void kernel_main() {
   Vfs::init_ramfs();
 
   VfsNode* shell = Vfs::lookup("/bin/sh");
-  if (shell && shell->data) {
+  if ((shell != nullptr) && (shell->data != nullptr)) {
     printf("Loading shell \"%s\" (%u bytes)...\n", shell->name, static_cast<unsigned>(shell->size));
     assert(Scheduler::create_process(std::span<const uint8_t>{shell->data, shell->size},
                                      shell->name) &&

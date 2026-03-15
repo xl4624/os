@@ -57,7 +57,9 @@ static int readline(char* buf, int max) {
   int n = 0;
   while (1) {
     char c;
-    if (read(0, &c, 1) != 1) continue;
+    if (read(0, &c, 1) != 1) {
+      continue;
+    }
     if (c == '\n' || c == '\r') {
       putchar('\n');
       buf[n] = '\0';
@@ -89,7 +91,8 @@ static int is_var_char(char c) {
 
 /* Expand $VAR references from src into dst (at most dsz bytes including NUL). */
 static void expand_vars(const char* src, char* dst, int dsz) {
-  int si = 0, di = 0;
+  int si = 0;
+  int di = 0;
   while (src[si] && di < dsz - 1) {
     if (src[si] != '$') {
       dst[di++] = src[si++];
@@ -104,7 +107,9 @@ static void expand_vars(const char* src, char* dst, int dsz) {
     vname[vi] = '\0';
     const char* val = get_var(vname);
     if (val) {
-      while (*val && di < dsz - 1) dst[di++] = *val++;
+      while (*val && di < dsz - 1) {
+        dst[di++] = *val++;
+      }
     }
   }
   dst[di] = '\0';
@@ -130,9 +135,13 @@ typedef struct {
 
 /* Advance past leading spaces; trim trailing spaces in place. */
 static char* trim(char* s) {
-  while (*s == ' ') s++;
+  while (*s == ' ') {
+    s++;
+  }
   int len = (int)strlen(s);
-  while (len > 0 && s[len - 1] == ' ') s[--len] = '\0';
+  while (len > 0 && s[len - 1] == ' ') {
+    s[--len] = '\0';
+  }
   return s;
 }
 
@@ -148,10 +157,14 @@ static void parse_cmd(char* cmd_str, Cmd* cmd) {
   while (tok && cmd->argc < MAX_ARGS - 1) {
     if (strcmp(tok, "<") == 0) {
       tok = strtok_r(0, " ", &save);
-      if (tok) cmd->redir_in = tok;
+      if (tok) {
+        cmd->redir_in = tok;
+      }
     } else if (strcmp(tok, ">") == 0) {
       tok = strtok_r(0, " ", &save);
-      if (tok) cmd->redir_out = tok;
+      if (tok) {
+        cmd->redir_out = tok;
+      }
     } else {
       cmd->argv[cmd->argc++] = tok;
     }
@@ -187,14 +200,20 @@ static int try_assignment(const char* word) {
     return 0;
   }
   const char* eq = strchr(word, '=');
-  if (!eq) return 0;
+  if (!eq) {
+    return 0;
+  }
   /* All characters before '=' must be valid name characters. */
   for (const char* p = word; p < eq; p++) {
-    if (!is_var_char(*p)) return 0;
+    if (!is_var_char(*p)) {
+      return 0;
+    }
   }
   char name[VAR_NAME_MAX];
   int nlen = (int)(eq - word);
-  if (nlen >= VAR_NAME_MAX) return 0;
+  if (nlen >= VAR_NAME_MAX) {
+    return 0;
+  }
   strncpy(name, word, (size_t)nlen);
   name[nlen] = '\0';
   set_var(name, eq + 1);
@@ -243,14 +262,22 @@ static void wait_child(int pid) {
 }
 
 static void run_pipeline(Pipeline* pl) {
-  if (pl->ncmds == 0) return;
+  if (pl->ncmds == 0) {
+    return;
+  }
 
   /* Single command: check for assignment or builtin before forking. */
   if (pl->ncmds == 1) {
     Cmd* cmd = &pl->cmds[0];
-    if (cmd->argc == 0) return;
-    if (try_assignment(cmd->argv[0])) return;
-    if (run_builtin(cmd)) return;
+    if (cmd->argc == 0) {
+      return;
+    }
+    if (try_assignment(cmd->argv[0])) {
+      return;
+    }
+    if (run_builtin(cmd)) {
+      return;
+    }
   }
 
   /* Create (ncmds - 1) pipes connecting consecutive commands. */
@@ -285,9 +312,13 @@ static void run_pipeline(Pipeline* pl) {
 
     if (pid == 0) {
       /* Child: read stdin from the previous pipe. */
-      if (i > 0) dup2(pipes[i - 1][0], 0);
+      if (i > 0) {
+        dup2(pipes[i - 1][0], 0);
+      }
       /* Child: write stdout into the next pipe. */
-      if (i < npipes) dup2(pipes[i][1], 1);
+      if (i < npipes) {
+        dup2(pipes[i][1], 1);
+      }
       /* Close all pipe ends; the child only uses the dup2'd copies. */
       for (int j = 0; j < npipes; j++) {
         close(pipes[j][0]);
@@ -295,7 +326,7 @@ static void run_pipeline(Pipeline* pl) {
       }
       /* Apply I/O redirections (overrides pipe if both specified). */
       if (cmd->redir_in) {
-        int fd = open(cmd->redir_in);
+        int fd = open(cmd->redir_in, 0);
         if (fd < 0) {
           printf("sh: cannot open %s\n", cmd->redir_in);
           _exit(1);
@@ -304,7 +335,7 @@ static void run_pipeline(Pipeline* pl) {
         close(fd);
       }
       if (cmd->redir_out) {
-        int fd = open(cmd->redir_out);
+        int fd = open(cmd->redir_out, 0);
         if (fd < 0) {
           printf("sh: cannot open %s\n", cmd->redir_out);
           _exit(1);
@@ -343,7 +374,9 @@ static void run_pipeline(Pipeline* pl) {
 
   /* Wait for every child to finish. */
   for (int i = 0; i < pl->ncmds; i++) {
-    if (pids[i] > 0) wait_child(pids[i]);
+    if (pids[i] > 0) {
+      wait_child(pids[i]);
+    }
   }
 }
 
@@ -360,7 +393,9 @@ int main(void) {
   while (1) {
     printf("$ ");
 
-    if (readline(raw, LINE_MAX) == 0) continue;
+    if (readline(raw, LINE_MAX) == 0) {
+      continue;
+    }
 
     /* Expand $VAR references before parsing. */
     expand_vars(raw, expanded, LINE_MAX);

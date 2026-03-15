@@ -36,8 +36,7 @@ void unmap(vaddr_t virt);
 // Translate `virt` to its backing physical address.
 // Returns 0 if `virt` is not mapped.
 // The low 12 bits of `virt` (the page offset) are preserved in the result.
-[[nodiscard]]
-paddr_t get_phys(vaddr_t virt);
+[[nodiscard]] paddr_t get_phys(vaddr_t virt);
 
 // Flush the entire TLB by reloading CR3 with its current value.
 // Use when switching address spaces (loading a new page directory).

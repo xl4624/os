@@ -67,7 +67,7 @@ void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user) {
 
 void unmap(PageTable* pd, vaddr_t virt) {
   const uint32_t pdi = pd_index(virt);
-  PageEntry& pde = pd->entry[pdi];
+  PageEntry const& pde = pd->entry[pdi];
   if (!pde.present) {
     return;
   }
@@ -86,7 +86,7 @@ void unmap(PageTable* pd, vaddr_t virt) {
 
 void unmap_nofree(PageTable* pd, vaddr_t virt) {
   const uint32_t pdi = pd_index(virt);
-  PageEntry& pde = pd->entry[pdi];
+  PageEntry const& pde = pd->entry[pdi];
   if (!pde.present) {
     return;
   }
@@ -142,7 +142,7 @@ PageDir copy(const PageTable* src_pd) {
         continue;
       }
 
-      paddr_t new_page = kPmm.alloc();
+      const paddr_t new_page = kPmm.alloc();
       assert(new_page && "AddressSpace::copy(): out of physical memory\n");
 
       const auto* src = phys_to_virt(frame_to_phys(pte.frame)).ptr<const uint8_t>();
@@ -160,7 +160,7 @@ PageDir copy(const PageTable* src_pd) {
 void destroy(PageTable* pd, paddr_t pd_phys) {
   // Free all user-space page tables and their mapped pages.
   for (uint32_t pdi = 0; pdi < kKernelPdeStart; ++pdi) {
-    PageEntry& pde = pd->entry[pdi];
+    PageEntry const& pde = pd->entry[pdi];
     if (!pde.present) {
       continue;
     }

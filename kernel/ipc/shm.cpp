@@ -22,7 +22,7 @@ int32_t create(uint32_t size) {
     return -1;
   }
 
-  uint32_t num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+  const uint32_t num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE;
   if (num_pages > kMaxShmPages) {
     return -1;
   }
@@ -41,7 +41,7 @@ int32_t create(uint32_t size) {
 
   // Allocate physical pages.
   for (uint32_t i = 0; i < num_pages; ++i) {
-    paddr_t phys = kPmm.alloc();
+    const paddr_t phys = kPmm.alloc();
     if (phys == 0) {
       for (uint32_t j = 0; j < i; ++j) {
         kPmm.free(region->pages[j]);
@@ -71,7 +71,7 @@ int32_t attach(uint32_t shmid, vaddr_t vaddr) {
   if (vaddr % PAGE_SIZE != 0) {
     return -1;
   }
-  vaddr_t end = vaddr + region->num_pages * PAGE_SIZE;
+  const vaddr_t end = vaddr + region->num_pages * PAGE_SIZE;
   if (end <= vaddr || end > KERNEL_VMA) {
     return -1;
   }
@@ -104,12 +104,12 @@ int32_t detach(vaddr_t vaddr, uint32_t size) {
 
   // Find the mapping by vaddr.
   for (uint32_t i = 0; i < proc->shm_mapping_count; ++i) {
-    ShmMapping& m = proc->shm_mappings[i];
+    ShmMapping const& m = proc->shm_mappings[i];
     if (m.vaddr != vaddr) {
       continue;
     }
 
-    uint32_t expected_size = m.num_pages * PAGE_SIZE;
+    const uint32_t expected_size = m.num_pages * PAGE_SIZE;
     if (size != expected_size) {
       return -1;
     }
@@ -143,7 +143,7 @@ int32_t detach(vaddr_t vaddr, uint32_t size) {
 
 void detach_all(Process* proc) {
   while (proc->shm_mapping_count > 0) {
-    ShmMapping& m = proc->shm_mappings[0];
+    ShmMapping const& m = proc->shm_mappings[0];
 
     // Unmap without freeing physical frames.
     for (uint32_t p = 0; p < m.num_pages; ++p) {

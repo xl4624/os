@@ -81,7 +81,7 @@ static int game_over, paused;
 
 static int piece_cell(int type, int rot, int r, int c) {
   unsigned short mask = pieces[type][rot];
-  return (mask >> (15 - (r * 4 + c))) & 1;
+  return (mask >> (15 - ((r * 4) + c))) & 1;
 }
 
 static int check_fit(int type, int rot, int row, int col) {
@@ -149,7 +149,7 @@ static void spawn_piece(void) {
   next_type = rand() % NUM_PIECES;
   cur_rot = 0;
   cur_row = -1;
-  cur_col = BOARD_W / 2 - 2;
+  cur_col = (BOARD_W / 2) - 2;
 
   if (!check_fit(cur_type, cur_rot, cur_row, cur_col)) {
     game_over = 1;
@@ -173,7 +173,7 @@ static void lock_and_spawn(void) {
 // ======================================================================
 
 static void draw_cell(int row, int col, int color) {
-  set_cursor(BOARD_ROW + row, BOARD_COL + col * CELL_CHARS);
+  set_cursor(BOARD_ROW + row, BOARD_COL + (col * CELL_CHARS));
   if (color) {
     set_color(TERM_COLOR(color, color));
     write(1, "  ", CELL_CHARS);
@@ -229,7 +229,7 @@ static void draw_ghost(int show) {
         continue;
       }
       if (show) {
-        set_cursor(BOARD_ROW + br, BOARD_COL + bc * CELL_CHARS);
+        set_cursor(BOARD_ROW + br, BOARD_COL + (bc * CELL_CHARS));
         set_color(TERM_COLOR(TERM_BRIGHT_BLACK, TERM_BLACK));
         write(1, "[]", CELL_CHARS);
       } else {
@@ -265,7 +265,7 @@ static void draw_border(void) {
   for (int r = 0; r < BOARD_H; r++) {
     set_cursor(BOARD_ROW + r, BOARD_COL - 1);
     write(1, "|", 1);
-    set_cursor(BOARD_ROW + r, BOARD_COL + BOARD_W * CELL_CHARS);
+    set_cursor(BOARD_ROW + r, BOARD_COL + (BOARD_W * CELL_CHARS));
     write(1, "|", 1);
   }
 
@@ -302,7 +302,7 @@ static void draw_info(void) {
   for (int r = 0; r < 4; r++) {
     for (int c = 0; c < 4; c++) {
       if (piece_cell(next_type, 0, r, c)) {
-        set_cursor(BOARD_ROW + 5 + r, INFO_COL + c * CELL_CHARS);
+        set_cursor(BOARD_ROW + 5 + r, INFO_COL + (c * CELL_CHARS));
         set_color(TERM_COLOR(piece_colors[next_type], piece_colors[next_type]));
         write(1, "  ", CELL_CHARS);
       }
@@ -404,12 +404,12 @@ static void init_game(void) {
 
 static void show_game_over(void) {
   set_color(TERM_COLOR(TERM_BRIGHT_RED, TERM_BLACK));
-  set_cursor(BOARD_ROW + BOARD_H / 2 - 1, BOARD_COL + 2);
+  set_cursor(BOARD_ROW + (BOARD_H / 2) - 1, BOARD_COL + 2);
   printf("  GAME OVER!  ");
   set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
-  set_cursor(BOARD_ROW + BOARD_H / 2 + 1, BOARD_COL + 2);
+  set_cursor(BOARD_ROW + (BOARD_H / 2) + 1, BOARD_COL + 2);
   printf("  Score: %d  ", score);
-  set_cursor(BOARD_ROW + BOARD_H / 2 + 2, BOARD_COL + 2);
+  set_cursor(BOARD_ROW + (BOARD_H / 2) + 2, BOARD_COL + 2);
   printf(" R=Restart Q=Quit");
 }
 
@@ -431,7 +431,7 @@ static int run_game(void) {
       paused = !paused;
       if (paused) {
         set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
-        set_cursor(BOARD_ROW + BOARD_H / 2, BOARD_COL + 4);
+        set_cursor(BOARD_ROW + (BOARD_H / 2), BOARD_COL + 4);
         printf("  PAUSED  ");
       } else {
         draw_full_screen();

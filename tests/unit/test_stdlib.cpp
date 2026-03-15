@@ -160,3 +160,29 @@ TEST(stdlib, strtol_endptr) {
 TEST(stdlib, strtoul_basic) { ASSERT(strtoul("123", nullptr, 10) == 123); }
 
 TEST(stdlib, strtoul_hex) { ASSERT(strtoul("ff", nullptr, 16) == 255); }
+
+TEST(stdlib, snprintf_basic) {
+  char buf[32];
+  int n = snprintf(buf, sizeof(buf), "hello");
+  ASSERT_EQ(n, 5);
+  ASSERT_STR_EQ(buf, "hello");
+}
+
+TEST(stdlib, snprintf_truncation) {
+  char buf[32];
+  int n = snprintf(buf, 5, "hello world");
+  ASSERT_EQ(n, 11);  // total chars that would be written
+  ASSERT_STR_EQ(buf, "hell");
+}
+
+TEST(stdlib, snprintf_zero_size) {
+  char buf[32];
+  int n = snprintf(buf, 0, "test");
+  ASSERT_EQ(n, 4);  // total chars that would be written
+}
+
+TEST(stdlib, snprintf_format) {
+  char buf[32];
+  snprintf(buf, sizeof(buf), "value: %d", 42);
+  ASSERT_STR_EQ(buf, "value: 42");
+}

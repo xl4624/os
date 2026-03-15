@@ -234,7 +234,7 @@ static int32_t sys_exec(TrapFrame* regs) {
   }
 
   vaddr_t entry = 0;  // NOLINT(misc-const-correctness) -- output param
-  vaddr_t brk = 0;   // NOLINT(misc-const-correctness) -- output param
+  vaddr_t brk = 0;    // NOLINT(misc-const-correctness) -- output param
   if (!Elf::load(std::span<const uint8_t>{node->data, node->size}, new_pd_virt, entry, brk)) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -1;

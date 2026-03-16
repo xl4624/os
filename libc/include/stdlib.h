@@ -32,6 +32,10 @@ int __libc_atoi(const char* nptr);
 char* getenv(const char* name);
 int system(const char* command);
 
+void qsort(void* base, size_t nmemb, size_t size, int (*compar)(const void*, const void*));
+int atexit(void (*func)(void));
+double atof(const char* s);
+
 __END_DECLS
 
 #endif

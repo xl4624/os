@@ -15,6 +15,9 @@ OBJS := $(addprefix $(BUILDDIR)/user/, crt0.o $(addsuffix .o, $(basename $(SRCS)
 .SECONDARY: $(OBJS)
 
 all: $(PROGS)
+	@if [ -d doom/doomgeneric ]; then \
+	    $(MAKE) -C doom BUILDDIR=$(BUILDDIR) SYSROOT=$(SYSROOT); \
+	fi
 
 $(BUILDDIR)/user/%.elf: $(BUILDDIR)/user/crt0.o $(BUILDDIR)/user/%.o link.ld
 	@mkdir -p $(dir $@)

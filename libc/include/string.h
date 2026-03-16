@@ -22,7 +22,7 @@ int strcmp(const char* s1, const char* s2);
 char* strcpy(char* __restrict__ dest, const char* __restrict__ src);
 size_t strcspn(const char* s, const char* reject);
 char* strdup(const char* s);
-// char *strerror(int);
+char* strerror(int errnum);
 // char *strerror_l(int, locale_t);
 // int strerror_r(int, char *, size_t);
 size_t strlen(const char* s);

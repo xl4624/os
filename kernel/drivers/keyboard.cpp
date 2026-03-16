@@ -107,6 +107,10 @@ Key Key::from_extended_scancode(uint8_t scancode) {
       return {Left};
     case kExtRight:
       return {Right};
+    case 0x1D:
+      return {RightCtrl};
+    case 0x38:
+      return {RightAlt};
     default:
       return {Unknown};
   }

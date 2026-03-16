@@ -117,8 +117,33 @@ void blit_scaled(const uint32_t* src, uint32_t src_w, uint32_t src_h) {
   const uint32_t off_x = (fb_w > dst_w) ? (fb_w - dst_w) / 2 : 0;
   const uint32_t off_y = (fb_h > dst_h) ? (fb_h - dst_h) / 2 : 0;
 
-  // Clear entire framebuffer to black for letterbox bars.
-  memset(fb_buffer, 0, fb_size);
+  // If no letterboxing, skip clearing and just blit directly.
+  if (off_x == 0 && off_y == 0) {
+    for (uint32_t r = 0; r < dst_h; ++r) {
+      const uint32_t src_row = r / scale;
+      auto* dst_row = reinterpret_cast<uint32_t*>(fb_buffer + (r * fb_info.pitch));
+      for (uint32_t c = 0; c < dst_w; ++c) {
+        const uint32_t src_col = c / scale;
+        dst_row[c] = src[(src_row * src_w) + src_col];
+      }
+    }
+    return;
+  }
+
+  // Clear the letterbox regions: top, bottom, left, right bars.
+
+  // Top bar.
+  memset(fb_buffer, 0, off_y * fb_info.pitch);
+
+  // Bottom bar.
+  memset(fb_buffer + ((off_y + dst_h) * fb_info.pitch), 0, off_y * fb_info.pitch);
+
+  // Left bar (within the middle region).
+  for (uint32_t r = 0; r < dst_h; ++r) {
+    memset(fb_buffer + ((off_y + r) * fb_info.pitch), 0, off_x * bytes_per_pixel);
+    memset(fb_buffer + ((off_y + r) * fb_info.pitch) + ((off_x + dst_w) * bytes_per_pixel), 0,
+           off_x * bytes_per_pixel);
+  }
 
   for (uint32_t r = 0; r < dst_h; ++r) {
     const uint32_t src_row = r / scale;

@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 // clang-format off
-
 // 8x16 bitmap font covering ASCII 0-127.
 // Each glyph is 16 bytes (one byte per row, MSB-first).
 static constexpr uint8_t kFont8x16[128][16] = {
@@ -264,5 +263,4 @@ static constexpr uint8_t kFont8x16[128][16] = {
     // 0x7F - DEL (block)
     {0x00, 0x00, 0x00, 0x00, 0x10, 0x38, 0x6C, 0xC6, 0xC6, 0xC6, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00}
 };
-
 // clang-format on

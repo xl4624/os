@@ -13,6 +13,6 @@ int fb_flip(const void* src, unsigned int w, unsigned int h) {
 int fb_flip(const void* src, unsigned int w, unsigned int h) {
   int32_t ret;
   __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_FB_FLIP), "b"(src), "c"(w), "d"(h));
-  return ret;
+  return __syscall_ret(ret);
 }
 #endif

@@ -8,12 +8,12 @@
 // ===========================================================================
 
 TEST(keyboard, from_scancode_unknown_at_zero) {
-  Key const k = Key::from_scancode(0x00);
+  const Key k = Key::from_scancode(0x00);
   ASSERT_EQ(k, Key::Unknown);
 }
 
 TEST(keyboard, from_scancode_esc) {
-  Key const k = Key::from_scancode(0x01);
+  const Key k = Key::from_scancode(0x01);
   ASSERT_EQ(k, Key::Esc);
 }
 
@@ -137,17 +137,17 @@ TEST(keyboard, from_extended_scancode_unknown) {
 
 TEST(keyboard, ascii_lowercase_letters) {
   for (uint8_t sc = 0x10; sc <= 0x19; sc++) {  // Q-P row
-    Key const k = Key::from_scancode(sc);
-    char const ch = k.ascii(false);
+    const Key k = Key::from_scancode(sc);
+    const char ch = k.ascii(false);
     ASSERT(islower(ch));
   }
 }
 
 TEST(keyboard, ascii_uppercase_with_shift) {
   for (uint8_t sc = 0x10; sc <= 0x19; sc++) {  // Q-P row
-    Key const k = Key::from_scancode(sc);
-    char const lo = k.ascii(false);
-    char const hi = k.ascii(true);
+    const Key k = Key::from_scancode(sc);
+    const char lo = k.ascii(false);
+    const char hi = k.ascii(true);
     ASSERT_EQ(hi, lo - 32);  // uppercase = lowercase - 32 in ASCII
   }
 }
@@ -286,31 +286,31 @@ TEST(keyboard, is_modifier_false_for_function_and_nav_keys) {
 
 TEST(keyboard, scancode_to_event_key_press) {
   // 0x1E = A make-code (press).
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x1E);
   ASSERT_EQ(ev.key, Key::A);
   ASSERT_TRUE(ev.pressed);
 }
 
 TEST(keyboard, scancode_to_event_key_release) {
   // 0x9E = 0x1E | 0x80 = A break-code (release).
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x9E);
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x9E);
   ASSERT_EQ(ev.key, Key::A);
   ASSERT_FALSE(ev.pressed);
 }
 
 TEST(keyboard, scancode_to_event_ascii_on_press) {
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);  // A
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_EQ(ev.ascii, 'a');
 }
 
 TEST(keyboard, scancode_to_event_no_ascii_on_release) {
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x9E);  // A release
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x9E);  // A release
   ASSERT_EQ(ev.ascii, '\0');
 }
 
 TEST(keyboard, scancode_to_event_extended_prefix_returns_no_key) {
   // 0xE0 is the extended prefix byte; it is not a key itself.
-  KeyEvent const ev = kKeyboard.scancode_to_event(0xE0);
+  const KeyEvent ev = kKeyboard.scancode_to_event(0xE0);
   ASSERT_EQ(ev.key, Key::Unknown);
   ASSERT_FALSE(ev.pressed);
 }
@@ -318,7 +318,7 @@ TEST(keyboard, scancode_to_event_extended_prefix_returns_no_key) {
 TEST(keyboard, scancode_to_event_extended_arrow_sequence) {
   // Two-byte sequence: 0xE0, 0x48 → Up arrow press.
   kKeyboard.scancode_to_event(0xE0);  // consume prefix
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x48);
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x48);
   ASSERT_EQ(ev.key, Key::Up);
   ASSERT_TRUE(ev.pressed);
   ASSERT_EQ(ev.ascii, '\0');
@@ -327,7 +327,7 @@ TEST(keyboard, scancode_to_event_extended_arrow_sequence) {
 TEST(keyboard, scancode_to_event_extended_arrow_release) {
   // 0xE0, 0xC8 → Up arrow release (0x48 | 0x80 = 0xC8).
   kKeyboard.scancode_to_event(0xE0);
-  KeyEvent const ev = kKeyboard.scancode_to_event(0xC8);
+  const KeyEvent ev = kKeyboard.scancode_to_event(0xC8);
   ASSERT_EQ(ev.key, Key::Up);
   ASSERT_FALSE(ev.pressed);
 }
@@ -335,19 +335,19 @@ TEST(keyboard, scancode_to_event_extended_arrow_release) {
 TEST(keyboard, shift_state_tracked) {
   // Press LeftShift (0x2A), then 'a' (0x1E), then release shift (0xAA).
   kKeyboard.scancode_to_event(0x2A);                              // LeftShift press
-  KeyEvent const with_shift = kKeyboard.scancode_to_event(0x1E);  // A
+  const KeyEvent with_shift = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(with_shift.shift);
   ASSERT_EQ(with_shift.ascii, 'A');
 
   kKeyboard.scancode_to_event(0xAA);                                 // LeftShift release
-  KeyEvent const without_shift = kKeyboard.scancode_to_event(0x1E);  // A
+  const KeyEvent without_shift = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_FALSE(without_shift.shift);
   ASSERT_EQ(without_shift.ascii, 'a');
 }
 
 TEST(keyboard, right_shift_state_tracked) {
   kKeyboard.scancode_to_event(0x36);                      // RightShift press
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);  // A
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(ev.shift);
   ASSERT_EQ(ev.ascii, 'A');
   kKeyboard.scancode_to_event(0xB6);  // RightShift release
@@ -355,7 +355,7 @@ TEST(keyboard, right_shift_state_tracked) {
 
 TEST(keyboard, ctrl_state_tracked) {
   kKeyboard.scancode_to_event(0x1D);                      // LeftCtrl press
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);  // A
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(ev.ctrl);
   // Ctrl suppresses ASCII output.
   ASSERT_EQ(ev.ascii, '\0');
@@ -364,7 +364,7 @@ TEST(keyboard, ctrl_state_tracked) {
 
 TEST(keyboard, alt_state_tracked) {
   kKeyboard.scancode_to_event(0x38);                      // LeftAlt press
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);  // A
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(ev.alt);
   // Alt suppresses ASCII output.
   ASSERT_EQ(ev.ascii, '\0');
@@ -372,7 +372,7 @@ TEST(keyboard, alt_state_tracked) {
 }
 
 TEST(keyboard, modifier_key_press_has_no_ascii) {
-  KeyEvent const ev = kKeyboard.scancode_to_event(0x2A);  // LeftShift press
+  const KeyEvent ev = kKeyboard.scancode_to_event(0x2A);  // LeftShift press
   ASSERT_EQ(ev.ascii, '\0');
   kKeyboard.scancode_to_event(0xAA);  // release
 }

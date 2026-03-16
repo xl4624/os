@@ -1,10 +1,13 @@
 #include "keyboard.h"
 
 #include <assert.h>
+#include <signal.h>
 #include <stdio.h>
 #include <sys/io.h>
 
 #include "interrupt.h"
+#include "qemu.h"
+#include "scheduler.h"
 
 static constexpr uint16_t kDataPort = 0x60;
 static constexpr uint8_t kExtended = 0xE0;
@@ -164,6 +167,16 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
     ke.key = event.key.value();
     ke.pressed = event.pressed ? 1 : 0;
     static_cast<void>(event_buffer_.push(ke));
+  }
+
+  // Ctrl+C: send SIGINT to all running processes, or exit QEMU if none exist.
+  if (event.pressed && event.ctrl && event.key == Key::C) {
+    if (Scheduler::has_user_processes()) {
+      Scheduler::broadcast_signal(SIGINT);
+    } else {
+      Qemu::exit(0);
+    }
+    return;
   }
 
   // Buffer printable characters for sys_read.

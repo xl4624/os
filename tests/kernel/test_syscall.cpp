@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <sys/syscall.h>
 
 #include "address_space.h"
@@ -16,7 +17,7 @@ TEST(syscall, invalid_number) {
   TrapFrame frame = {};
   frame.eax = SYS_MAX + 5;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-ENOSYS));
 }
 
 // During ktest the current process is the idle process (PID 0).
@@ -36,7 +37,7 @@ TEST(syscall, write_bad_fd) {
   frame.eax = SYS_WRITE;
   frame.ebx = 99;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EBADF));
 }
 
 // count=0 satisfies validate_user_buffer immediately (len==0 short-circuit).
@@ -58,7 +59,7 @@ TEST(syscall, write_buf_overflow) {
   frame.ecx = 0xFFFFFFFEU;  // buf near end of address space
   frame.edx = 4;            // buf + count wraps to 2
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EFAULT));
 }
 
 // buf sits exactly at KERNEL_VMA, so buf+count crosses into kernel space.
@@ -69,7 +70,7 @@ TEST(syscall, write_buf_in_kernel_space) {
   frame.ecx = static_cast<uint32_t>(KERNEL_VMA);  // buf at kernel boundary
   frame.edx = 1;                                  // count = 1
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EFAULT));
 }
 
 // ===========================================================================
@@ -81,7 +82,7 @@ TEST(syscall, read_bad_fd) {
   frame.eax = SYS_READ;
   frame.ebx = 99;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EBADF));
 }
 
 // buf + count wraps past 2^32, so the overflow check rejects it.
@@ -92,7 +93,7 @@ TEST(syscall, read_buf_overflow) {
   frame.ecx = 0xFFFFFFFEU;  // buf near end of address space
   frame.edx = 4;            // buf + count wraps to 2
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EFAULT));
 }
 
 // buf sits exactly at KERNEL_VMA, so buf+count crosses into kernel space.
@@ -103,7 +104,7 @@ TEST(syscall, read_buf_in_kernel_space) {
   frame.ecx = static_cast<uint32_t>(KERNEL_VMA);  // buf at kernel boundary
   frame.edx = 1;                                  // count = 1
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EFAULT));
 }
 
 // ===========================================================================
@@ -127,7 +128,7 @@ TEST(syscall, sbrk_at_kernel_boundary) {
   frame.eax = SYS_SBRK;
   frame.ebx = static_cast<uint32_t>(KERNEL_VMA);
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-ENOMEM));
 }
 
 // A negative increment (ebx = -1) from a non-zero break produces a new_break
@@ -136,7 +137,7 @@ TEST(syscall, sbrk_at_kernel_boundary) {
 // which is less than old_break, triggering the new_break < old_break guard.
 TEST(syscall, sbrk_negative_below_break) {
   Process* proc = Scheduler::current();
-  vaddr_t const orig_break = proc->heap_break;
+  const vaddr_t orig_break = proc->heap_break;
 
   proc->heap_break = 0x00401000;
 
@@ -144,7 +145,7 @@ TEST(syscall, sbrk_negative_below_break) {
   frame.eax = SYS_SBRK;
   frame.ebx = 0xFFFFFFFFU;  // -1 as int32_t
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-ENOMEM));
 
   proc->heap_break = orig_break;
 }
@@ -157,8 +158,8 @@ TEST(syscall, sbrk_allocates_page) {
 
   Process* proc = Scheduler::current();
   PageTable* orig_pd = proc->page_directory;
-  paddr_t const orig_pd_phys = proc->page_directory_phys;
-  vaddr_t const orig_break = proc->heap_break;
+  const paddr_t orig_pd_phys = proc->page_directory_phys;
+  const vaddr_t orig_break = proc->heap_break;
 
   proc->page_directory = pd;
   proc->page_directory_phys = pd_phys;
@@ -192,7 +193,7 @@ TEST(syscall, exec_name_in_kernel_space) {
   frame.eax = SYS_EXEC;
   frame.ebx = static_cast<uint32_t>(KERNEL_VMA);
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EFAULT));
 }
 
 // ===========================================================================
@@ -204,7 +205,7 @@ TEST(syscall, alloc_user_stack_range) {
   ASSERT_NOT_NULL(pd);
 
   const char* argv[] = {"test"};
-  uint32_t const esp = Scheduler::alloc_user_stack(pd, argv);
+  const uint32_t esp = Scheduler::alloc_user_stack(pd, argv);
   ASSERT_NE(esp, 0U);
   ASSERT_TRUE(esp < static_cast<uint32_t>(kUserStackTop));
   ASSERT_TRUE(esp >= static_cast<uint32_t>(kUserStackVA));
@@ -217,7 +218,7 @@ TEST(syscall, alloc_user_stack_pages_are_user_mapped) {
   ASSERT_NOT_NULL(pd);
 
   const char* argv[] = {"hello"};
-  uint32_t const esp = Scheduler::alloc_user_stack(pd, argv);
+  const uint32_t esp = Scheduler::alloc_user_stack(pd, argv);
   ASSERT_NE(esp, 0U);
   ASSERT_TRUE(AddressSpace::is_user_mapped(pd, esp, /*writeable=*/true));
 

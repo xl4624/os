@@ -63,7 +63,7 @@ TEST(string, memmove_zero_length) {
 
 TEST(string, memmove_returns_dest) {
   char buf[20];
-  void const* result = memmove(buf, "test", 5);
+  const void* result = memmove(buf, "test", 5);
   ASSERT(result == buf);
 }
 
@@ -82,7 +82,7 @@ TEST(string, strcpy_long_string) {
 
 TEST(string, strcpy_returns_dest) {
   char dest[20];
-  char const* result = strcpy(dest, "test");
+  const char* result = strcpy(dest, "test");
   ASSERT(result == dest);
 }
 
@@ -101,7 +101,7 @@ TEST(string, memcpy_zero_length) {
 
 TEST(string, memcpy_returns_dest) {
   char buf[20];
-  void const* result = memcpy(buf, "test", 5);
+  const void* result = memcpy(buf, "test", 5);
   ASSERT(result == buf);
 }
 
@@ -145,7 +145,7 @@ TEST(string, memset_zero) {
 
 TEST(string, memset_returns_dest) {
   char buf[20];
-  void const* result = memset(buf, 'X', 5);
+  const void* result = memset(buf, 'X', 5);
   ASSERT(result == buf);
 }
 
@@ -224,7 +224,7 @@ TEST(string, strcat_empty_dest) {
 
 TEST(string, strcat_returns_dest) {
   char dest[20] = "Hello";
-  char const* result = strcat(dest, " World");
+  const char* result = strcat(dest, " World");
   ASSERT(result == dest);
 }
 
@@ -253,7 +253,7 @@ TEST(string, strncat_zero_n) {
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 TEST(string, strncat_returns_dest) {
   char dest[20] = "Hello";
-  char const* result = strncat(dest, " World", 6);
+  const char* result = strncat(dest, " World", 6);
   ASSERT(result == dest);
 }
 #pragma GCC diagnostic pop
@@ -321,7 +321,7 @@ TEST(string, strncpy_empty_src) {
 
 TEST(string, strncpy_returns_dest) {
   char dest[20];
-  char const* result = strncpy(dest, "test", 5);
+  const char* result = strncpy(dest, "test", 5);
   ASSERT(result == dest);
 }
 
@@ -336,13 +336,13 @@ TEST(string, strstr_not_found) {
 }
 
 TEST(string, strstr_empty_needle) {
-  char const* result = strstr("hello", "");
+  const char* result = strstr("hello", "");
   ASSERT(result != nullptr);
   ASSERT_STR_EQ(result, "hello");
 }
 
 TEST(string, strstr_multiple_occurrences) {
-  char const* result = strstr("hello hello world", "hello");
+  const char* result = strstr("hello hello world", "hello");
   ASSERT(result != nullptr);
   ASSERT_EQ(result[0], 'h');
 }
@@ -354,7 +354,7 @@ TEST(string, strstr_returns_pointer) {
 
 TEST(string, strtok_basic) {
   char buf[] = "hello,world,test";
-  char const* token = strtok(buf, ",");
+  const char* token = strtok(buf, ",");
   ASSERT_STR_EQ(token, "hello");
   token = strtok(nullptr, ",");
   ASSERT_STR_EQ(token, "world");
@@ -366,7 +366,7 @@ TEST(string, strtok_basic) {
 
 TEST(string, strtok_multiple_delims) {
   char buf[] = "hello world\ttest";
-  char const* token = strtok(buf, " \t");
+  const char* token = strtok(buf, " \t");
   ASSERT_STR_EQ(token, "hello");
   token = strtok(nullptr, " \t");
   ASSERT_STR_EQ(token, "world");
@@ -376,13 +376,13 @@ TEST(string, strtok_multiple_delims) {
 
 TEST(string, strtok_empty_string) {
   char buf[] = "";
-  char const* token = strtok(buf, ",");
+  const char* token = strtok(buf, ",");
   ASSERT(token == nullptr);
 }
 
 TEST(string, strtok_no_delim_found) {
   char buf[] = "hello";
-  char const* token = strtok(buf, ",");
+  const char* token = strtok(buf, ",");
   ASSERT_STR_EQ(token, "hello");
   token = strtok(nullptr, ",");
   ASSERT(token == nullptr);
@@ -390,7 +390,7 @@ TEST(string, strtok_no_delim_found) {
 
 TEST(string, strtok_consecutive_delims) {
   char buf[] = "hello,,world";
-  char const* token = strtok(buf, ",");
+  const char* token = strtok(buf, ",");
   ASSERT_STR_EQ(token, "hello");
   token = strtok(nullptr, ",");
   ASSERT_STR_EQ(token, "world");
@@ -399,7 +399,7 @@ TEST(string, strtok_consecutive_delims) {
 TEST(string, strtok_r_basic) {
   char buf[] = "hello,world,test";
   char* saveptr;
-  char const* token = strtok_r(buf, ",", &saveptr);
+  const char* token = strtok_r(buf, ",", &saveptr);
   ASSERT_STR_EQ(token, "hello");
   token = strtok_r(nullptr, ",", &saveptr);
   ASSERT_STR_EQ(token, "world");
@@ -415,8 +415,8 @@ TEST(string, strtok_r_multiple_strings) {
   char* saveptr1;
   char* saveptr2;
 
-  char const* t1 = strtok_r(buf1, ",", &saveptr1);
-  char const* t2 = strtok_r(buf2, ",", &saveptr2);
+  const char* t1 = strtok_r(buf1, ",", &saveptr1);
+  const char* t2 = strtok_r(buf2, ",", &saveptr2);
 
   ASSERT_STR_EQ(t1, "a");
   ASSERT_STR_EQ(t2, "x");
@@ -483,7 +483,7 @@ TEST(string, memcmp_unsigned_byte_comparison) {
 // strtok must skip leading delimiters.
 TEST(string, strtok_leading_delimiters) {
   char buf[] = ",,,hello,world";
-  char const* token = strtok(buf, ",");
+  const char* token = strtok(buf, ",");
   ASSERT(token != nullptr);
   ASSERT_STR_EQ(token, "hello");
   token = strtok(nullptr, ",");

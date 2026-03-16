@@ -18,7 +18,7 @@ bool write_tmp(const char* data, size_t len) {
   if (f == nullptr) {
     return false;
   }
-  size_t const n = fwrite(data, 1, len, f);
+  const size_t n = fwrite(data, 1, len, f);
   fclose(f);
   return n == len;
 }
@@ -30,7 +30,7 @@ bool write_tmp(const char* data, size_t len) {
 // ====================================================================
 
 TEST(fio, fopen_nonexistent_read_returns_null) {
-  FILE const* f = fopen("/tmp/does_not_exist_myos_12345.tmp", "r");
+  const FILE* f = fopen("/tmp/does_not_exist_myos_12345.tmp", "r");
   ASSERT_NULL(f);
 }
 
@@ -42,7 +42,7 @@ TEST(fio, fopen_write_creates_file) {
 }
 
 TEST(fio, fopen_invalid_mode_returns_null) {
-  FILE const* f = fopen(kTmpPath, "z");
+  const FILE* f = fopen(kTmpPath, "z");
   ASSERT_NULL(f);
 }
 
@@ -60,7 +60,7 @@ TEST(fio, fwrite_fread_roundtrip) {
   ASSERT_NOT_NULL(f);
 
   char buf[32] = {0};
-  size_t const n = fread(buf, 1, sizeof(buf) - 1, f);
+  const size_t n = fread(buf, 1, sizeof(buf) - 1, f);
   fclose(f);
   remove(kTmpPath);
 
@@ -78,7 +78,7 @@ TEST(fio, fread_sets_eof_at_end) {
   // Read all data.
   fread(buf, 1, 16, f);
   // Next read must trigger EOF.
-  size_t const n = fread(buf, 1, 1, f);
+  const size_t n = fread(buf, 1, 1, f);
   ASSERT_EQ(n, (size_t)0);
   ASSERT(feof(f));
 
@@ -92,7 +92,7 @@ TEST(fio, fwrite_returns_nmemb_on_success) {
 
   // Write 3 elements of size 4 = 12 bytes.
   const int vals[3] = {1, 2, 3};
-  size_t const n = fwrite(vals, sizeof(int), 3, f);
+  const size_t n = fwrite(vals, sizeof(int), 3, f);
   fclose(f);
   remove(kTmpPath);
 
@@ -219,7 +219,7 @@ TEST(fio, fgets_reads_line_with_newline) {
   ASSERT_NOT_NULL(f);
 
   char buf[32] = {0};
-  char const* ret = fgets(buf, sizeof(buf), f);
+  const char* ret = fgets(buf, sizeof(buf), f);
   ASSERT_NOT_NULL(ret);
   ASSERT_STR_EQ(buf, "line1\n");
 
@@ -235,7 +235,7 @@ TEST(fio, fgets_returns_null_at_eof) {
 
   char buf[16];
   fgets(buf, sizeof(buf), f);                    // Read "x".
-  char const* ret = fgets(buf, sizeof(buf), f);  // Should be NULL.
+  const char* ret = fgets(buf, sizeof(buf), f);  // Should be NULL.
   ASSERT_NULL(ret);
 
   fclose(f);

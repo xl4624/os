@@ -104,7 +104,7 @@ int32_t detach(vaddr_t vaddr, uint32_t size) {
 
   // Find the mapping by vaddr.
   for (uint32_t i = 0; i < proc->shm_mapping_count; ++i) {
-    ShmMapping const& m = proc->shm_mappings[i];
+    const ShmMapping& m = proc->shm_mappings[i];
     if (m.vaddr != vaddr) {
       continue;
     }
@@ -143,7 +143,7 @@ int32_t detach(vaddr_t vaddr, uint32_t size) {
 
 void detach_all(Process* proc) {
   while (proc->shm_mapping_count > 0) {
-    ShmMapping const& m = proc->shm_mappings[0];
+    const ShmMapping& m = proc->shm_mappings[0];
 
     // Unmap without freeing physical frames.
     for (uint32_t p = 0; p < m.num_pages; ++p) {

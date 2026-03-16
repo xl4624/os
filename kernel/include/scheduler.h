@@ -86,4 +86,22 @@ void block_current();
 // Get the currently running process (nullptr before init).
 [[nodiscard]] Process* current();
 
+// Send signal `signum` to the process with the given pid.
+// Sets the pending bit; if the target is blocked, moves it to the ready queue.
+void send_signal(uint32_t pid, uint32_t signum);
+
+// Send signal `signum` to all non-idle, non-zombie processes.
+// Used for Ctrl+C (SIGINT) where there is no process group tracking yet.
+void broadcast_signal(uint32_t signum);
+
+// Returns true if at least one non-idle, non-zombie process exists.
+[[nodiscard]] bool has_user_processes();
+
+// Check and deliver pending signals for the current process.
+// Must be called just before returning to user mode (i.e. before iret).
+// Delivers at most one signal per call: kills the process (SIG_DFL) or
+// redirects execution to the user handler (user VA in signal_handlers[]).
+// frame is the TrapFrame about to be restored; only acts for user-mode frames.
+void check_pending_signals(TrapFrame* frame);
+
 }  // namespace Scheduler

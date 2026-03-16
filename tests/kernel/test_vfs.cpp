@@ -49,21 +49,21 @@ TEST(vfs, register_and_lookup) {
   ASSERT_STR_EQ(node->name, "/dev/test");
   ASSERT_EQ(node->type, VfsNodeType::CharDev);
 
-  VfsNode const* found = Vfs::lookup("/dev/test");
+  const VfsNode* found = Vfs::lookup("/dev/test");
   ASSERT(found == node);
 }
 
 TEST(vfs, lookup_not_found) {
   Vfs::init();
-  VfsNode const* node = Vfs::register_node("/dev/test", VfsNodeType::CharDev, &counting_ops);
+  const VfsNode* node = Vfs::register_node("/dev/test", VfsNodeType::CharDev, &counting_ops);
   ASSERT_NOT_NULL(node);
   ASSERT_NULL(Vfs::lookup("/dev/other"));
 }
 
 TEST(vfs, register_multiple_nodes) {
   Vfs::init();
-  VfsNode const* a = Vfs::register_node("/dev/a", VfsNodeType::CharDev, &counting_ops);
-  VfsNode const* b = Vfs::register_node("/dev/b", VfsNodeType::CharDev, &counting_ops);
+  const VfsNode* a = Vfs::register_node("/dev/a", VfsNodeType::CharDev, &counting_ops);
+  const VfsNode* b = Vfs::register_node("/dev/b", VfsNodeType::CharDev, &counting_ops);
   ASSERT_NOT_NULL(a);
   ASSERT_NOT_NULL(b);
   ASSERT(a != b);
@@ -79,7 +79,7 @@ TEST(vfs, register_name_too_long) {
   memset(long_name, 'x', kMaxPathLen);
   long_name[kMaxPathLen] = '\0';
 
-  VfsNode const* node = Vfs::register_node(long_name, VfsNodeType::File, &counting_ops);
+  const VfsNode* node = Vfs::register_node(long_name, VfsNodeType::File, &counting_ops);
   ASSERT_NULL(node);
 }
 
@@ -97,7 +97,7 @@ TEST(vfs, read_chardev) {
   FileDescription desc = {FileType::VfsNode, 1, nullptr, &vfs_fd};
 
   uint8_t buf[8] = {};
-  int32_t const n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
+  const int32_t n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
   // counting_read returns min(buf_size, node->size) = 5
   ASSERT_EQ(n, 5);
   ASSERT_EQ(buf[0], 'A');
@@ -115,7 +115,7 @@ TEST(vfs, write_chardev) {
   FileDescription desc = {FileType::VfsNode, 1, nullptr, &vfs_fd};
 
   const uint8_t data[] = "test";
-  int32_t const n = Vfs::write(&desc, std::span<const uint8_t>(data, 4));
+  const int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 4));
   ASSERT_EQ(n, 4);
 
   ASSERT_EQ(vfs_fd.offset, 4U);
@@ -130,7 +130,7 @@ TEST(vfs, read_null_ops) {
   FileDescription desc = {FileType::VfsNode, 1, nullptr, &vfs_fd};
 
   uint8_t buf[4] = {};
-  int32_t const n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
+  const int32_t n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
   ASSERT_EQ(n, -1);
 }
 
@@ -143,7 +143,7 @@ TEST(vfs, write_null_ops) {
   FileDescription desc = {FileType::VfsNode, 1, nullptr, &vfs_fd};
 
   const uint8_t data[] = "x";
-  int32_t const n = Vfs::write(&desc, std::span<const uint8_t>(data, 1));
+  const int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 1));
   ASSERT_EQ(n, -1);
 }
 
@@ -175,7 +175,7 @@ TEST(vfs, ramfs_read_advances_offset) {
 
   // File nodes without ops should fail (we set ops to nullptr above).
   uint8_t buf[4] = {};
-  int32_t const n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
+  const int32_t n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
   ASSERT_EQ(n, -1);
 }
 
@@ -189,7 +189,7 @@ TEST(vfs, open_returns_fd) {
   ASSERT_NOT_NULL(node);
   node->size = 10;
 
-  int32_t const fd = Vfs::open("/dev/test");
+  const int32_t fd = Vfs::open("/dev/test");
   ASSERT_TRUE(fd >= 0);
 
   // Clean up: close the fd.
@@ -201,7 +201,7 @@ TEST(vfs, open_returns_fd) {
 
 TEST(vfs, open_not_found) {
   Vfs::init();
-  int32_t const fd = Vfs::open("/nonexistent");
+  const int32_t fd = Vfs::open("/nonexistent");
   ASSERT_EQ(fd, -1);
 }
 
@@ -211,7 +211,7 @@ TEST(vfs, open_read_write_through_fd) {
   ASSERT_NOT_NULL(node);
   node->size = 3;
 
-  int32_t const fd_num = Vfs::open("/dev/echo");
+  const int32_t fd_num = Vfs::open("/dev/echo");
   ASSERT_TRUE(fd_num >= 0);
 
   Process* proc = Scheduler::current();
@@ -250,7 +250,7 @@ TEST(vfs, devfs_null_read_eof) {
   FileDescription desc = {FileType::VfsNode, 1, nullptr, &vfs_fd};
 
   uint8_t buf[4] = {};
-  int32_t const n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
+  const int32_t n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
   ASSERT_EQ(n, 0);
 }
 
@@ -265,7 +265,7 @@ TEST(vfs, devfs_null_write_discards) {
   FileDescription desc = {FileType::VfsNode, 1, nullptr, &vfs_fd};
 
   const uint8_t data[] = "discard me";
-  int32_t const n = Vfs::write(&desc, std::span<const uint8_t>(data, 10));
+  const int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 10));
   ASSERT_EQ(n, 10);
 }
 
@@ -277,7 +277,7 @@ TEST(vfs, devfs_tty_exists) {
   Vfs::init();
   Vfs::init_devfs();
 
-  VfsNode const* tty_node = Vfs::lookup("/dev/tty");
+  const VfsNode* tty_node = Vfs::lookup("/dev/tty");
   ASSERT_NOT_NULL(tty_node);
   ASSERT_EQ(tty_node->type, VfsNodeType::CharDev);
 }
@@ -292,7 +292,7 @@ TEST(vfs, close_vfs_fd) {
   ASSERT_NOT_NULL(node);
   node->size = 1;
 
-  int32_t const fd_num = Vfs::open("/dev/test");
+  const int32_t fd_num = Vfs::open("/dev/test");
   ASSERT_TRUE(fd_num >= 0);
 
   Process* proc = Scheduler::current();

@@ -94,12 +94,12 @@ TEST(pipe, write_then_read) {
 
   // Write directly to the pipe.
   const uint8_t msg[] = {'h', 'e', 'l', 'l', 'o'};
-  int32_t const written = pipe_write(pipe, msg);
+  const int32_t written = pipe_write(pipe, msg);
   ASSERT_EQ(written, 5);
 
   // Read directly from the pipe.
   uint8_t buf[8] = {};
-  int32_t const nread = pipe_read(pipe, buf);
+  const int32_t nread = pipe_read(pipe, buf);
   ASSERT_EQ(nread, 5);
   ASSERT(memcmp(buf, "hello", 5) == 0);
 
@@ -120,7 +120,7 @@ TEST(pipe, read_empty_with_writers_returns_restart) {
   // Directly call pipe_read to check the return value (syscall_dispatch
   // would turn kSyscallRestart into an EIP rewind).
   uint8_t buf[4];
-  int32_t const ret = pipe_read(pipe, buf);
+  const int32_t ret = pipe_read(pipe, buf);
   ASSERT_EQ(ret, kSyscallRestart);
 
   close_fd(rfd);
@@ -140,7 +140,7 @@ TEST(pipe, read_eof_no_writers) {
   ASSERT_EQ(pipe->writers, 0U);
 
   uint8_t buf[4];
-  int32_t const ret = pipe_read(pipe, buf);
+  const int32_t ret = pipe_read(pipe, buf);
   ASSERT_EQ(ret, 0);
 
   close_fd(rfd);
@@ -159,7 +159,7 @@ TEST(pipe, write_no_readers_returns_epipe) {
   ASSERT_EQ(pipe->readers, 0U);
 
   const uint8_t data[] = {1, 2, 3};
-  int32_t const ret = pipe_write(pipe, data);
+  const int32_t ret = pipe_write(pipe, data);
   ASSERT_EQ(ret, -1);
 
   close_fd(wfd);
@@ -181,7 +181,7 @@ TEST(pipe, buffer_full_returns_restart) {
   ASSERT_TRUE(pipe->buffer.is_full());
 
   // Another write should block.
-  uint8_t const extra = 'B';
+  const uint8_t extra = 'B';
   ret = pipe_write(pipe, std::span<const uint8_t>(&extra, 1));
   ASSERT_EQ(ret, kSyscallRestart);
 
@@ -199,7 +199,7 @@ TEST(pipe, close_read_decrements_readers) {
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();
-  Pipe const* pipe = proc->fds[rfd]->pipe;
+  const Pipe* pipe = proc->fds[rfd]->pipe;
   ASSERT_EQ(pipe->readers, 1U);
 
   close_fd(rfd);
@@ -214,7 +214,7 @@ TEST(pipe, close_write_decrements_writers) {
   ASSERT_TRUE(make_pipe(rfd, wfd));
 
   Process* proc = Scheduler::current();
-  Pipe const* pipe = proc->fds[wfd]->pipe;
+  const Pipe* pipe = proc->fds[wfd]->pipe;
   ASSERT_EQ(pipe->writers, 1U);
 
   close_fd(wfd);

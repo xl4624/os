@@ -1,8 +1,12 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/kbd.h>
 #include <termctl.h>
 #include <unistd.h>
+
+static int kbd_fd = -1;
 
 // ======================================================================
 // Constants
@@ -351,39 +355,30 @@ static void draw_full_screen(void) {
 #define INPUT_Q 8
 
 static int read_input(void) {
-  char buffer[8];
-  int n = read(0, buffer, sizeof(buffer));
-  if (n <= 0) {
+  struct kbd_event ev;
+  if (read(kbd_fd, &ev, sizeof(ev)) != (int)sizeof(ev) || !ev.pressed) {
     return INPUT_NONE;
   }
-
-  for (int i = 0; i < n; i++) {
-    if (buffer[i] == '\x1b' && i + 2 < n && buffer[i + 1] == '[') {
-      switch (buffer[i + 2]) {
-        case 'A':
-          return INPUT_UP;
-        case 'B':
-          return INPUT_DOWN;
-        case 'C':
-          return INPUT_RIGHT;
-        case 'D':
-          return INPUT_LEFT;
-        default:
-          break;
-      }
-      i += 2;
-    } else if (buffer[i] == ' ') {
+  switch (ev.key) {
+    case KEY_LEFT:
+      return INPUT_LEFT;
+    case KEY_RIGHT:
+      return INPUT_RIGHT;
+    case KEY_UP:
+      return INPUT_UP;
+    case KEY_DOWN:
+      return INPUT_DOWN;
+    case KEY_SPACE:
       return INPUT_SPACE;
-    } else if (buffer[i] == 'p' || buffer[i] == 'P') {
+    case KEY_P:
       return INPUT_P;
-    } else if (buffer[i] == 'r' || buffer[i] == 'R') {
+    case KEY_R:
       return INPUT_R;
-    } else if (buffer[i] == 'q' || buffer[i] == 'Q') {
+    case KEY_Q:
       return INPUT_Q;
-    }
+    default:
+      return INPUT_NONE;
   }
-
-  return INPUT_NONE;
 }
 
 // ======================================================================
@@ -543,6 +538,12 @@ static int run_game(void) {
 // ======================================================================
 
 int main(void) {
+  kbd_fd = open("/dev/kbd", 0);
+  if (kbd_fd < 0) {
+    printf("tetris: failed to open /dev/kbd\n");
+    return 1;
+  }
+
   /* Seed RNG: wait for first keypress, use loop counter as seed */
   clear_screen();
   set_color(TERM_COLOR(TERM_BRIGHT_WHITE, TERM_BLACK));
@@ -553,9 +554,9 @@ int main(void) {
 
   unsigned int seed_counter = 0;
   for (;;) {
-    char c;
-    int n = read(0, &c, 1);
-    if (n > 0) {
+    struct kbd_event ev;
+    int n = read(kbd_fd, &ev, sizeof(ev));
+    if (n == (int)sizeof(ev) && ev.pressed) {
       break;
     }
     seed_counter++;

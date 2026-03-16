@@ -12,7 +12,7 @@ int fork(void) { return -1; }
 int fork(void) {
   int32_t pid;
   __asm__ volatile("int $0x80" : "=a"(pid) : "a"(SYS_FORK));
-  return pid;
+  return __syscall_ret(pid);
 }
 
 #endif

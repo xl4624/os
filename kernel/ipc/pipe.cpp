@@ -33,7 +33,7 @@ int32_t pipe_write(Pipe* pipe, std::span<const uint8_t> buf) {
   }
 
   uint32_t bytes_written = 0;
-  for (unsigned const char i : buf) {
+  for (const unsigned char i : buf) {
     if (!pipe->buffer.push(static_cast<char>(i))) {
       break;
     }

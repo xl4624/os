@@ -13,7 +13,7 @@ constexpr double kE = 2.71828182845904523536;
 
 // Absolute-value epsilon comparison for doubles.
 bool near(double a, double b, double eps = 1e-9) {
-  double const diff = a - b;
+  const double diff = a - b;
   return (diff >= -eps) && (diff <= eps);
 }
 
@@ -79,9 +79,9 @@ TEST(math, cos_negative) { ASSERT(near(cos(-kPi), -1.0)); }
 
 // Pythagorean identity: sin^2 + cos^2 == 1
 TEST(math, sin_cos_identity) {
-  double const angle = 1.2345;
-  double const s = sin(angle);
-  double const c = cos(angle);
+  const double angle = 1.2345;
+  const double s = sin(angle);
+  const double c = cos(angle);
   ASSERT(near((s * s) + (c * c), 1.0, 1e-12));
 }
 
@@ -162,7 +162,7 @@ TEST(math, ceil_small_negative) { ASSERT(near(ceil(-0.99), 0.0)); }
 
 // floor(x) <= x < floor(x) + 1 for all x
 TEST(math, floor_ceil_relationship) {
-  double const x = 3.7;
+  const double x = 3.7;
   ASSERT(floor(x) <= x);
   ASSERT(ceil(x) >= x);
   ASSERT(near(ceil(x) - floor(x), 1.0));
@@ -185,8 +185,8 @@ TEST(math, log_ten) { ASSERT(near(log(10.0), 2.302585092994046)); }
 // log is the inverse of exp: log(e^x) == x
 TEST(math, log_inverse_exp) {
   // We don't have exp(), but pow(e, x) = e^x
-  double const x = 3.0;
-  double const ex = pow(kE, x);
+  const double x = 3.0;
+  const double ex = pow(kE, x);
   ASSERT(near(log(ex), x, 1e-6));
 }
 
@@ -234,6 +234,6 @@ TEST(math, pow_e_to_one) {
 
 TEST(math, pow_consistency_with_sqrt) {
   // x^0.5 == sqrt(x) for positive x
-  double const x = 7.0;
+  const double x = 7.0;
   ASSERT(near(pow(x, 0.5), sqrt(x), 1e-9));
 }

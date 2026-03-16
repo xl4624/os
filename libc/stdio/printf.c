@@ -48,20 +48,17 @@ typedef void (*emit_fn)(char c, void* ctx);
 
 // clang-format off
 enum {
-FLAG_ALT =         (1 << 0),
-FLAG_ZERO =        (1 << 1),
-FLAG_LEFTJUSTIFY = (1 << 2),
-FLAG_SPACE =       (1 << 3),
-FLAG_PLUS =        (1 << 4)
+  FLAG_ALT =         (1 << 0),
+  FLAG_ZERO =        (1 << 1),
+  FLAG_LEFTJUSTIFY = (1 << 2),
+  FLAG_SPACE =       (1 << 3),
+  FLAG_PLUS =        (1 << 4),
+  FLAG_NUMERIC =     (1 << 5),
+  FLAG_SIGNED =      (1 << 6),
+  FLAG_NEGATIVE =    (1 << 7),
+  FLAG_ALT2 =        (1 << 8)
 };
 static const char flag_chars[] = "#0- +";
-
-enum {
-FLAG_NUMERIC =     (1 << 5),
-FLAG_SIGNED =      (1 << 6),
-FLAG_NEGATIVE =    (1 << 7),
-FLAG_ALT2 =        (1 << 8)
-};
 // clang-format on
 
 static char* fill_numbuf(char* numbuf_end, unsigned long val, unsigned int base) {
@@ -239,9 +236,8 @@ static int vformat(emit_fn emit, void* ctx, const char* __restrict__ format, va_
       ++count;
     }
     for (; len > 0; ++data, --len) {
-      // clang-format off
-      emit(*data, ctx); // NOLINT(clang-analyzer-core.CallAndMessage,clang-analyzer-security.ArrayBound)
-      // clang-format on
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage,clang-analyzer-security.ArrayBound)
+      emit(*data, ctx);
       ++count;
     }
     for (; width > 0; --width) {

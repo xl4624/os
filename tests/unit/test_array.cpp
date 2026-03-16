@@ -21,7 +21,7 @@ TEST(array, const_element_access) {
 }
 
 TEST(array, size_and_empty) {
-  std::array<int, 5> const a = {};
+  const std::array<int, 5> a = {};
   ASSERT_EQ(a.size(), 5U);
   ASSERT_EQ(a.max_size(), 5U);
   ASSERT_FALSE(a.empty());
@@ -38,7 +38,7 @@ TEST(array, zero_size) {
 
 TEST(array, data_pointer) {
   std::array<int, 3> a = {10, 20, 30};
-  int const* p = a.data();
+  const int* p = a.data();
   ASSERT_NOT_NULL(p);
   ASSERT_EQ(p[0], 10);
   ASSERT_EQ(p[2], 30);
@@ -47,27 +47,27 @@ TEST(array, data_pointer) {
 }
 
 TEST(array, iterator_loop) {
-  std::array<int, 4> const a = {1, 2, 3, 4};
+  const std::array<int, 4> a = {1, 2, 3, 4};
   int sum = 0;
-  for (int const& it : a) {
+  for (const int& it : a) {
     sum += it;
   }
   ASSERT_EQ(sum, 10);
 }
 
 TEST(array, range_based_for) {
-  std::array<int, 4> const a = {1, 2, 3, 4};
+  const std::array<int, 4> a = {1, 2, 3, 4};
   int sum = 0;
-  for (int const v : a) {
+  for (const int v : a) {
     sum += v;
   }
   ASSERT_EQ(sum, 10);
 }
 
 TEST(array, cbegin_cend) {
-  std::array<int, 3> const a = {5, 6, 7};
+  const std::array<int, 3> a = {5, 6, 7};
   int sum = 0;
-  for (int const it : a) {
+  for (const int it : a) {
     sum += it;
   }
   ASSERT_EQ(sum, 18);

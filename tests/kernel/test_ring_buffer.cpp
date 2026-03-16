@@ -6,7 +6,7 @@
 // ===========================================================================
 
 TEST(ring_buffer, empty_at_start) {
-  RingBuffer<int, 4> const rb;
+  const RingBuffer<int, 4> rb;
   ASSERT_TRUE(rb.is_empty());
   ASSERT_FALSE(rb.is_full());
   ASSERT_EQ(rb.size(), 0U);
@@ -105,7 +105,7 @@ TEST(ring_buffer, peek_returns_front_without_removing) {
 }
 
 TEST(ring_buffer, peek_fails_when_empty) {
-  RingBuffer<int, 4> const rb;
+  const RingBuffer<int, 4> rb;
   int val = 0;
   ASSERT_FALSE(rb.peek(val));
 }

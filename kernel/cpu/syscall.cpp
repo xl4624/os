@@ -1,6 +1,8 @@
 #include "syscall.h"
 
 #include <assert.h>
+#include <errno.h>
+#include <signal.h>
 #include <string.h>
 #include <unique_ptr.h>
 
@@ -47,7 +49,7 @@ static bool validate_user_buffer(uint32_t ptr, uint32_t len, bool writeable) {
 }
 
 // SYS_WRITE(fd=ebx, buf=ecx, count=edx)
-// Returns number of bytes written, or -1 on error.
+// Returns number of bytes written, or negative errno on error.
 static int32_t sys_write(TrapFrame* regs) {
   const uint32_t fd_num = regs->ebx;
   const uint32_t buf = regs->ecx;
@@ -55,11 +57,11 @@ static int32_t sys_write(TrapFrame* regs) {
 
   const Process* proc = Scheduler::current();
   if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
-    return -1;
+    return -EBADF;
   }
 
   if (!validate_user_buffer(buf, count, /*writeable=*/false)) {
-    return -1;
+    return -EFAULT;
   }
 
   return file_write(proc->fds[fd_num],
@@ -67,7 +69,7 @@ static int32_t sys_write(TrapFrame* regs) {
 }
 
 // SYS_READ(fd=ebx, buf=ecx, count=edx)
-// Returns number of bytes read, or -1 on error.
+// Returns number of bytes read, or negative errno on error.
 static int32_t sys_read(TrapFrame* regs) {
   const uint32_t fd_num = regs->ebx;
   const uint32_t buf = regs->ecx;
@@ -75,11 +77,11 @@ static int32_t sys_read(TrapFrame* regs) {
 
   const Process* proc = Scheduler::current();
   if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
-    return -1;
+    return -EBADF;
   }
 
   if (!validate_user_buffer(buf, count, /*writeable=*/true)) {
-    return -1;
+    return -EFAULT;
   }
 
   return file_read(proc->fds[fd_num], std::span<uint8_t>(reinterpret_cast<uint8_t*>(buf), count));
@@ -116,7 +118,7 @@ static int32_t sys_sbrk(TrapFrame* regs) {
   // Reject if the new break would collide with the user stack, enter kernel
   // space, or wrap around.
   if (new_break >= kUserStackVA || new_break < old_break) {
-    return -1;
+    return -ENOMEM;
   }
 
   if (increment > 0) {
@@ -130,7 +132,7 @@ static int32_t sys_sbrk(TrapFrame* regs) {
         for (vaddr_t undo = old_page; undo < va; undo += PAGE_SIZE) {
           AddressSpace::unmap(proc->page_directory, undo);
         }
-        return -1;
+        return -ENOMEM;
       }
       AddressSpace::map(proc->page_directory, va, phys,
                         /*writeable=*/true, /*user=*/true);
@@ -152,16 +154,17 @@ static int32_t sys_getpid([[maybe_unused]] TrapFrame* regs) {
 }
 
 // SYS_OPEN(path=ebx)
-// Opens a file by path. Returns fd on success, -1 on failure.
+// Opens a file by path. Returns fd on success, or negative errno on failure.
 static int32_t sys_open(TrapFrame* regs) {
   const uint32_t path_ptr = regs->ebx;
 
   if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
-    return -1;
+    return -EFAULT;
   }
 
   const char* path = reinterpret_cast<const char*>(path_ptr);
-  return Vfs::open(path);
+  const int32_t fd = Vfs::open(path);
+  return fd >= 0 ? fd : -ENOENT;
 }
 
 // SYS_EXEC(path=ebx, argv=ecx)
@@ -176,7 +179,7 @@ static int32_t sys_exec(TrapFrame* regs) {
   const uint32_t argv_ptr = regs->ecx;
 
   if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
-    return -1;
+    return -EFAULT;
   }
 
   const char* path = reinterpret_cast<const char*>(path_ptr);
@@ -189,21 +192,21 @@ static int32_t sys_exec(TrapFrame* regs) {
 
   if (argv_ptr != 0) {
     if (!validate_user_buffer(argv_ptr, 4, /*writeable=*/false)) {
-      return -1;
+      return -EFAULT;
     }
     const auto* uargv = reinterpret_cast<const uint32_t*>(argv_ptr);
     while (argc < kMaxExecArgs) {
       // Validate the pointer slot itself.
       if (!validate_user_buffer(argv_ptr + (static_cast<uint32_t>(argc) * 4), 4,
                                 /*writeable=*/false)) {
-        return -1;
+        return -EFAULT;
       }
       const uint32_t str_ptr = uargv[argc];
       if (str_ptr == 0) {
         break;
       }
       if (!validate_user_buffer(str_ptr, 1, /*writeable=*/false)) {
-        return -1;
+        return -EFAULT;
       }
       const char* src = reinterpret_cast<const char*>(str_ptr);
       strncpy(arg_bufs[argc], src, kMaxArgLen - 1);
@@ -223,7 +226,7 @@ static int32_t sys_exec(TrapFrame* regs) {
 
   const VfsNode* node = Vfs::lookup(path);
   if (node == nullptr || node->data == nullptr) {
-    return -1;
+    return -ENOENT;
   }
 
   Process* proc = Scheduler::current();
@@ -231,21 +234,21 @@ static int32_t sys_exec(TrapFrame* regs) {
 
   auto [new_pd_phys, new_pd_virt] = AddressSpace::create();
   if (new_pd_virt == nullptr) {
-    return -1;
+    return -ENOMEM;
   }
 
   vaddr_t entry = 0;
   vaddr_t brk = 0;
   if (!Elf::load(std::span<const uint8_t>{node->data, node->size}, new_pd_virt, entry, brk)) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
-    return -1;
+    return -ENOEXEC;
   }
 
   const uint32_t user_esp = Scheduler::alloc_user_stack(
       new_pd_virt, std::span<const char*>{argv_ptrs, static_cast<size_t>(argc)});
   if (user_esp == 0) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
-    return -1;
+    return -ENOMEM;
   }
 
   const paddr_t old_pd_phys = proc->page_directory_phys;
@@ -284,9 +287,8 @@ static int32_t sys_fork(TrapFrame* regs) {
 }
 
 // SYS_WAITPID(pid=ebx, exit_code_ptr=ecx)
-// Blocks until a child exits, returns child PID on success.
-// exit_code_ptr (if non-null) receives the child's exit code.
-// Returns 0 if blocked (will be restarted by scheduler), or -1 on error.
+// Blocks until a child exits. Returns child PID on success,
+// kSyscallRestart if blocked (will be retried), or -ECHILD on error.
 static int32_t sys_waitpid(TrapFrame* regs) {
   auto pid = static_cast<int32_t>(regs->ebx);
   const uint32_t exit_code_ptr = regs->ecx;
@@ -347,13 +349,13 @@ static int32_t sys_pipe(TrapFrame* regs) {
 }
 
 // SYS_CLOSE(fd=ebx)
-// Closes a file descriptor. Returns 0 on success, -1 on error.
+// Closes a file descriptor. Returns 0 on success, or negative errno on error.
 static int32_t sys_close(TrapFrame* regs) {
   const uint32_t fd_num = regs->ebx;
   Process* proc = Scheduler::current();
 
   if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
-    return -1;
+    return -EBADF;
   }
 
   file_close(proc->fds[fd_num]);
@@ -362,14 +364,14 @@ static int32_t sys_close(TrapFrame* regs) {
 }
 
 // SYS_DUP2(oldfd=ebx, newfd=ecx)
-// Duplicates oldfd onto newfd. Returns newfd on success, -1 on error.
+// Duplicates oldfd onto newfd. Returns newfd on success, or negative errno on error.
 static int32_t sys_dup2(TrapFrame* regs) {
   const uint32_t oldfd = regs->ebx;
   const uint32_t newfd = regs->ecx;
   Process* proc = Scheduler::current();
 
   if (oldfd >= kMaxFds || newfd >= kMaxFds || proc->fds[oldfd] == nullptr) {
-    return -1;
+    return -EBADF;
   }
 
   if (oldfd == newfd) {
@@ -478,23 +480,92 @@ static int32_t sys_fb_flip(TrapFrame* regs) {
   const uint32_t src_h = regs->edx;
 
   if (src_w == 0 || src_h == 0) {
-    return -1;
+    return -EINVAL;
   }
   if (!Framebuffer::is_available()) {
-    return -1;
+    return -ENODEV;
   }
 
   // Guard against overflow before multiplying.
   if (src_w > 4096 || src_h > 4096) {
-    return -1;
+    return -EINVAL;
   }
   const uint32_t buf_size = src_w * src_h * 4;
   if (!validate_user_buffer(buf, buf_size, /*writeable=*/false)) {
-    return -1;
+    return -EFAULT;
   }
 
   Framebuffer::blit_scaled(reinterpret_cast<const uint32_t*>(buf), src_w, src_h);
   return 0;
+}
+
+// SYS_KILL(pid=ebx, sig=ecx)
+// Sends signal `sig` to the process with the given pid.
+// Returns 0 on success, or negative errno on error.
+static int32_t sys_kill(TrapFrame* regs) {
+  const auto pid = static_cast<int32_t>(regs->ebx);
+  const uint32_t sig = regs->ecx;
+  if (sig >= 32) {
+    return -EINVAL;
+  }
+  if (pid > 0) {
+    Scheduler::send_signal(static_cast<uint32_t>(pid), sig);
+  } else if (pid == 0 || pid == -1) {
+    Scheduler::broadcast_signal(sig);
+  }
+  return 0;
+}
+
+// SYS_SIGACTION(sig=ebx, handler=ecx, old_handler_ptr=edx)
+// Sets the handler for signal `sig`. handler is a user-space VA, kSigDfl (0),
+// or kSigIgn (1). If old_handler_ptr is non-null, the previous handler is
+// written there. Returns 0 on success, or negative errno on error.
+static int32_t sys_sigaction(TrapFrame* regs) {
+  const uint32_t sig = regs->ebx;
+  const uint32_t new_handler = regs->ecx;
+  const uint32_t old_ptr = regs->edx;
+
+  if (sig == 0 || sig >= 32) {
+    return -EINVAL;
+  }
+
+  Process* proc = Scheduler::current();
+
+  if (old_ptr != 0) {
+    if (!validate_user_buffer(old_ptr, sizeof(uint32_t), /*writeable=*/true)) {
+      return -EFAULT;
+    }
+    *reinterpret_cast<uint32_t*>(old_ptr) = proc->signal_handlers[sig];
+  }
+
+  proc->signal_handlers[sig] = new_handler;
+  return 0;
+}
+
+// SYS_SIGRETURN()
+// Restores the saved user context from the SignalFrame on the user stack after
+// a signal handler returns via the inline trampoline. The trampoline does ret
+// (consuming return_addr) before issuing int $0x80, so user_esp on entry
+// here points one dword past the start of SignalFrame.
+static int32_t sys_sigreturn(TrapFrame* regs) {
+  // After handler ret: user_esp = signal_frame_addr + sizeof(return_addr).
+  const uint32_t sf_addr = regs->user_esp - sizeof(uint32_t);
+
+  if (!validate_user_buffer(sf_addr, sizeof(SignalFrame), /*writeable=*/false)) {
+    Scheduler::exit_current(SIGSEGV);
+    return 0;  // not reached for the current process
+  }
+
+  const auto* sf = reinterpret_cast<const SignalFrame*>(sf_addr);
+
+  regs->eip = sf->saved_eip;
+  regs->eflags = sf->saved_eflags | 0x200U;  // preserve IF
+  regs->user_esp = sf->saved_esp;
+  regs->ecx = sf->saved_ecx;
+  regs->edx = sf->saved_edx;
+
+  // Return saved_eax; syscall_dispatch will write this back to regs->eax.
+  return static_cast<int32_t>(sf->saved_eax);
 }
 
 // ===========================================================================
@@ -504,25 +575,28 @@ static int32_t sys_fb_flip(TrapFrame* regs) {
 using syscall_fn = int32_t (*)(TrapFrame*);
 
 static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
-    sys_exit,      // 0  SYS_EXIT
-    sys_fork,      // 1  SYS_FORK
-    sys_read,      // 2  SYS_READ
-    sys_write,     // 3  SYS_WRITE
-    sys_open,      // 4  SYS_OPEN
-    sys_close,     // 5  SYS_CLOSE
-    sys_waitpid,   // 6  SYS_WAITPID
-    sys_exec,      // 7  SYS_EXEC
-    sys_lseek,     // 8  SYS_LSEEK
-    sys_getpid,    // 9  SYS_GETPID
-    sys_pipe,      // 10 SYS_PIPE
-    sys_sbrk,      // 11 SYS_SBRK
-    sys_dup2,      // 12 SYS_DUP2
-    sys_sleep,     // 13 SYS_SLEEP
-    sys_shmget,    // 14 SYS_SHMGET
-    sys_shmat,     // 15 SYS_SHMAT
-    sys_shmdt,     // 16 SYS_SHMDT
-    sys_getticks,  // 17 SYS_GETTICKS
-    sys_fb_flip,   // 18 SYS_FB_FLIP
+    sys_exit,       // 0  SYS_EXIT
+    sys_fork,       // 1  SYS_FORK
+    sys_read,       // 2  SYS_READ
+    sys_write,      // 3  SYS_WRITE
+    sys_open,       // 4  SYS_OPEN
+    sys_close,      // 5  SYS_CLOSE
+    sys_waitpid,    // 6  SYS_WAITPID
+    sys_exec,       // 7  SYS_EXEC
+    sys_lseek,      // 8  SYS_LSEEK
+    sys_getpid,     // 9  SYS_GETPID
+    sys_pipe,       // 10 SYS_PIPE
+    sys_sbrk,       // 11 SYS_SBRK
+    sys_dup2,       // 12 SYS_DUP2
+    sys_sleep,      // 13 SYS_SLEEP
+    sys_shmget,     // 14 SYS_SHMGET
+    sys_shmat,      // 15 SYS_SHMAT
+    sys_shmdt,      // 16 SYS_SHMDT
+    sys_getticks,   // 17 SYS_GETTICKS
+    sys_fb_flip,    // 18 SYS_FB_FLIP
+    sys_kill,       // 19 SYS_KILL
+    sys_sigaction,  // 20 SYS_SIGACTION
+    sys_sigreturn,  // 21 SYS_SIGRETURN
 };
 
 static_assert(syscall_table[SYS_EXIT] == sys_exit);
@@ -544,12 +618,18 @@ static_assert(syscall_table[SYS_SHMAT] == sys_shmat);
 static_assert(syscall_table[SYS_SHMDT] == sys_shmdt);
 static_assert(syscall_table[SYS_GETTICKS] == sys_getticks);
 static_assert(syscall_table[SYS_FB_FLIP] == sys_fb_flip);
+static_assert(syscall_table[SYS_KILL] == sys_kill);
+static_assert(syscall_table[SYS_SIGACTION] == sys_sigaction);
+static_assert(syscall_table[SYS_SIGRETURN] == sys_sigreturn);
 static_assert(syscall_table.size() == SYS_MAX);
 
 __BEGIN_DECLS
 
 // Assembly entry point defined in syscall_entry.S.
 void syscall_entry();
+
+// Assembly entry point defined in trap_entry.S.
+void page_fault_entry();
 
 // Called from syscall_entry.S. Returns the kernel ESP to restore (may be a
 // different process's stack after exit/sleep triggers a context switch).
@@ -559,7 +639,8 @@ uint32_t syscall_dispatch(uint32_t esp) {
   const uint32_t num = regs->eax;
 
   if (num >= SYS_MAX) {
-    regs->eax = static_cast<uint32_t>(-1);
+    regs->eax = static_cast<uint32_t>(-ENOSYS);
+    Scheduler::check_pending_signals(regs);
     return Scheduler::schedule(esp);
   }
 
@@ -575,6 +656,9 @@ uint32_t syscall_dispatch(uint32_t esp) {
     regs->eax = static_cast<uint32_t>(ret);
   }
 
+  // Check for pending signals before returning to user mode.
+  Scheduler::check_pending_signals(regs);
+
   // Run the scheduler. If the syscall blocked or exited the current process,
   // this returns a different process's ESP.
   return Scheduler::schedule(esp);
@@ -588,6 +672,10 @@ void init() {
   assert(Interrupt::is_initialized() && "Syscall::init(): Interrupt must be initialized first");
   IDT::set_entry(SYSCALL_VECTOR, reinterpret_cast<uintptr_t>(syscall_entry), IDT::Gate::Interrupt,
                  IDT::Ring::User);
+  // Override the ISRWrapper<14> installed by Interrupt::init() with a full
+  // TRAP_ENTRY stub so we can deliver SIGSEGV and context-switch on page faults.
+  IDT::set_entry(14, reinterpret_cast<uintptr_t>(page_fault_entry), IDT::Gate::Interrupt,
+                 IDT::Ring::Kernel);
 }
 
 }  // namespace Syscall

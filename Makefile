@@ -36,8 +36,9 @@ all: $(ISO)
 RUN_LOG := $(BUILDDIR)/run.log
 
 run: $(ISO)
-	@qemu-system-i386 -m 256 -cdrom $(ISO) -no-reboot -no-shutdown \
-		-display sdl,grab-mod=lshift-lctrl-lalt -debugcon file:$(RUN_LOG)
+	@qemu-system-i386 -m 256 -cdrom $(ISO) -no-reboot \
+		-device isa-debug-exit,iobase=0xf4,iosize=0x04 \
+		-display sdl,grab-mod=lshift-lctrl-lalt -debugcon file:$(RUN_LOG); true
 	@echo "--- Log written to $(RUN_LOG) ---"
 
 debug: $(ISO)

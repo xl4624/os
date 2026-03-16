@@ -41,7 +41,7 @@ int32_t file_write(FileDescription* fd, std::span<const uint8_t> buf) {
   switch (fd->type) {
     case FileType::TerminalWrite:
       terminal_write({reinterpret_cast<const char*>(buf.data()), buf.size()});
-      for (unsigned const char i : buf) {
+      for (const unsigned char i : buf) {
         outb(kDebugconPort, i);
       }
       return static_cast<int32_t>(buf.size());

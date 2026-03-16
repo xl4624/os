@@ -3,10 +3,13 @@
 #include <array.h>
 #include <assert.h>
 #include <cstdint.h>
+#include <errno.h>
+#include <signal.h>
 #include <span.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/cdefs.h>
+#include <sys/syscall.h>
 
 #include "address_space.h"
 #include "elf.h"
@@ -14,6 +17,7 @@
 #include "gdt.h"
 #include "heap.h"
 #include "idt.h"
+#include "interrupt.h"
 #include "paging.h"
 #include "pic.h"
 #include "pit.h"
@@ -33,6 +37,27 @@ extern char stack_top[];
 uint32_t timer_dispatch(uint32_t esp) {
   PIT::tick();
   PIC::send_eoi(0);
+  auto* regs = reinterpret_cast<TrapFrame*>(esp);
+  Scheduler::check_pending_signals(regs);
+  return Scheduler::schedule(esp);
+}
+
+// Page fault dispatch. Called from page_fault_entry in trap_entry.S after the
+// CPU's error code has been discarded. Delivers SIGSEGV for user-mode faults;
+// panics for kernel-mode faults.
+uint32_t page_fault_dispatch(uint32_t esp) {
+  auto* regs = reinterpret_cast<TrapFrame*>(esp);
+  if ((regs->cs & 3) == 3) {
+    // User-mode page fault: deliver SIGSEGV.
+    Scheduler::send_signal(Scheduler::current()->pid, SIGSEGV);
+    Scheduler::check_pending_signals(regs);
+  } else {
+    uint32_t fault_addr = 0;  // NOLINT(misc-const-correctness)
+    __asm__ volatile("mov %%cr2, %0" : "=r"(fault_addr));
+    printf("Kernel page fault at 0x%08x (eip=0x%08x)\n", fault_addr,
+           static_cast<unsigned>(regs->eip));
+    halt_and_catch_fire();
+  }
   return Scheduler::schedule(esp);
 }
 
@@ -121,7 +146,10 @@ void wake_sleepers() {
       } else {
         blocked_head = next;
       }
-      enqueue_ready(p);
+      // Only re-queue if still blocked; processes killed while blocked will be Zombie.
+      if (p->state == ProcessState::Blocked) {
+        enqueue_ready(p);
+      }
     } else {
       prev = p;
     }
@@ -138,8 +166,7 @@ uint32_t switch_to(Process* target) {
   current_process = target;
   target->state = ProcessState::Running;
 
-  // Update TSS.esp0 so ring-3 interrupts land on this process's kernel
-  // stack.
+  // Update TSS.esp0 so ring-3 interrupts land on this process's kernel stack.
   TSS::set_kernel_stack(reinterpret_cast<uint32_t>(target->kernel_stack) + kKernelStackSize);
 
   AddressSpace::sync_kernel_mappings(target->page_directory);
@@ -155,8 +182,7 @@ namespace Scheduler {
 void init() {
   assert(!initialized && "Scheduler::init(): called more than once");
 
-  // Create the idle process. This process runs when no other process is
-  // ready to run. It uses the kernel's original stack and page tables.
+  // Create the idle process. This process runs when no other process is ready to run.
   idle_process = alloc_process();
   assert(idle_process && "Scheduler::init(): failed to allocate idle process");
   idle_process->state = ProcessState::Running;
@@ -441,6 +467,10 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
     ++region->ref_count;
   }
 
+  // Inherit signal handlers; child starts with no pending signals.
+  memcpy(child->signal_handlers, current_process->signal_handlers, sizeof(child->signal_handlers));
+  child->pending_signals = 0;
+
   child->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));
   assert(child->kernel_stack && "fork_current(): failed to allocate kernel stack");
   memset(child->kernel_stack, 0, kKernelStackSize);
@@ -493,14 +523,136 @@ int32_t waitpid_current(int32_t pid, int32_t* exit_code_ptr) {
   }
 
   if (!found_child) {
-    return -1;
+    return -ECHILD;
   }
 
-  // Child exists but hasn't exited; block and retry via syscall restart.
-  enqueue_blocked(current_process);
-  return 0;
+  // Child exists but hasn't exited; signal syscall_dispatch to block and retry.
+  return kSyscallRestart;
 }
 
 Process* current() { return current_process; }
+
+void send_signal(uint32_t pid, uint32_t signum) {
+  if (signum == 0 || signum >= 32) {
+    return;
+  }
+  for (uint32_t i = 0; i < next_pid; ++i) {
+    Process& p = process_table[i];
+    if (p.pid != pid || p.state == ProcessState::Zombie) {
+      continue;
+    }
+    p.pending_signals |= (1U << signum);
+    // Wake a blocked process so it can have the signal delivered.
+    if (p.state == ProcessState::Blocked) {
+      Process* prev = nullptr;
+      Process* cur = blocked_head;
+      while (cur != nullptr) {
+        if (cur == &p) {
+          if (prev != nullptr) {
+            prev->next = cur->next;
+          } else {
+            blocked_head = cur->next;
+          }
+          enqueue_ready(cur);
+          break;
+        }
+        prev = cur;
+        cur = cur->next;
+      }
+    }
+    return;
+  }
+}
+
+void broadcast_signal(uint32_t signum) {
+  for (uint32_t i = 1; i < next_pid; ++i) {  // skip idle (pid 0)
+    const Process& p = process_table[i];
+    if (p.state != ProcessState::Zombie && p.state != ProcessState::Empty) {
+      send_signal(p.pid, signum);  // NOLINT(readability-magic-numbers)
+    }
+  }
+}
+
+bool has_user_processes() {
+  for (uint32_t i = 1; i < next_pid; ++i) {  // skip idle (pid 0)
+    const auto s = process_table[i].state;
+    if (s != ProcessState::Zombie && s != ProcessState::Empty) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Deliver a signal to a user-installed handler by building a SignalFrame on
+// the user stack and redirecting execution to the handler.
+static void deliver_to_user_handler(TrapFrame* frame, uint32_t sig, uint32_t handler_va) {
+  // Trampoline: mov $SYS_SIGRETURN, %eax (5 bytes) + int $0x80 (2 bytes).
+  static constexpr uint32_t kTrampolineSize = 7;
+  static constexpr uint8_t kTrampoline[kTrampolineSize] = {
+      0xB8, static_cast<uint8_t>(SYS_SIGRETURN), 0x00, 0x00,
+      0x00,  // mov $SYS_SIGRETURN, %eax
+      0xCD,
+      0x80,  // int $0x80
+  };
+
+  const uint32_t trampoline_addr = frame->user_esp - kTrampolineSize;
+  const uint32_t signal_frame_addr = trampoline_addr - sizeof(SignalFrame);
+
+  // Validate that the new stack region is user-writable.
+  if (signal_frame_addr >= KERNEL_VMA ||
+      signal_frame_addr + kTrampolineSize + sizeof(SignalFrame) > KERNEL_VMA) {
+    exit_current(sig);
+    return;
+  }
+
+  // Write the trampoline and signal frame directly through user virtual
+  // addresses (the current page directory is the process's own).
+  memcpy(reinterpret_cast<void*>(trampoline_addr), kTrampoline, kTrampolineSize);
+
+  auto* sf = reinterpret_cast<SignalFrame*>(signal_frame_addr);
+  sf->return_addr = trampoline_addr;
+  sf->signum = sig;
+  sf->saved_eax = frame->eax;
+  sf->saved_ecx = frame->ecx;
+  sf->saved_edx = frame->edx;
+  sf->saved_eip = frame->eip;
+  sf->saved_eflags = frame->eflags;
+  sf->saved_esp = frame->user_esp;
+
+  // Redirect the iret frame to the signal handler.
+  frame->eip = handler_va;
+  frame->user_esp = signal_frame_addr;
+}
+
+void check_pending_signals(TrapFrame* frame) {
+  Process* proc = current_process;
+  if (proc == idle_process || proc->pending_signals == 0) {
+    return;
+  }
+  // Only deliver signals when returning to user mode.
+  if ((frame->cs & 3) != 3) {
+    return;
+  }
+
+  for (uint32_t sig = 1; sig < 32; ++sig) {
+    if ((proc->pending_signals & (1U << sig)) == 0U) {
+      continue;
+    }
+    proc->pending_signals &= ~(1U << sig);
+
+    const uint32_t handler = proc->signal_handlers[sig];
+    if (handler == kSigIgn) {
+      continue;
+    }
+    if (handler == kSigDfl) {
+      // Default action: terminate the process.
+      exit_current(sig);
+      return;
+    }
+    // User-installed handler: build a signal frame and redirect to it.
+    deliver_to_user_handler(frame, sig, handler);
+    return;  // deliver one signal at a time
+  }
+}
 
 }  // namespace Scheduler

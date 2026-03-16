@@ -26,13 +26,13 @@ int Tracked::instances = 0;
 // ===========================================================================
 
 TEST(optional, default_is_empty) {
-  std::optional<int> const o;
+  const std::optional<int> o;
   ASSERT_FALSE(o.has_value());
   ASSERT_FALSE(static_cast<bool>(o));
 }
 
 TEST(optional, nullopt_is_empty) {
-  std::optional<int> const o = std::nullopt;
+  const std::optional<int> o = std::nullopt;
   ASSERT_FALSE(o.has_value());
 }
 
@@ -49,15 +49,15 @@ TEST(optional, implicit_value_construction) {
 }
 
 TEST(optional, copy_construction_engaged) {
-  std::optional<int> const a = 10;
+  const std::optional<int> a = 10;
   const std::optional<int>& b = a;
   ASSERT_TRUE(b.has_value());
   ASSERT_EQ(*b, 10);
 }
 
 TEST(optional, copy_construction_empty) {
-  std::optional<int> const a;
-  std::optional<int> const& b = a;
+  const std::optional<int> a;
+  const std::optional<int>& b = a;
   ASSERT_FALSE(b.has_value());
 }
 
@@ -71,7 +71,7 @@ TEST(optional, move_construction_engaged) {
 
 TEST(optional, move_construction_empty) {
   std::optional<int> a;
-  std::optional<int> const b = std::move(a);
+  const std::optional<int> b = std::move(a);
   ASSERT_FALSE(b.has_value());
 }
 
@@ -92,7 +92,7 @@ TEST(optional, destructor_called_on_reset) {
 TEST(optional, destructor_called_on_scope_exit) {
   Tracked::instances = 0;
   {
-    std::optional<Tracked> const o = Tracked(3);
+    const std::optional<Tracked> o = Tracked(3);
     ASSERT_EQ(Tracked::instances, 1);
   }
   ASSERT_EQ(Tracked::instances, 0);
@@ -109,7 +109,7 @@ TEST(optional, nullopt_assignment_clears) {
 }
 
 TEST(optional, copy_assignment_engaged) {
-  std::optional<int> const a = 1;
+  const std::optional<int> a = 1;
   std::optional<int> b;
   b = a;
   ASSERT_TRUE(b.has_value());
@@ -117,7 +117,7 @@ TEST(optional, copy_assignment_engaged) {
 }
 
 TEST(optional, copy_assignment_empty) {
-  std::optional<int> const a;
+  const std::optional<int> a;
   std::optional<int> b = 5;
   b = a;
   ASSERT_FALSE(b.has_value());
@@ -165,12 +165,12 @@ TEST(optional, value_method) {
 }
 
 TEST(optional, value_or_engaged) {
-  std::optional<int> const o = 10;
+  const std::optional<int> o = 10;
   ASSERT_EQ(o.value_or(99), 10);
 }
 
 TEST(optional, value_or_empty) {
-  std::optional<int> const o;
+  const std::optional<int> o;
   ASSERT_EQ(o.value_or(99), 99);
 }
 
@@ -257,35 +257,35 @@ TEST(optional, make_optional_value) {
 // ===========================================================================
 
 TEST(optional, equality_both_engaged_equal) {
-  std::optional<int> const a = 5;
-  std::optional<int> const b = 5;
+  const std::optional<int> a = 5;
+  const std::optional<int> b = 5;
   ASSERT_TRUE(a == b);
   ASSERT_FALSE(a != b);
 }
 
 TEST(optional, equality_both_engaged_different) {
-  std::optional<int> const a = 5;
-  std::optional<int> const b = 6;
+  const std::optional<int> a = 5;
+  const std::optional<int> b = 6;
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }
 
 TEST(optional, equality_both_empty) {
-  std::optional<int> const a;
-  std::optional<int> const b;
+  const std::optional<int> a;
+  const std::optional<int> b;
   ASSERT_TRUE(a == b);
 }
 
 TEST(optional, equality_one_empty) {
-  std::optional<int> const a = 5;
-  std::optional<int> const b;
+  const std::optional<int> a = 5;
+  const std::optional<int> b;
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }
 
 TEST(optional, equality_with_nullopt) {
-  std::optional<int> const empty;
-  std::optional<int> const full = 1;
+  const std::optional<int> empty;
+  const std::optional<int> full = 1;
   ASSERT_TRUE(empty == std::nullopt);
   ASSERT_FALSE(full == std::nullopt);
   ASSERT_TRUE(std::nullopt == empty);
@@ -294,7 +294,7 @@ TEST(optional, equality_with_nullopt) {
 }
 
 TEST(optional, equality_with_value) {
-  std::optional<int> const o = 42;
+  const std::optional<int> o = 42;
   ASSERT_TRUE(o == 42);
   ASSERT_TRUE(42 == o);
   ASSERT_FALSE(o == 1);
@@ -302,7 +302,7 @@ TEST(optional, equality_with_value) {
 }
 
 TEST(optional, equality_empty_with_value) {
-  std::optional<int> const o;
+  const std::optional<int> o;
   ASSERT_FALSE(o == 42);
   ASSERT_TRUE(o != 42);
 }

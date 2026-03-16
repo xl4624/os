@@ -70,7 +70,7 @@ void run_all() {
   char current_category[64] = "";
 
   for (int i = 0; i < kTestCount; ++i) {
-    TestCase const& tc = kTests[i];
+    const TestCase& tc = kTests[i];
 
     // Parse "category/test_name"
     const char* slash = strchr(tc.name, '/');
@@ -114,7 +114,7 @@ void run_all() {
   dbg_putint(kTestState.failed);
   dbg_puts(" failed\n");
 
-  uint8_t const exit_code =
+  const uint8_t exit_code =
       (kTestState.failed == 0) ? QEMU_EXIT_CODE_SUCCESS : QEMU_EXIT_CODE_FAILURE;
   outb(QEMU_DEBUG_EXIT_PORT, exit_code);
 }

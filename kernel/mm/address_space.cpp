@@ -65,7 +65,7 @@ void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user) {
 
 void unmap(PageTable* pd, vaddr_t virt) {
   const uint32_t pdi = pd_index(virt);
-  PageEntry const& pde = pd->entry[pdi];
+  const PageEntry& pde = pd->entry[pdi];
   if (!pde.present) {
     return;
   }
@@ -84,7 +84,7 @@ void unmap(PageTable* pd, vaddr_t virt) {
 
 void unmap_nofree(PageTable* pd, vaddr_t virt) {
   const uint32_t pdi = pd_index(virt);
-  PageEntry const& pde = pd->entry[pdi];
+  const PageEntry& pde = pd->entry[pdi];
   if (!pde.present) {
     return;
   }
@@ -158,7 +158,7 @@ PageDir copy(const PageTable* src_pd) {
 void destroy(PageTable* pd, paddr_t pd_phys) {
   // Free all user-space page tables and their mapped pages.
   for (uint32_t pdi = 0; pdi < kKernelPdeStart; ++pdi) {
-    PageEntry const& pde = pd->entry[pdi];
+    const PageEntry& pde = pd->entry[pdi];
     if (!pde.present) {
       continue;
     }

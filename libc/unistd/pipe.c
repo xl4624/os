@@ -15,7 +15,7 @@ int pipe(int pipefd[2]) {
 int pipe(int pipefd[2]) {
   int32_t ret;
   __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_PIPE), "b"(pipefd));
-  return ret;
+  return __syscall_ret(ret);
 }
 
 #endif

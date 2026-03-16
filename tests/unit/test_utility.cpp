@@ -3,9 +3,9 @@
 #include "../framework/test.h"
 
 TEST(utility, move_produces_rvalue) {
-  int const x = 42;
+  const int x = 42;
   static_assert(std::is_rvalue_reference_v<decltype(std::move(x))>);
-  int const y = x;
+  const int y = x;
   ASSERT_EQ(y, 42);
 }
 
@@ -16,7 +16,7 @@ TEST(utility, move_class) {
     Tracker(Tracker&& other) noexcept { other.moved = true; }
   };
   Tracker a;
-  Tracker const b(std::move(a));
+  const Tracker b(std::move(a));
   ASSERT_TRUE(a.moved);
 }
 

@@ -144,7 +144,7 @@ void Heap::dump() const {
 
   BlockHeader* cur = base_;
   while (reinterpret_cast<uint8_t*>(cur) < end_) {
-    void const* payload = reinterpret_cast<uint8_t*>(cur) + sizeof(BlockHeader);
+    const void* payload = reinterpret_cast<uint8_t*>(cur) + sizeof(BlockHeader);
     printf("  [%p] payload=%p size=%6u %s\n", reinterpret_cast<void*>(cur), payload,
            static_cast<unsigned>(cur->size), cur->free ? "FREE" : "USED");
     if (cur->free) {

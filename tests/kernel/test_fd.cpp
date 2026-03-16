@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <string.h>
 #include <sys/syscall.h>
 
@@ -85,7 +86,7 @@ TEST(fd, write_bad_fd) {
   frame.eax = SYS_WRITE;
   frame.ebx = 99;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EBADF));
 }
 
 TEST(fd, write_null_fd_slot) {
@@ -99,7 +100,7 @@ TEST(fd, write_null_fd_slot) {
   frame.ecx = 0;
   frame.edx = 0;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EBADF));
 
   proc->fds[5] = saved;
 }
@@ -131,7 +132,7 @@ TEST(fd, close_invalid_fd) {
   frame.eax = SYS_CLOSE;
   frame.ebx = 99;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EBADF));
 }
 
 // ===========================================================================
@@ -153,7 +154,7 @@ TEST(fd, dup2_copies_fd) {
   frame.ecx = *slot + 1;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
 
-  uint32_t const newfd = *slot + 1;
+  const uint32_t newfd = *slot + 1;
   ASSERT_EQ(frame.eax, newfd);
   ASSERT(proc->fds[newfd] == desc);
   ASSERT_EQ(desc->ref_count, 2U);
@@ -183,5 +184,5 @@ TEST(fd, dup2_invalid_oldfd) {
   frame.ebx = 99;
   frame.ecx = 3;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
+  ASSERT_EQ(frame.eax, static_cast<uint32_t>(-EBADF));
 }

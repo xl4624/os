@@ -67,3 +67,18 @@ timer_entry:
 .type syscall_entry, @function
 syscall_entry:
     TRAP_ENTRY syscall_dispatch
+
+/*
+ * Page fault (ISR 14). Registered in IDT by Syscall::init() to override the
+ * default ISRWrapper<14> and route through the full TRAP_ENTRY machinery so
+ * we can context-switch on delivery of SIGSEGV.
+ *
+ * The CPU pushes an error code onto the stack before EIP/CS/EFLAGS/ESP/SS,
+ * so we discard it with add $4,%esp before the standard TRAP_ENTRY push
+ * sequence.
+ */
+.global page_fault_entry
+.type page_fault_entry, @function
+page_fault_entry:
+    add $4, %esp            /* discard CPU-pushed error code */
+    TRAP_ENTRY page_fault_dispatch

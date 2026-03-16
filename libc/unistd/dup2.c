@@ -16,7 +16,7 @@ int dup2(int oldfd, int newfd) {
 int dup2(int oldfd, int newfd) {
   int32_t ret;
   __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_DUP2), "b"(oldfd), "c"(newfd));
-  return ret;
+  return __syscall_ret(ret);
 }
 
 #endif

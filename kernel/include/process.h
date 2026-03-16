@@ -36,6 +36,7 @@ static_assert(offsetof(TrapFrame, user_ss) == 64, "user_ss at offset 64");
 
 // Process states for the scheduler.
 enum class ProcessState : uint8_t {
+  Empty = 0,  // slot is unused or has been reaped
   Ready,
   Running,
   Blocked,
@@ -52,6 +53,35 @@ static constexpr uint32_t kMaxProcesses = 64;
 static constexpr vaddr_t kUserStackVA = 0x00BFC000;
 static constexpr uint32_t kUserStackPages = 4;
 static constexpr vaddr_t kUserStackTop = kUserStackVA + kUserStackPages * PAGE_SIZE;
+
+// Signal handler disposition: 0 = SIG_DFL, 1 = SIG_IGN, else user-space VA.
+static constexpr uint32_t kSigDfl = 0;
+static constexpr uint32_t kSigIgn = 1;
+
+/*
+ * Signal frame pushed onto the user stack when a user-installed signal handler
+ * is invoked. Layout (from low to high user-space address):
+ *
+ *   [trampoline: 7 bytes]   -- mov $SYS_SIGRETURN,%eax; int $0x80
+ *   [SignalFrame]
+ *     return_addr           -- points to start of trampoline above
+ *     signum                -- first argument to handler (C cdecl)
+ *     saved_eax .. saved_esp  -- register state to restore on sigreturn
+ *
+ * After the handler executes ret, execution jumps to the trampoline which
+ * issues sys_sigreturn to restore the saved context.
+ */
+struct SignalFrame {
+  uint32_t return_addr;  // points to inline trampoline (7 bytes below this frame)
+  uint32_t signum;       // argument to handler
+  // Saved user context:
+  uint32_t saved_eax;
+  uint32_t saved_ecx;
+  uint32_t saved_edx;
+  uint32_t saved_eip;
+  uint32_t saved_eflags;
+  uint32_t saved_esp;
+} __attribute__((packed));
 
 /*
  * Process Control Block (PCB).
@@ -74,5 +104,8 @@ struct Process {
   std::array<FileDescription*, kMaxFds> fds{};  // per-process file descriptor table
   std::array<ShmMapping, kMaxShmMappings> shm_mappings{};  // shared memory attachments
   uint32_t shm_mapping_count;                              // number of active shm mappings
-  Process* next;  // intrusive list pointer (ready/blocked queues)
+  // Signal state:
+  uint32_t pending_signals;      // bitmask: bit N set means signal N is pending
+  uint32_t signal_handlers[32];  // per-signal handler: kSigDfl / kSigIgn / user VA
+  Process* next;                 // intrusive list pointer (ready/blocked queues)
 };

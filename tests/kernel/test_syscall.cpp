@@ -89,7 +89,7 @@ TEST(syscall, read_buf_overflow) {
   TrapFrame frame = {};
   frame.eax = SYS_READ;
   frame.ebx = 0;            // fd = stdin
-  frame.ecx = 0xFFFFFFFEu;  // buf near end of address space
+  frame.ecx = 0xFFFFFFFEU;  // buf near end of address space
   frame.edx = 4;            // buf + count wraps to 2
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
   ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
@@ -116,7 +116,7 @@ TEST(syscall, sbrk_query) {
   frame.eax = SYS_SBRK;
   frame.ebx = 0;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
-  ASSERT_EQ(frame.eax, 0u);
+  ASSERT_EQ(frame.eax, 0U);
 }
 
 // An increment that would push the break to exactly KERNEL_VMA is rejected.
@@ -136,13 +136,13 @@ TEST(syscall, sbrk_at_kernel_boundary) {
 // which is less than old_break, triggering the new_break < old_break guard.
 TEST(syscall, sbrk_negative_below_break) {
   Process* proc = Scheduler::current();
-  vaddr_t orig_break = proc->heap_break;
+  vaddr_t const orig_break = proc->heap_break;
 
   proc->heap_break = 0x00401000;
 
   TrapFrame frame = {};
   frame.eax = SYS_SBRK;
-  frame.ebx = 0xFFFFFFFFu;  // -1 as int32_t
+  frame.ebx = 0xFFFFFFFFU;  // -1 as int32_t
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
   ASSERT_EQ(frame.eax, static_cast<uint32_t>(-1));
 
@@ -157,8 +157,8 @@ TEST(syscall, sbrk_allocates_page) {
 
   Process* proc = Scheduler::current();
   PageTable* orig_pd = proc->page_directory;
-  paddr_t orig_pd_phys = proc->page_directory_phys;
-  vaddr_t orig_break = proc->heap_break;
+  paddr_t const orig_pd_phys = proc->page_directory_phys;
+  vaddr_t const orig_break = proc->heap_break;
 
   proc->page_directory = pd;
   proc->page_directory_phys = pd_phys;
@@ -170,8 +170,8 @@ TEST(syscall, sbrk_allocates_page) {
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
 
   // Returns old break and advances break by PAGE_SIZE.
-  ASSERT_EQ(frame.eax, 0x00400000u);
-  ASSERT_EQ(static_cast<uint32_t>(proc->heap_break), 0x00401000u);
+  ASSERT_EQ(frame.eax, 0x00400000U);
+  ASSERT_EQ(static_cast<uint32_t>(proc->heap_break), 0x00401000U);
   // The page that was newly allocated must be user-writable.
   ASSERT_TRUE(AddressSpace::is_user_mapped(pd, 0x00400000, /*writeable=*/true));
 
@@ -204,7 +204,7 @@ TEST(syscall, alloc_user_stack_range) {
   ASSERT_NOT_NULL(pd);
 
   const char* argv[] = {"test"};
-  uint32_t esp = Scheduler::alloc_user_stack(pd, argv);
+  uint32_t const esp = Scheduler::alloc_user_stack(pd, argv);
   ASSERT_NE(esp, 0U);
   ASSERT_TRUE(esp < static_cast<uint32_t>(kUserStackTop));
   ASSERT_TRUE(esp >= static_cast<uint32_t>(kUserStackVA));
@@ -217,7 +217,7 @@ TEST(syscall, alloc_user_stack_pages_are_user_mapped) {
   ASSERT_NOT_NULL(pd);
 
   const char* argv[] = {"hello"};
-  uint32_t esp = Scheduler::alloc_user_stack(pd, argv);
+  uint32_t const esp = Scheduler::alloc_user_stack(pd, argv);
   ASSERT_NE(esp, 0U);
   ASSERT_TRUE(AddressSpace::is_user_mapped(pd, esp, /*writeable=*/true));
 

@@ -3,9 +3,9 @@
 #include "../framework/test.h"
 
 TEST(utility, move_produces_rvalue) {
-  int x = 42;
-  static_assert(std::is_rvalue_reference<decltype(std::move(x))>::value);
-  int y = std::move(x);
+  int const x = 42;
+  static_assert(std::is_rvalue_reference_v<decltype(std::move(x))>);
+  int const y = x;
   ASSERT_EQ(y, 42);
 }
 
@@ -16,13 +16,13 @@ TEST(utility, move_class) {
     Tracker(Tracker&& other) noexcept { other.moved = true; }
   };
   Tracker a;
-  Tracker b(std::move(a));
+  Tracker const b(std::move(a));
   ASSERT_TRUE(a.moved);
 }
 
 TEST(utility, forward_lvalue) {
   int x = 10;
-  static_assert(std::is_lvalue_reference<decltype(std::forward<int&>(x))>::value);
+  static_assert(std::is_lvalue_reference_v<decltype(std::forward<int&>(x))>);
   int& ref = std::forward<int&>(x);
   ASSERT_EQ(ref, 10);
   ref = 20;
@@ -30,11 +30,12 @@ TEST(utility, forward_lvalue) {
 }
 
 TEST(utility, forward_rvalue) {
-  static_assert(std::is_rvalue_reference<decltype(std::forward<int>(42))>::value);
+  static_assert(std::is_rvalue_reference_v<decltype(std::forward<int>(42))>);
 }
 
 TEST(utility, swap_ints) {
-  int a = 1, b = 2;
+  int a = 1;
+  int b = 2;
   std::swap(a, b);
   ASSERT_EQ(a, 2);
   ASSERT_EQ(b, 1);
@@ -60,7 +61,8 @@ TEST(utility, swap_class) {
   struct Point {
     int x, y;
   };
-  Point p = {1, 2}, q = {3, 4};
+  Point p = {1, 2};
+  Point q = {3, 4};
   std::swap(p, q);
   ASSERT_EQ(p.x, 3);
   ASSERT_EQ(p.y, 4);
@@ -129,7 +131,7 @@ TEST(utility, is_trivially_copyable) {
     float y;
   };
   struct NonTrivial {
-    NonTrivial(const NonTrivial&) {}
+    NonTrivial(const NonTrivial& /*unused*/) {}
   };
   static_assert(std::is_trivially_copyable_v<int>);
   static_assert(std::is_trivially_copyable_v<Trivial>);
@@ -143,8 +145,8 @@ TEST(utility, is_trivially_constructible) {
     int x;
   };
   struct NonTrivial {
-    NonTrivial() : x(42) {}
-    int x;
+    NonTrivial() {}
+    int x{42};
   };
   static_assert(std::is_trivially_constructible_v<int>);
   static_assert(std::is_trivially_constructible_v<Trivial>);
@@ -158,8 +160,8 @@ TEST(utility, is_trivial) {
     int x;
   };
   struct NonTrivial {
-    NonTrivial() : x(0) {}
-    int x;
+    NonTrivial() {}
+    int x{0};
   };
   static_assert(std::is_trivial_v<int>);
   static_assert(std::is_trivial_v<Trivial>);
@@ -246,10 +248,10 @@ TEST(utility, is_aggregate) {
 
 TEST(utility, is_nothrow_default_constructible) {
   struct Nothrow {
-    Nothrow() noexcept {}
+    Nothrow() noexcept = default;
   };
   struct Throwing {
-    Throwing() {}
+    Throwing() noexcept(false) {}
   };
   static_assert(std::is_nothrow_default_constructible_v<int>);
   static_assert(std::is_nothrow_default_constructible_v<Nothrow>);
@@ -262,11 +264,11 @@ TEST(utility, is_nothrow_default_constructible) {
 TEST(utility, is_nothrow_copy_constructible) {
   struct Nothrow {
     Nothrow() = default;
-    Nothrow(const Nothrow&) noexcept {}
+    Nothrow(const Nothrow& /*unused*/) noexcept = default;
   };
   struct Throwing {
     Throwing() = default;
-    Throwing(const Throwing&) {}
+    Throwing(const Throwing& /*unused*/) noexcept(false) {}
   };
   static_assert(std::is_nothrow_copy_constructible_v<int>);
   static_assert(std::is_nothrow_copy_constructible_v<Nothrow>);
@@ -278,11 +280,11 @@ TEST(utility, is_nothrow_copy_constructible) {
 TEST(utility, is_nothrow_move_constructible) {
   struct Nothrow {
     Nothrow() = default;
-    Nothrow(Nothrow&&) noexcept {}
+    Nothrow(Nothrow&& /*unused*/) noexcept {}
   };
   struct Throwing {
     Throwing() = default;
-    Throwing(Throwing&&) {}
+    Throwing(Throwing&& /*unused*/) noexcept(false) {}
   };
   static_assert(std::is_nothrow_move_constructible_v<int>);
   static_assert(std::is_nothrow_move_constructible_v<Nothrow>);
@@ -296,7 +298,7 @@ TEST(utility, is_nothrow_move_constructible) {
 // ===========================================================================
 
 struct NothrowSwappable {
-  friend void swap(NothrowSwappable&, NothrowSwappable&) noexcept {}
+  friend void swap(NothrowSwappable& /*unused*/, NothrowSwappable& /*unused*/) noexcept {}
 };
 
 TEST(utility, is_nothrow_swappable) {
@@ -315,7 +317,7 @@ struct ReturnsInt {
 };
 
 struct TakesIntReturnsFloat {
-  float operator()(int) noexcept { return 1.0f; }
+  float operator()(int /*unused*/) noexcept { return 1.0F; }
 };
 
 TEST(utility, invoke_result_nullary) {

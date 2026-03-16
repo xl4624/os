@@ -12,12 +12,12 @@
 #include "multiboot.h"
 #include "paging.h"
 #include "pit.h"
-#include "vmm.h"
 #include "scheduler.h"
 #include "syscall.h"
 #include "terminal.h"
 #include "tss.h"
 #include "vfs.h"
+#include "vmm.h"
 #include "x86.h"
 
 /* Verify we are using the i686-elf cross-compile */

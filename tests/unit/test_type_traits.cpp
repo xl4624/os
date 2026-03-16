@@ -14,8 +14,8 @@ TEST(type_traits, integral_constant) {
 }
 
 TEST(type_traits, is_same) {
-  static_assert(std::is_same<int, int>::value);
-  static_assert(!std::is_same<int, float>::value);
+  static_assert(std::is_same_v<int, int>);
+  static_assert(!std::is_same_v<int, float>);
   static_assert(!std::is_same_v<int, const int>);
   ASSERT_TRUE((std::is_same<int, int>::value));
   ASSERT_FALSE((std::is_same<int, float>::value));

@@ -153,7 +153,7 @@ TEST(fd, dup2_copies_fd) {
   frame.ecx = *slot + 1;
   syscall_dispatch(reinterpret_cast<uint32_t>(&frame));
 
-  uint32_t newfd = *slot + 1;
+  uint32_t const newfd = *slot + 1;
   ASSERT_EQ(frame.eax, newfd);
   ASSERT(proc->fds[newfd] == desc);
   ASSERT_EQ(desc->ref_count, 2U);

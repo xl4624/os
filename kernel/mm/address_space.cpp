@@ -8,7 +8,6 @@
 
 namespace {
 
-
 // Top 10 bits of a virtual address → page directory index.
 constexpr uint32_t pd_index(vaddr_t va) { return va >> (PAGE_TABLE_BITS + PAGE_OFFSET_BITS); }
 

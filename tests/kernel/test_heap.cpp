@@ -16,7 +16,7 @@ TEST(heap, alloc_returns_nonnull) {
 
 TEST(heap, alloc_is_16byte_aligned) {
   const size_t sizes[] = {1, 7, 16, 17, 64, 100, 256};
-  for (unsigned int size : sizes) {
+  for (unsigned int const size : sizes) {
     void* p = kmalloc(size);
     ASSERT_NOT_NULL(p);
     ASSERT((reinterpret_cast<uintptr_t>(p) & 15U) == 0U);
@@ -47,7 +47,7 @@ TEST(heap, alloc_multiple_disjoint) {
 }
 
 TEST(heap, alloc_zero_returns_null) {
-  void* p = kmalloc(0);
+  void const* p = kmalloc(0);
   ASSERT_NULL(p);
 }
 
@@ -76,7 +76,7 @@ TEST(heap, many_small_allocs) {
 }
 
 TEST(heap, oom_returns_null) {
-  void* p = kmalloc(Heap::kMaxSize + 1);
+  void const* p = kmalloc(Heap::kMaxSize + 1);
   ASSERT_NULL(p);
 }
 
@@ -94,7 +94,7 @@ TEST(heap, calloc_zeroed) {
 }
 
 TEST(heap, calloc_overflow_safe) {
-  void* p = kcalloc(static_cast<size_t>(-1), 2);
+  void const* p = kcalloc(static_cast<size_t>(-1), 2);
   ASSERT_NULL(p);
 }
 
@@ -194,7 +194,7 @@ TEST(heap, realloc_null_is_malloc) {
 TEST(heap, realloc_zero_frees) {
   void* p = kmalloc(64);
   ASSERT_NOT_NULL(p);
-  void* q = krealloc(p, 0);
+  void const* q = krealloc(p, 0);
   ASSERT_NULL(q);
 }
 

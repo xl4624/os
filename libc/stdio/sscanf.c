@@ -60,7 +60,7 @@ int sscanf(const char* str, const char* format, ...) {
     // parse width
     int width = 0;
     while (*format >= '0' && *format <= '9') {
-      width = width * 10 + (*format - '0');
+      width = ((width * 10)) + (*format - '0');
       ++format;
     }
     if (width == 0) {
@@ -85,7 +85,7 @@ int sscanf(const char* str, const char* format, ...) {
         long val = 0;
         int chars = 0;
         while (*s >= '0' && *s <= '9' && (width < 0 || chars < width)) {
-          val = val * 10 + (*s - '0');
+          val = ((val * 10)) + (*s - '0');
           ++s;
           ++chars;
         }
@@ -113,7 +113,7 @@ int sscanf(const char* str, const char* format, ...) {
         unsigned long val = 0;
         int chars = 0;
         while ((d = to_digit(*s, 16)) >= 0 && (width < 0 || chars < width)) {
-          val = val * 16 + (unsigned long)d;
+          val = ((val * 16)) + (unsigned long)d;
           ++s;
           ++chars;
         }

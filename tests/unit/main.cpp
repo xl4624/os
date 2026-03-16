@@ -13,13 +13,13 @@ int main() {
   // Group by category
   char current_category[64] = "";
   for (int i = 0; i < kTestCount; ++i) {
-    TestCase& test = kTests[i];
+    TestCase const& test = kTests[i];
     const char* slash = strchr(test.name, '/');
-    if (!slash) {
+    if (slash == nullptr) {
       continue;
     }
 
-    size_t cat_len = slash - test.name;
+    size_t const cat_len = slash - test.name;
     char category[64];
     for (size_t j = 0; j < cat_len && j < 63; ++j) {
       category[j] = test.name[j];
@@ -28,7 +28,7 @@ int main() {
     const char* test_name = slash + 1;
 
     if (strcmp(category, current_category) != 0) {
-      if (current_category[0]) {
+      if (current_category[0] != 0) {
         printf("\n");
       }
       strcpy(current_category, category);

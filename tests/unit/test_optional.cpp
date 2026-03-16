@@ -26,13 +26,13 @@ int Tracked::instances = 0;
 // ===========================================================================
 
 TEST(optional, default_is_empty) {
-  std::optional<int> o;
+  std::optional<int> const o;
   ASSERT_FALSE(o.has_value());
   ASSERT_FALSE(static_cast<bool>(o));
 }
 
 TEST(optional, nullopt_is_empty) {
-  std::optional<int> o = std::nullopt;
+  std::optional<int> const o = std::nullopt;
   ASSERT_FALSE(o.has_value());
 }
 
@@ -49,15 +49,15 @@ TEST(optional, implicit_value_construction) {
 }
 
 TEST(optional, copy_construction_engaged) {
-  std::optional<int> a = 10;
-  std::optional<int> b = a;
+  std::optional<int> const a = 10;
+  const std::optional<int>& b = a;
   ASSERT_TRUE(b.has_value());
   ASSERT_EQ(*b, 10);
 }
 
 TEST(optional, copy_construction_empty) {
-  std::optional<int> a;
-  std::optional<int> b = a;
+  std::optional<int> const a;
+  std::optional<int> const& b = a;
   ASSERT_FALSE(b.has_value());
 }
 
@@ -71,7 +71,7 @@ TEST(optional, move_construction_engaged) {
 
 TEST(optional, move_construction_empty) {
   std::optional<int> a;
-  std::optional<int> b = std::move(a);
+  std::optional<int> const b = std::move(a);
   ASSERT_FALSE(b.has_value());
 }
 
@@ -92,7 +92,7 @@ TEST(optional, destructor_called_on_reset) {
 TEST(optional, destructor_called_on_scope_exit) {
   Tracked::instances = 0;
   {
-    std::optional<Tracked> o = Tracked(3);
+    std::optional<Tracked> const o = Tracked(3);
     ASSERT_EQ(Tracked::instances, 1);
   }
   ASSERT_EQ(Tracked::instances, 0);
@@ -109,7 +109,7 @@ TEST(optional, nullopt_assignment_clears) {
 }
 
 TEST(optional, copy_assignment_engaged) {
-  std::optional<int> a = 1;
+  std::optional<int> const a = 1;
   std::optional<int> b;
   b = a;
   ASSERT_TRUE(b.has_value());
@@ -117,7 +117,7 @@ TEST(optional, copy_assignment_engaged) {
 }
 
 TEST(optional, copy_assignment_empty) {
-  std::optional<int> a;
+  std::optional<int> const a;
   std::optional<int> b = 5;
   b = a;
   ASSERT_FALSE(b.has_value());
@@ -165,12 +165,12 @@ TEST(optional, value_method) {
 }
 
 TEST(optional, value_or_engaged) {
-  std::optional<int> o = 10;
+  std::optional<int> const o = 10;
   ASSERT_EQ(o.value_or(99), 10);
 }
 
 TEST(optional, value_or_empty) {
-  std::optional<int> o;
+  std::optional<int> const o;
   ASSERT_EQ(o.value_or(99), 99);
 }
 
@@ -209,14 +209,16 @@ TEST(optional, emplace_calls_destructor_first) {
 }
 
 TEST(optional, swap_both_engaged) {
-  std::optional<int> a = 1, b = 2;
+  std::optional<int> a = 1;
+  std::optional<int> b = 2;
   a.swap(b);
   ASSERT_EQ(*a, 2);
   ASSERT_EQ(*b, 1);
 }
 
 TEST(optional, swap_first_empty) {
-  std::optional<int> a, b = 9;
+  std::optional<int> a;
+  std::optional<int> b = 9;
   a.swap(b);
   ASSERT_TRUE(a.has_value());
   ASSERT_EQ(*a, 9);
@@ -224,7 +226,8 @@ TEST(optional, swap_first_empty) {
 }
 
 TEST(optional, swap_second_empty) {
-  std::optional<int> a = 3, b;
+  std::optional<int> a = 3;
+  std::optional<int> b;
   a.swap(b);
   ASSERT_FALSE(a.has_value());
   ASSERT_TRUE(b.has_value());
@@ -232,7 +235,8 @@ TEST(optional, swap_second_empty) {
 }
 
 TEST(optional, swap_both_empty) {
-  std::optional<int> a, b;
+  std::optional<int> a;
+  std::optional<int> b;
   a.swap(b);
   ASSERT_FALSE(a.has_value());
   ASSERT_FALSE(b.has_value());
@@ -253,35 +257,35 @@ TEST(optional, make_optional_value) {
 // ===========================================================================
 
 TEST(optional, equality_both_engaged_equal) {
-  std::optional<int> a = 5;
-  std::optional<int> b = 5;
+  std::optional<int> const a = 5;
+  std::optional<int> const b = 5;
   ASSERT_TRUE(a == b);
   ASSERT_FALSE(a != b);
 }
 
 TEST(optional, equality_both_engaged_different) {
-  std::optional<int> a = 5;
-  std::optional<int> b = 6;
+  std::optional<int> const a = 5;
+  std::optional<int> const b = 6;
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }
 
 TEST(optional, equality_both_empty) {
-  std::optional<int> a;
-  std::optional<int> b;
+  std::optional<int> const a;
+  std::optional<int> const b;
   ASSERT_TRUE(a == b);
 }
 
 TEST(optional, equality_one_empty) {
-  std::optional<int> a = 5;
-  std::optional<int> b;
+  std::optional<int> const a = 5;
+  std::optional<int> const b;
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }
 
 TEST(optional, equality_with_nullopt) {
-  std::optional<int> empty;
-  std::optional<int> full = 1;
+  std::optional<int> const empty;
+  std::optional<int> const full = 1;
   ASSERT_TRUE(empty == std::nullopt);
   ASSERT_FALSE(full == std::nullopt);
   ASSERT_TRUE(std::nullopt == empty);
@@ -290,7 +294,7 @@ TEST(optional, equality_with_nullopt) {
 }
 
 TEST(optional, equality_with_value) {
-  std::optional<int> o = 42;
+  std::optional<int> const o = 42;
   ASSERT_TRUE(o == 42);
   ASSERT_TRUE(42 == o);
   ASSERT_FALSE(o == 1);
@@ -298,7 +302,7 @@ TEST(optional, equality_with_value) {
 }
 
 TEST(optional, equality_empty_with_value) {
-  std::optional<int> o;
+  std::optional<int> const o;
   ASSERT_FALSE(o == 42);
   ASSERT_TRUE(o != 42);
 }

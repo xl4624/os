@@ -36,13 +36,13 @@ TEST(address_space, create_and_destroy) {
 
 TEST(address_space, map_user_page) {
   auto [pd_phys, pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
 
   AddressSpace::map(pd, 0x00400000, page, true, true);
 
   // Verify the PDE and PTE were created.
-  uint32_t pdi = 0x00400000 >> 22;
+  uint32_t const pdi = 0x00400000 >> 22;
   ASSERT_EQ(pd->entry[pdi].present, 1U);
   ASSERT_EQ(pd->entry[pdi].user, 1U);
 
@@ -77,7 +77,7 @@ TEST(address_space, copy_propagates_user_mapping) {
   // A user page mapped in the source must appear at the same virtual address
   // in the copy, with the same access flags.
   auto [src_phys, src_pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
   AddressSpace::map(src_pd, 0x00400000, page, /*writeable=*/true,
                     /*user=*/true);
@@ -95,7 +95,7 @@ TEST(address_space, copy_uses_distinct_physical_frames) {
   // The copied page must be backed by a different physical frame so writes
   // in one address space do not affect the other.
   auto [src_phys, src_pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
   AddressSpace::map(src_pd, 0x00400000, page, /*writeable=*/true,
                     /*user=*/true);
@@ -126,10 +126,10 @@ TEST(address_space, copy_uses_distinct_physical_frames) {
 TEST(address_space, copy_replicates_page_data) {
   // Page contents from the source must be present verbatim in the copy.
   auto [src_phys, src_pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
 
-  uint8_t* src_data = phys_to_virt(page).ptr<uint8_t>();
+  auto* src_data = phys_to_virt(page).ptr<uint8_t>();
   for (uint32_t i = 0; i < PAGE_SIZE; ++i) {
     src_data[i] = static_cast<uint8_t>(i & 0xFF);
   }
@@ -147,7 +147,7 @@ TEST(address_space, copy_replicates_page_data) {
   const auto* dst_pt =
       phys_to_virt(paddr_t{static_cast<uintptr_t>(dst_pde.frame) << PAGE_OFFSET_BITS})
           .ptr<const PageTable>();
-  const uint8_t* dst_data =
+  const auto* dst_data =
       phys_to_virt(paddr_t{static_cast<uintptr_t>(dst_pt->entry[pti].frame) << PAGE_OFFSET_BITS})
           .ptr<const uint8_t>();
 
@@ -162,7 +162,7 @@ TEST(address_space, copy_replicates_page_data) {
 // ===========================================================================
 
 TEST(scheduler, current_not_null) {
-  Process* p = Scheduler::current();
+  Process const* p = Scheduler::current();
   ASSERT_NOT_NULL(p);
   ASSERT_EQ(p->pid, 0U);  // idle process has PID 0
 }
@@ -209,7 +209,7 @@ TEST(scheduler, create_process) {
   TestElf elf;
   make_test_elf(elf, 0x00400000);
 
-  Process* p = Scheduler::create_process(
+  Process const* p = Scheduler::create_process(
       std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)}, "test");
   ASSERT_NOT_NULL(p);
   ASSERT_EQ(p->pid, 1U);  // first user process
@@ -223,9 +223,9 @@ TEST(scheduler, create_multiple_processes) {
   make_test_elf(elf, 0x00400000);
   const std::span<const uint8_t> data{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)};
 
-  Process* p1 = Scheduler::create_process(data, "test1");
-  Process* p2 = Scheduler::create_process(data, "test2");
-  Process* p3 = Scheduler::create_process(data, "test3");
+  Process const* p1 = Scheduler::create_process(data, "test1");
+  Process const* p2 = Scheduler::create_process(data, "test2");
+  Process const* p3 = Scheduler::create_process(data, "test3");
 
   ASSERT_NOT_NULL(p1);
   ASSERT_NOT_NULL(p2);

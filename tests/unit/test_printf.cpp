@@ -5,14 +5,14 @@
 TEST(printf, fprintf_empty_format) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
-  int n = fprintf(stdout, "");
+  int const n = fprintf(stdout, "");
 #pragma GCC diagnostic pop
   ASSERT_EQ(n, 0);
 }
 
 TEST(printf, fprintf_plain_string) {
   // "hello\n" = 6 chars
-  int n = fprintf(stdout, "hello\n");
+  int const n = fprintf(stdout, "hello\n");
   ASSERT_EQ(n, 6);
 }
 
@@ -21,8 +21,8 @@ TEST(printf, fprintf_matches_snprintf_count) {
   // the same character count for identical format strings and arguments.
   const char* fmt = "val: %d hex: %x str: %s";
   char buf[64];
-  int n_snprintf = snprintf(buf, sizeof(buf), fmt, 42, 0xab, "world");
-  int n_fprintf = fprintf(stdout, fmt, 42, 0xab, "world");
+  int const n_snprintf = snprintf(buf, sizeof(buf), fmt, 42, 0xab, "world");
+  int const n_fprintf = fprintf(stdout, fmt, 42, 0xab, "world");
   fprintf(stdout, "\n");
   ASSERT_EQ(n_snprintf, n_fprintf);
 }
@@ -30,6 +30,6 @@ TEST(printf, fprintf_matches_snprintf_count) {
 TEST(printf, fprintf_stderr) {
   // fprintf to stderr should work the same way as stdout
   // "test\n" = 5 chars
-  int n = fprintf(stderr, "test\n");
+  int const n = fprintf(stderr, "test\n");
   ASSERT_EQ(n, 5);
 }

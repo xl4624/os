@@ -13,7 +13,7 @@ class RingBuffer {
  public:
   static_assert(Capacity > 0, "RingBuffer capacity must be > 0");
 
-  RingBuffer() = default;
+  RingBuffer() : buffer_{}, head_{0}, tail_{0}, count_{0} {}
   ~RingBuffer() = default;
 
   RingBuffer(const RingBuffer&) = delete;

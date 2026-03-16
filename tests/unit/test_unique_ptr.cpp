@@ -1,3 +1,4 @@
+#include <memory.h>
 #include <unique_ptr.h>
 
 #include "../framework/test.h"
@@ -31,18 +32,18 @@ struct Derived : Base {
 // ===========================================================================
 
 TEST(unique_ptr, default_is_null) {
-  std::unique_ptr<int> p;
+  std::unique_ptr<int> const p;
   ASSERT_NULL(p.get());
   ASSERT_FALSE(static_cast<bool>(p));
 }
 
 TEST(unique_ptr, nullptr_construction) {
-  std::unique_ptr<int> p(nullptr);
+  std::unique_ptr<int> const p(nullptr);
   ASSERT_NULL(p.get());
 }
 
 TEST(unique_ptr, pointer_construction) {
-  std::unique_ptr<int> p(new int(42));
+  std::unique_ptr<int> const p = std::make_unique<int>(42);
   ASSERT_NOT_NULL(p.get());
   ASSERT_EQ(*p, 42);
   ASSERT_TRUE(static_cast<bool>(p));
@@ -55,7 +56,7 @@ TEST(unique_ptr, pointer_construction) {
 TEST(unique_ptr, destructor_frees_on_scope_exit) {
   Widget::destroy_count = 0;
   {
-    std::unique_ptr<Widget> p(new Widget(1));
+    std::unique_ptr<Widget> const p = std::make_unique<Widget>(1);
     ASSERT_EQ(Widget::destroy_count, 0);
   }
   ASSERT_EQ(Widget::destroy_count, 1);
@@ -63,7 +64,7 @@ TEST(unique_ptr, destructor_frees_on_scope_exit) {
 
 TEST(unique_ptr, destructor_frees_on_reset) {
   Widget::destroy_count = 0;
-  std::unique_ptr<Widget> p(new Widget(2));
+  std::unique_ptr<Widget> p = std::make_unique<Widget>(2);
   p.reset();
   ASSERT_EQ(Widget::destroy_count, 1);
   ASSERT_NULL(p.get());
@@ -72,7 +73,7 @@ TEST(unique_ptr, destructor_frees_on_reset) {
 TEST(unique_ptr, no_double_free_on_null) {
   Widget::destroy_count = 0;
   {
-    std::unique_ptr<Widget> p;
+    std::unique_ptr<Widget> const p;
   }
   ASSERT_EQ(Widget::destroy_count, 0);
 }
@@ -82,9 +83,9 @@ TEST(unique_ptr, no_double_free_on_null) {
 // ===========================================================================
 
 TEST(unique_ptr, move_construction_transfers_ownership) {
-  std::unique_ptr<int> a(new int(7));
-  int* raw = a.get();
-  std::unique_ptr<int> b(std::move(a));
+  std::unique_ptr<int> a = std::make_unique<int>(7);
+  int const* raw = a.get();
+  std::unique_ptr<int> const b(std::move(a));
   ASSERT_NULL(a.get());
   ASSERT_EQ(b.get(), raw);
   ASSERT_EQ(*b, 7);
@@ -92,8 +93,8 @@ TEST(unique_ptr, move_construction_transfers_ownership) {
 
 TEST(unique_ptr, move_assignment_transfers_ownership) {
   Widget::destroy_count = 0;
-  std::unique_ptr<Widget> a(new Widget(3));
-  std::unique_ptr<Widget> b(new Widget(4));
+  std::unique_ptr<Widget> a = std::make_unique<Widget>(3);
+  std::unique_ptr<Widget> b = std::make_unique<Widget>(4);
   // Moving a into b should destroy b's original widget.
   b = std::move(a);
   ASSERT_EQ(Widget::destroy_count, 1);
@@ -103,7 +104,7 @@ TEST(unique_ptr, move_assignment_transfers_ownership) {
 
 TEST(unique_ptr, move_assign_nullptr_destroys) {
   Widget::destroy_count = 0;
-  std::unique_ptr<Widget> p(new Widget(5));
+  std::unique_ptr<Widget> p = std::make_unique<Widget>(5);
   p = nullptr;
   ASSERT_EQ(Widget::destroy_count, 1);
   ASSERT_NULL(p.get());
@@ -114,8 +115,8 @@ TEST(unique_ptr, move_assign_nullptr_destroys) {
 // ===========================================================================
 
 TEST(unique_ptr, release_returns_raw_pointer) {
-  std::unique_ptr<int> p(new int(99));
-  int* raw = p.release();
+  std::unique_ptr<int> p = std::make_unique<int>(99);
+  int const* raw = p.release();
   ASSERT_NULL(p.get());
   ASSERT_EQ(*raw, 99);
   delete raw;
@@ -123,7 +124,7 @@ TEST(unique_ptr, release_returns_raw_pointer) {
 
 TEST(unique_ptr, reset_to_new_value) {
   Widget::destroy_count = 0;
-  std::unique_ptr<Widget> p(new Widget(1));
+  std::unique_ptr<Widget> p = std::make_unique<Widget>(1);
   p.reset(new Widget(2));  // NOLINT(modernize-make-unique)
   ASSERT_EQ(Widget::destroy_count, 1);
   ASSERT_EQ(p->value, 2);
@@ -134,7 +135,7 @@ TEST(unique_ptr, reset_to_new_value) {
 // ===========================================================================
 
 TEST(unique_ptr, dereference_operator) {
-  std::unique_ptr<int> p(new int(55));
+  std::unique_ptr<int> p = std::make_unique<int>(55);
   ASSERT_EQ(*p, 55);
   *p = 66;
   ASSERT_EQ(*p, 66);
@@ -144,7 +145,7 @@ TEST(unique_ptr, arrow_operator) {
   struct Point {
     int x, y;
   };
-  std::unique_ptr<Point> p(new Point{3, 4});
+  std::unique_ptr<Point> p = std::make_unique<Point>(Point{3, 4});
   ASSERT_EQ(p->x, 3);
   ASSERT_EQ(p->y, 4);
   p->x = 10;
@@ -156,10 +157,10 @@ TEST(unique_ptr, arrow_operator) {
 // ===========================================================================
 
 TEST(unique_ptr, swap) {
-  std::unique_ptr<int> a(new int(1));
-  std::unique_ptr<int> b(new int(2));
-  int* raw_a = a.get();
-  int* raw_b = b.get();
+  std::unique_ptr<int> a = std::make_unique<int>(1);
+  std::unique_ptr<int> b = std::make_unique<int>(2);
+  int const* raw_a = a.get();
+  int const* raw_b = b.get();
   a.swap(b);
   ASSERT_EQ(a.get(), raw_b);
   ASSERT_EQ(b.get(), raw_a);
@@ -170,19 +171,19 @@ TEST(unique_ptr, swap) {
 // ===========================================================================
 
 TEST(unique_ptr, equality_two_ptrs) {
-  std::unique_ptr<int> a(new int(1));
-  std::unique_ptr<int> b(new int(2));
+  std::unique_ptr<int> const a = std::make_unique<int>(1);
+  std::unique_ptr<int> const b = std::make_unique<int>(2);
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }
 
 TEST(unique_ptr, null_comparison) {
-  std::unique_ptr<int> p;
+  std::unique_ptr<int> const p;
   ASSERT_TRUE(p == nullptr);
   ASSERT_TRUE(nullptr == p);
   ASSERT_FALSE(p != nullptr);
 
-  std::unique_ptr<int> q(new int(1));
+  std::unique_ptr<int> const q = std::make_unique<int>(1);
   ASSERT_FALSE(q == nullptr);
   ASSERT_TRUE(q != nullptr);
 }
@@ -238,7 +239,7 @@ TEST(unique_ptr, array_make_unique) {
 TEST(unique_ptr, array_move_construction) {
   auto a = std::make_unique<int[]>(3);
   a[0] = 10;
-  int* raw = a.get();
+  int const* raw = a.get();
   auto b = std::move(a);
   ASSERT_NULL(a.get());
   ASSERT_EQ(b.get(), raw);
@@ -266,7 +267,7 @@ TEST(unique_ptr, custom_deleter) {
     delete p;
   };
   {
-    std::unique_ptr<int, decltype(deleter)> p(new int(1), deleter);
+    std::unique_ptr<int, decltype(deleter)> const p(new int(1), deleter);
     ASSERT_EQ(freed, 0);
   }
   ASSERT_EQ(freed, 1);

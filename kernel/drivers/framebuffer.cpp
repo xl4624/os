@@ -1,5 +1,7 @@
 #include "framebuffer.h"
 
+#include <algorithm.h>
+#include <cstdint.h>
 #include <string.h>
 
 #include "paging.h"
@@ -92,6 +94,41 @@ void blit(const uint32_t* src, uint32_t dst_x, uint32_t dst_y, uint32_t w, uint3
 
     const uint32_t fb_offset = (y * fb_info.pitch) + (dst_x * bytes_per_pixel);
     memcpy(fb_buffer + fb_offset, src + (row * w), copy_w * bytes_per_pixel);
+  }
+}
+
+void blit_scaled(const uint32_t* src, uint32_t src_w, uint32_t src_h) {
+  if (src_w == 0 || src_h == 0) {
+    return;
+  }
+
+  const uint32_t fb_w = fb_info.width;
+  const uint32_t fb_h = fb_info.height;
+  const uint32_t bytes_per_pixel = fb_info.bpp / 8;
+
+  // Integer scale factor: largest multiplier that fits both dimensions.
+  const uint32_t scale_x = fb_w / src_w;
+  const uint32_t scale_y = fb_h / src_h;
+  uint32_t scale = (scale_x < scale_y) ? scale_x : scale_y;
+  scale = std::max<uint32_t>(scale, 1);
+
+  const uint32_t dst_w = src_w * scale;
+  const uint32_t dst_h = src_h * scale;
+  const uint32_t off_x = (fb_w > dst_w) ? (fb_w - dst_w) / 2 : 0;
+  const uint32_t off_y = (fb_h > dst_h) ? (fb_h - dst_h) / 2 : 0;
+
+  // Clear entire framebuffer to black for letterbox bars.
+  memset(fb_buffer, 0, fb_size);
+
+  for (uint32_t r = 0; r < dst_h; ++r) {
+    const uint32_t src_row = r / scale;
+    // Pointer to the start of the destination row in the framebuffer.
+    auto* dst_row = reinterpret_cast<uint32_t*>(fb_buffer + ((off_y + r) * fb_info.pitch) +
+                                                (off_x * bytes_per_pixel));
+    for (uint32_t c = 0; c < dst_w; ++c) {
+      const uint32_t src_col = c / scale;
+      dst_row[c] = src[(src_row * src_w) + src_col];
+    }
   }
 }
 

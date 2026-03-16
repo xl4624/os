@@ -118,7 +118,7 @@ class PS2CommandQueue {
    * Sends byte to keyboard controller data port.
    * Spins until input buffer is ready.
    */
-  void send_byte(uint8_t data);
+  static void send_byte(uint8_t data);
 
   /**
    * Returns true when keyboard controller input buffer is empty.

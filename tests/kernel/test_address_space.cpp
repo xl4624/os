@@ -20,7 +20,7 @@ TEST(address_space, is_user_mapped_unmapped_returns_false) {
 
 TEST(address_space, is_user_mapped_mapped_returns_true) {
   auto [pd_phys, pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
   AddressSpace::map(pd, 0x00400000, page, /*writeable=*/true, /*user=*/true);
   ASSERT_TRUE(AddressSpace::is_user_mapped(pd, 0x00400000, /*writeable=*/false));
@@ -30,7 +30,7 @@ TEST(address_space, is_user_mapped_mapped_returns_true) {
 
 TEST(address_space, is_user_mapped_read_only) {
   auto [pd_phys, pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
   AddressSpace::map(pd, 0x00400000, page, /*writeable=*/false, /*user=*/true);
   // Read-only page: non-writeable check passes, writeable check fails.
@@ -45,7 +45,7 @@ TEST(address_space, is_user_mapped_read_only) {
 
 TEST(address_space, unmap_removes_mapping) {
   auto [pd_phys, pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
   AddressSpace::map(pd, 0x00400000, page, /*writeable=*/true, /*user=*/true);
   ASSERT_TRUE(AddressSpace::is_user_mapped(pd, 0x00400000, /*writeable=*/false));
@@ -57,7 +57,7 @@ TEST(address_space, unmap_removes_mapping) {
 
 TEST(address_space, is_user_mapped_offset_within_page) {
   auto [pd_phys, pd] = AddressSpace::create();
-  paddr_t page = kPmm.alloc();
+  paddr_t const page = kPmm.alloc();
   ASSERT_NE(page, 0U);
   AddressSpace::map(pd, 0x00400000, page, /*writeable=*/true, /*user=*/true);
   // is_user_mapped rounds va down to its page; the last byte of the same
@@ -98,7 +98,7 @@ TEST(address_space, map_multiple_pages) {
   auto [pd_phys, pd] = AddressSpace::create();
   static constexpr int N = 8;
   for (int i = 0; i < N; ++i) {
-    paddr_t page = kPmm.alloc();
+    paddr_t const page = kPmm.alloc();
     ASSERT_NE(page, 0U);
     AddressSpace::map(pd, static_cast<vaddr_t>(0x00400000 + (i * PAGE_SIZE)), page,
                       /*writeable=*/true, /*user=*/true);

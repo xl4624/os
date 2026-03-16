@@ -25,4 +25,8 @@ struct fb_info {
   uint8_t reserved;
 };
 
+// Scale src (w*h pixels, 32-bit XRGB) to the hardware framebuffer.
+// Returns 0 on success, -1 on error.
+int fb_flip(const void* src, unsigned int w, unsigned int h);
+
 #endif

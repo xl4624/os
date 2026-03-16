@@ -58,4 +58,9 @@ void putpixel(uint32_t x, uint32_t y, uint32_t color);
 // packed (4 bytes per pixel, w*4 bytes per row).
 void blit(const uint32_t* src, uint32_t dst_x, uint32_t dst_y, uint32_t w, uint32_t h);
 
+// Scale src (src_w x src_h, 32-bit XRGB) to fill the framebuffer using
+// nearest-neighbor integer scaling with letterbox centering.
+// If src is larger than the framebuffer, scale is clamped to 1.
+void blit_scaled(const uint32_t* src, uint32_t src_w, uint32_t src_h);
+
 }  // namespace Framebuffer

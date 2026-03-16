@@ -40,7 +40,7 @@ TEST(vmm, write_through_mapped_page) {
   VMM::map(VA, phys);
 
   // Write through the virtual address and verify the value persists.
-  volatile uint32_t* ptr = VA.ptr<volatile uint32_t>();
+  volatile auto* ptr = VA.ptr<volatile uint32_t>();
   *ptr = 0xDEADBEEF;
   ASSERT_EQ(*ptr, static_cast<uint32_t>(0xDEADBEEF));
 
@@ -178,7 +178,7 @@ TEST(vmm, phys_above_8mib_is_accessible_after_map_all_physical_ram) {
   // map_all_physical_ram() must have installed a mapping for it in kernel_init().
   static constexpr uint32_t TEST_PHYS = 9U * 1024U * 1024U;
   const paddr_t phys{TEST_PHYS};
-  volatile uint32_t* ptr = phys_to_virt(phys).ptr<volatile uint32_t>();
+  volatile auto* ptr = phys_to_virt(phys).ptr<volatile uint32_t>();
 
   const uint32_t sentinel = 0xA5A5A5A5U;
   *ptr = sentinel;

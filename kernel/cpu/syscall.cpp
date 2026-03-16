@@ -7,6 +7,7 @@
 #include "address_space.h"
 #include "elf.h"
 #include "file.h"
+#include "framebuffer.h"
 #include "idt.h"
 #include "interrupt.h"
 #include "paging.h"
@@ -468,6 +469,34 @@ static int32_t sys_lseek(TrapFrame* regs) {
   return static_cast<int32_t>(new_offset);
 }
 
+// SYS_FB_FLIP(buf=ebx, src_w=ecx, src_h=edx)
+// Scales and blits a user framebuffer to the hardware display.
+// Returns 0 on success, -1 on error.
+static int32_t sys_fb_flip(TrapFrame* regs) {
+  const uint32_t buf = regs->ebx;
+  const uint32_t src_w = regs->ecx;
+  const uint32_t src_h = regs->edx;
+
+  if (src_w == 0 || src_h == 0) {
+    return -1;
+  }
+  if (!Framebuffer::is_available()) {
+    return -1;
+  }
+
+  // Guard against overflow before multiplying.
+  if (src_w > 4096 || src_h > 4096) {
+    return -1;
+  }
+  const uint32_t buf_size = src_w * src_h * 4;
+  if (!validate_user_buffer(buf, buf_size, /*writeable=*/false)) {
+    return -1;
+  }
+
+  Framebuffer::blit_scaled(reinterpret_cast<const uint32_t*>(buf), src_w, src_h);
+  return 0;
+}
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -493,6 +522,7 @@ static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
     sys_shmat,     // 15 SYS_SHMAT
     sys_shmdt,     // 16 SYS_SHMDT
     sys_getticks,  // 17 SYS_GETTICKS
+    sys_fb_flip,   // 18 SYS_FB_FLIP
 };
 
 static_assert(syscall_table[SYS_EXIT] == sys_exit);
@@ -513,6 +543,7 @@ static_assert(syscall_table[SYS_SHMGET] == sys_shmget);
 static_assert(syscall_table[SYS_SHMAT] == sys_shmat);
 static_assert(syscall_table[SYS_SHMDT] == sys_shmdt);
 static_assert(syscall_table[SYS_GETTICKS] == sys_getticks);
+static_assert(syscall_table[SYS_FB_FLIP] == sys_fb_flip);
 static_assert(syscall_table.size() == SYS_MAX);
 
 __BEGIN_DECLS

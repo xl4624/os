@@ -20,9 +20,9 @@ TEST(rand, returns_at_most_rand_max) {
 
 TEST(rand, same_seed_same_sequence) {
   srand(12345);
-  int a0 = rand();
-  int a1 = rand();
-  int a2 = rand();
+  int const a0 = rand();
+  int const a1 = rand();
+  int const a2 = rand();
 
   srand(12345);
   ASSERT_EQ(rand(), a0);
@@ -32,16 +32,16 @@ TEST(rand, same_seed_same_sequence) {
 
 TEST(rand, different_seeds_different_first_value) {
   srand(1);
-  int v1 = rand();
+  int const v1 = rand();
   srand(2);
-  int v2 = rand();
+  int const v2 = rand();
   // Different seeds must produce different first values.
   ASSERT_NE(v1, v2);
 }
 
 TEST(rand, sequence_not_constant) {
   srand(1);
-  int first = rand();
+  int const first = rand();
   // A sequence of 10 calls must contain at least one value != first.
   bool found_different = false;
   for (int i = 0; i < 10; ++i) {
@@ -56,7 +56,7 @@ TEST(rand, sequence_not_constant) {
 // Seed 0 must not produce a stuck sequence (all-zero or all-same output).
 TEST(rand, seed_zero_produces_varied_sequence) {
   srand(0);
-  int first = rand();
+  int const first = rand();
   bool found_different = false;
   for (int i = 0; i < 32; ++i) {
     if (rand() != first) {
@@ -71,7 +71,7 @@ TEST(rand, seed_zero_produces_varied_sequence) {
 TEST(rand, large_sample_stays_in_bounds) {
   srand(42);
   for (int i = 0; i < 1000; ++i) {
-    int v = rand();
+    int const v = rand();
     ASSERT_TRUE(v >= 0);
     ASSERT_TRUE(v <= RAND_MAX);
   }
@@ -85,7 +85,7 @@ TEST(rand, reseed_reproduces_sequence) {
     val = rand();
   }
   srand(99999);
-  for (int& val : vals) {
+  for (int const& val : vals) {
     ASSERT_EQ(rand(), val);
   }
 }

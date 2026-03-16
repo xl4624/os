@@ -101,8 +101,7 @@ paddr_t get_phys(vaddr_t virt) {
 
 void map_all_physical_ram() {
   constexpr uint32_t kBootMappedEnd = 8U * 1024U * 1024U;
-  const uint32_t total_bytes =
-      static_cast<uint32_t>(kPmm.get_total_frames()) * PAGE_SIZE;
+  const uint32_t total_bytes = static_cast<uint32_t>(kPmm.get_total_frames()) * PAGE_SIZE;
 
   for (uint32_t off = kBootMappedEnd; off < total_bytes; off += PAGE_SIZE) {
     const paddr_t phys{off};

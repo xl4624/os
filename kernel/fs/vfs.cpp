@@ -291,17 +291,20 @@ void init_ramfs() {
       continue;
     }
 
-    // Build path "/bin/<name>"
-    char name[kMaxPathLen];
     const size_t name_len = strlen(mod->name);
     if (name_len + 6 > kMaxPathLen) {
       continue;
     }
+
+    // Strip ".elf" suffix if present; detect whether this is an ELF module.
+    char name[kMaxPathLen];
     strcpy(name, mod->name);
-    if (name_len > 4 && strcmp(name + name_len - 4, ".elf") == 0) {
+    const bool is_elf = (name_len > 4 && strcmp(name + name_len - 4, ".elf") == 0);
+    if (is_elf) {
       name[name_len - 4] = '\0';
     }
 
+    // All modules go into /bin/<name>.
     char path[kMaxPathLen];
     strcpy(path, "/bin/");
     strcpy(path + 5, name);
@@ -310,6 +313,20 @@ void init_ramfs() {
     if (node != nullptr) {
       node->data = mod->data;
       node->size = mod->len;
+    }
+
+    // Non-ELF modules (e.g. .wad data files) are also accessible at /<name>
+    // so programs can open them with an absolute path like "/doom1.wad".
+    if (!is_elf) {
+      char root_path[kMaxPathLen];
+      root_path[0] = '/';
+      strcpy(root_path + 1, name);
+
+      auto* root_node = register_node(root_path, VfsNodeType::File, &ramfs_ops);
+      if (root_node != nullptr) {
+        root_node->data = mod->data;
+        root_node->size = mod->len;
+      }
     }
   }
 }

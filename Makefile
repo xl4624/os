@@ -91,6 +91,9 @@ $(ISO): $(BIN) user
 	@mkdir -p $(ISODIR)/boot/grub
 	@cp $(BIN) $(ISODIR)/boot/myos.bin
 	@for f in $(BUILDDIR)/user/*.elf; do cp "$$f" $(ISODIR)/boot/; done
+	@if ls user/doom/*.wad 2>/dev/null | grep -q .; then \
+		for f in user/doom/*.wad; do cp "$$f" $(ISODIR)/boot/; done; \
+	fi
 	@cp grub.cfg $(ISODIR)/boot/grub/
 	@grub-mkrescue -o $@ $(ISODIR)
 

@@ -334,19 +334,19 @@ TEST(keyboard, scancode_to_event_extended_arrow_release) {
 
 TEST(keyboard, shift_state_tracked) {
   // Press LeftShift (0x2A), then 'a' (0x1E), then release shift (0xAA).
-  kKeyboard.scancode_to_event(0x2A);                        // LeftShift press
+  kKeyboard.scancode_to_event(0x2A);                              // LeftShift press
   KeyEvent const with_shift = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(with_shift.shift);
   ASSERT_EQ(with_shift.ascii, 'A');
 
-  kKeyboard.scancode_to_event(0xAA);                           // LeftShift release
+  kKeyboard.scancode_to_event(0xAA);                                 // LeftShift release
   KeyEvent const without_shift = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_FALSE(without_shift.shift);
   ASSERT_EQ(without_shift.ascii, 'a');
 }
 
 TEST(keyboard, right_shift_state_tracked) {
-  kKeyboard.scancode_to_event(0x36);                // RightShift press
+  kKeyboard.scancode_to_event(0x36);                      // RightShift press
   KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(ev.shift);
   ASSERT_EQ(ev.ascii, 'A');
@@ -354,7 +354,7 @@ TEST(keyboard, right_shift_state_tracked) {
 }
 
 TEST(keyboard, ctrl_state_tracked) {
-  kKeyboard.scancode_to_event(0x1D);                // LeftCtrl press
+  kKeyboard.scancode_to_event(0x1D);                      // LeftCtrl press
   KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(ev.ctrl);
   // Ctrl suppresses ASCII output.
@@ -363,7 +363,7 @@ TEST(keyboard, ctrl_state_tracked) {
 }
 
 TEST(keyboard, alt_state_tracked) {
-  kKeyboard.scancode_to_event(0x38);                // LeftAlt press
+  kKeyboard.scancode_to_event(0x38);                      // LeftAlt press
   KeyEvent const ev = kKeyboard.scancode_to_event(0x1E);  // A
   ASSERT_TRUE(ev.alt);
   // Alt suppresses ASCII output.

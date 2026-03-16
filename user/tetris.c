@@ -146,7 +146,7 @@ static int clear_full_lines(void) {
 
 static void spawn_piece(void) {
   cur_type = next_type;
-  next_type = rand() % NUM_PIECES;
+  next_type = rand() % NUM_PIECES;  // NOLINT(misc-predictable-rand)
   cur_rot = 0;
   cur_row = -1;
   cur_col = (BOARD_W / 2) - 2;
@@ -368,6 +368,8 @@ static int read_input(void) {
           return INPUT_RIGHT;
         case 'D':
           return INPUT_LEFT;
+        default:
+          break;
       }
       i += 2;
     } else if (buffer[i] == ' ') {
@@ -397,7 +399,7 @@ static void init_game(void) {
   level = 0;
   game_over = 0;
   paused = 0;
-  next_type = rand() % NUM_PIECES;
+  next_type = rand() % NUM_PIECES;  // NOLINT(misc-predictable-rand)
   spawn_piece();
   draw_full_screen();
 }
@@ -494,6 +496,8 @@ static int run_game(void) {
         drop_timer = 0;
         break;
       }
+      default:
+        break;
     }
 
     /* Auto drop */

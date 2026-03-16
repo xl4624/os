@@ -7,6 +7,12 @@
 
 #define EOF (-1)
 
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+#endif
+
 #ifdef __is_libc
 
 typedef struct {
@@ -43,7 +49,25 @@ int sscanf(const char* str, const char* format, ...);
 #ifdef __is_libc
 int vfprintf(FILE* file, const char* __restrict__ format, va_list ap);
 int fprintf(FILE* file, const char* __restrict__ format, ...);
+
+FILE* fopen(const char* path, const char* mode);
+int fclose(FILE* file);
+size_t fread(void* ptr, size_t size, size_t nmemb, FILE* file);
+size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* file);
+int fseek(FILE* file, long offset, int whence);
+long ftell(FILE* file);
+void rewind(FILE* file);
+int fgetc(FILE* file);
+int fputc(int c, FILE* file);
+char* fgets(char* s, int n, FILE* file);
+int fputs(const char* s, FILE* file);
+int feof(FILE* file);
+int ferror(FILE* file);
+int fflush(FILE* file);
 #endif /* !__is_libc */
+
+int remove(const char* path);
+int rename(const char* oldpath, const char* newpath);
 
 __END_DECLS
 

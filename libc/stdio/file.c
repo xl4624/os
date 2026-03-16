@@ -2,9 +2,9 @@
 
 #ifdef __is_libc
 
-static FILE kStdin = {0, 0, 0};
-static FILE kStdout = {1, 0, 0};
-static FILE kStderr = {2, 0, 0};
+static FILE kStdin = {0, 0, 0};   // NOLINT(misc-non-copyable-objects)
+static FILE kStdout = {1, 0, 0};  // NOLINT(misc-non-copyable-objects)
+static FILE kStderr = {2, 0, 0};  // NOLINT(misc-non-copyable-objects)
 
 FILE* __libc_stdin = &kStdin;
 FILE* __libc_stdout = &kStdout;

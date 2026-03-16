@@ -294,7 +294,7 @@ int vsnprintf(char* buf, size_t size, const char* __restrict__ format, va_list a
   b.size = size;
   b.pos = 0;
 
-  int ret = vformat(emit_buf, &b, format, ap);
+  int ret = vformat(emit_buf, (void*)&b, format, ap);
 
   if (size > 0) {
     size_t end = b.pos < size ? b.pos : size - 1;
@@ -318,7 +318,7 @@ static void emit_buf_unlimited(char c, void* ctx) {
 
 int vsprintf(char* buf, const char* __restrict__ format, va_list ap) {
   char* p = buf;
-  int ret = vformat(emit_buf_unlimited, &p, format, ap);
+  int ret = vformat(emit_buf_unlimited, (void*)&p, format, ap);
   *p = '\0';
   return ret;
 }
@@ -363,7 +363,7 @@ static void emit_fd(char c, void* ctx_) {
 // NOLINTNEXTLINE(misc-const-correctness)
 int vfprintf(FILE* file, const char* __restrict__ format, va_list ap) {
   struct fd_ctx ctx = {file->fd, {0}, 0};
-  int ret = vformat(emit_fd, &ctx, format, ap);
+  int ret = vformat(emit_fd, (void*)&ctx, format, ap);
   fd_ctx_flush(&ctx);
   return ret;
 }

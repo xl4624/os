@@ -2,10 +2,9 @@
 
 #ifdef __is_libk
 
-int getchar(void) {
-  // TODO: implement non-blocking getchar using kKeyboard
-  return EOF;
-}
+#include "keyboard.h"
+
+int getchar(void) { return keyboard_getchar(); }
 
 #elif defined(__is_libc)
 

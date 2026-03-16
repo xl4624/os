@@ -113,7 +113,7 @@ TEST(utility, is_trivially_destructible) {
     int x;
   };
   struct NonTrivial {
-    ~NonTrivial() {}
+    ~NonTrivial() {}  // NOLINT(modernize-use-equals-default)
   };
   static_assert(std::is_trivially_destructible_v<Trivial>);
   static_assert(!std::is_trivially_destructible_v<NonTrivial>);
@@ -131,7 +131,7 @@ TEST(utility, is_trivially_copyable) {
     float y;
   };
   struct NonTrivial {
-    NonTrivial(const NonTrivial& /*unused*/) {}
+    NonTrivial(const NonTrivial& /*unused*/) {}  // NOLINT(modernize-use-equals-default)
   };
   static_assert(std::is_trivially_copyable_v<int>);
   static_assert(std::is_trivially_copyable_v<Trivial>);
@@ -145,7 +145,7 @@ TEST(utility, is_trivially_constructible) {
     int x;
   };
   struct NonTrivial {
-    NonTrivial() {}
+    NonTrivial() = default;
     int x{42};
   };
   static_assert(std::is_trivially_constructible_v<int>);
@@ -160,7 +160,7 @@ TEST(utility, is_trivial) {
     int x;
   };
   struct NonTrivial {
-    NonTrivial() {}
+    NonTrivial() = default;
     int x{0};
   };
   static_assert(std::is_trivial_v<int>);
@@ -251,7 +251,7 @@ TEST(utility, is_nothrow_default_constructible) {
     Nothrow() noexcept = default;
   };
   struct Throwing {
-    Throwing() noexcept(false) {}
+    Throwing() noexcept(false) {}  // NOLINT(modernize-use-equals-default)
   };
   static_assert(std::is_nothrow_default_constructible_v<int>);
   static_assert(std::is_nothrow_default_constructible_v<Nothrow>);
@@ -268,7 +268,7 @@ TEST(utility, is_nothrow_copy_constructible) {
   };
   struct Throwing {
     Throwing() = default;
-    Throwing(const Throwing& /*unused*/) noexcept(false) {}
+    Throwing(const Throwing& /*unused*/) noexcept(false) = default;
   };
   static_assert(std::is_nothrow_copy_constructible_v<int>);
   static_assert(std::is_nothrow_copy_constructible_v<Nothrow>);

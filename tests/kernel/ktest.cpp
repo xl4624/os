@@ -114,7 +114,8 @@ void run_all() {
   dbg_putint(kTestState.failed);
   dbg_puts(" failed\n");
 
-  uint8_t const exit_code = (kTestState.failed == 0) ? QEMU_EXIT_CODE_SUCCESS : QEMU_EXIT_CODE_FAILURE;
+  uint8_t const exit_code =
+      (kTestState.failed == 0) ? QEMU_EXIT_CODE_SUCCESS : QEMU_EXIT_CODE_FAILURE;
   outb(QEMU_DEBUG_EXIT_PORT, exit_code);
 }
 }  // namespace KTest

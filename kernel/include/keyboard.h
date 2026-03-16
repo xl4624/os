@@ -2,7 +2,18 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/cdefs.h>
 #include <sys/kbd.h>
+
+__BEGIN_DECLS
+
+// Non-blocking read of one ASCII character from the keyboard ring buffer.
+// Returns the character as unsigned char cast to int, or EOF if none available.
+int keyboard_getchar(void);
+
+__END_DECLS
+
+#ifdef __cplusplus
 
 #include "ps2_command_queue.h"
 #include "ring_buffer.h"
@@ -172,3 +183,5 @@ class KeyboardDriver {
 };
 
 extern KeyboardDriver kKeyboard;
+
+#endif  // __cplusplus

@@ -22,6 +22,16 @@
     make run # builds OS as well
     ```
 
+    * Run host-compiled unit tests:
+    ```bash
+    make test
+    ```
+
+    * Run kernel tests in QEMU (output in `build/ktest/ktest.log`):
+    ```bash
+    make ktest
+    ```
+
     * Clean/delete object files, images, and binaries:
     ```bash
     make clean
@@ -38,12 +48,11 @@ For debugging purposes, `make run` automatically attaches the QEMU monitor to st
 This allows you to control the emulator (pause/resume VM, inspect registers, etc.).
 Check out the docs at: https://qemu-project.gitlab.io/qemu/system/monitor.html.
 
-To debug, you can run `make debug` to attach a debugger and a QEMU monitor to stdio,
-which allows you to control the emulator (pause/resume VM, inspect registers, etc.).
-You run `gdb` and type:
+To debug, you can run `make lldb` to launch QEMU with a GDB stub and attach LLDB:
 
 ```gdb
-(gdb) file myos.bin
-(gdb) target remote localhost:1234
-(gdb) continue
+(lldb) file myos.bin
+(lldb) gdb-remote localhost:1234
+(lldb) continue
 ```
+

@@ -1,6 +1,7 @@
 #include "keyboard.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <sys/io.h>
 
 #include "interrupt.h"
@@ -218,6 +219,15 @@ size_t KeyboardDriver::read_events(kbd_event* buf, size_t max_events) {
   }
   return n;
 }
+
+__BEGIN_DECLS
+
+int keyboard_getchar(void) {
+  char c;
+  return (kKeyboard.read(&c, 1) != 0U) ? static_cast<int>(static_cast<unsigned char>(c)) : EOF;
+}
+
+__END_DECLS
 
 KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
   // The 0xE0 prefix byte is not a key event itself; set the flag and bail.

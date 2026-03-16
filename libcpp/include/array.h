@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm.h>
 #include <cstddef.h>
+#include <iterator.h>
 
 namespace std {
 
@@ -11,14 +13,16 @@ struct array {
   T _data[N > 0 ? N : 1];
 
   using value_type = T;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using iterator = value_type*;
+  using const_iterator = const value_type*;
   using size_type = size_t;
   using difference_type = ptrdiff_t;
-  using reference = T&;
-  using const_reference = const T&;
-  using pointer = T*;
-  using const_pointer = const T*;
-  using iterator = T*;
-  using const_iterator = const T*;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   constexpr reference operator[](size_type pos) { return _data[pos]; }
   constexpr const_reference operator[](size_type pos) const { return _data[pos]; }
@@ -28,8 +32,8 @@ struct array {
   constexpr const_reference front() const { return _data[0]; }
   constexpr reference back() { return _data[N - 1]; }
   constexpr const_reference back() const { return _data[N - 1]; }
-  constexpr T* data() noexcept { return N > 0 ? _data : nullptr; }
-  constexpr const T* data() const noexcept { return N > 0 ? _data : nullptr; }
+  constexpr pointer data() noexcept { return N > 0 ? _data : nullptr; }
+  constexpr const_pointer data() const noexcept { return N > 0 ? _data : nullptr; }
 
   constexpr iterator begin() noexcept { return N > 0 ? _data : nullptr; }
   constexpr const_iterator begin() const noexcept { return N > 0 ? _data : nullptr; }
@@ -38,11 +42,22 @@ struct array {
   constexpr const_iterator end() const noexcept { return N > 0 ? _data + N : nullptr; }
   constexpr const_iterator cend() const noexcept { return N > 0 ? _data + N : nullptr; }
 
-  constexpr bool empty() const noexcept { return N == 0; }
-  constexpr size_type size() const noexcept { return N; }
-  constexpr size_type max_size() const noexcept { return N; }
+  constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+  constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+  constexpr const_reverse_iterator crbegin() const noexcept {
+    return const_reverse_iterator(end());
+  }
+  constexpr reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+  constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+  constexpr const_reverse_iterator crend() const noexcept {
+    return const_reverse_iterator(begin());
+  }
 
-  constexpr void fill(const T& value) {
+  [[nodiscard]] constexpr bool empty() const noexcept { return N == 0; }
+  [[nodiscard]] constexpr size_type size() const noexcept { return N; }
+  [[nodiscard]] constexpr size_type max_size() const noexcept { return N; }
+
+  constexpr void fill(const_reference value) {
     for (size_type i = 0; i < N; ++i) {
       _data[i] = value;
     }
@@ -50,11 +65,43 @@ struct array {
 
   constexpr void swap(array& other) noexcept {
     for (size_type i = 0; i < N; ++i) {
-      T tmp = _data[i];
+      value_type tmp = _data[i];
       _data[i] = other._data[i];
       other._data[i] = tmp;
     }
   }
 };
+
+// Array comparison operators.
+
+template <typename T, size_t N>
+inline bool operator==(const array<T, N>& a, const array<T, N>& b) {
+  return std::equal(a.begin(), a.end(), b.begin());
+}
+
+template <typename T, size_t N>
+inline bool operator!=(const array<T, N>& a, const array<T, N>& b) {
+  return !(a == b);
+}
+
+template <typename T, size_t N>
+inline bool operator<(const array<T, N>& a, const array<T, N>& b) {
+  return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+}
+
+template <typename T, size_t N>
+inline bool operator>(const array<T, N>& a, const array<T, N>& b) {
+  return b < a;
+}
+
+template <typename T, size_t N>
+inline bool operator<=(const array<T, N>& a, const array<T, N>& b) {
+  return !(a > b);
+}
+
+template <typename T, size_t N>
+inline bool operator>=(const array<T, N>& a, const array<T, N>& b) {
+  return !(a < b);
+}
 
 }  // namespace std

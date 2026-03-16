@@ -125,6 +125,28 @@ TEST(array, write_through_data) {
   ASSERT_EQ(a[1], 99);
 }
 
+TEST(array, equality) {
+  std::array<int, 3> a = {1, 2, 3};
+  std::array<int, 3> b = {1, 2, 3};
+  std::array<int, 3> c = {1, 2, 4};
+  ASSERT_TRUE(a == b);
+  ASSERT_FALSE(a == c);
+  ASSERT_TRUE(a != c);
+  ASSERT_FALSE(a != b);
+}
+
+TEST(array, ordering) {
+  std::array<int, 3> a = {1, 2, 3};
+  std::array<int, 3> b = {1, 2, 4};
+  ASSERT_TRUE(a < b);
+  ASSERT_FALSE(b < a);
+  ASSERT_TRUE(b > a);
+  ASSERT_TRUE(a <= b);
+  ASSERT_TRUE(a <= a);
+  ASSERT_TRUE(b >= a);
+  ASSERT_TRUE(b >= b);
+}
+
 TEST(array, struct_element) {
   struct Point {
     int x, y;

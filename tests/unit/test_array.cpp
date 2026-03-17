@@ -126,9 +126,9 @@ TEST(array, write_through_data) {
 }
 
 TEST(array, equality) {
-  std::array<int, 3> a = {1, 2, 3};
-  std::array<int, 3> b = {1, 2, 3};
-  std::array<int, 3> c = {1, 2, 4};
+  const std::array<int, 3> a = {1, 2, 3};
+  const std::array<int, 3> b = {1, 2, 3};
+  const std::array<int, 3> c = {1, 2, 4};
   ASSERT_TRUE(a == b);
   ASSERT_FALSE(a == c);
   ASSERT_TRUE(a != c);
@@ -136,8 +136,8 @@ TEST(array, equality) {
 }
 
 TEST(array, ordering) {
-  std::array<int, 3> a = {1, 2, 3};
-  std::array<int, 3> b = {1, 2, 4};
+  const std::array<int, 3> a = {1, 2, 3};
+  const std::array<int, 3> b = {1, 2, 4};
   ASSERT_TRUE(a < b);
   ASSERT_FALSE(b < a);
   ASSERT_TRUE(b > a);

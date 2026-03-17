@@ -14,11 +14,14 @@ struct Tracker {
   Tracker(const Tracker& o) : value(o.value) { ++constructs; }
   Tracker(Tracker&& o) noexcept : value(o.value) { ++constructs; }
   ~Tracker() { ++destructs; }
-  Tracker& operator=(const Tracker& o) { value = o.value; return *this; }
+  Tracker& operator=(const Tracker& o) {
+    value = o.value;
+    return *this;
+  }
   bool operator==(const Tracker& o) const { return value == o.value; }
 };
 int Tracker::constructs = 0;
-int Tracker::destructs  = 0;
+int Tracker::destructs = 0;
 
 }  // namespace
 
@@ -324,7 +327,7 @@ TEST(vector, clear_nonempty_vector) {
 
 TEST(vector, clear_calls_destructors) {
   Tracker::constructs = 0;
-  Tracker::destructs  = 0;
+  Tracker::destructs = 0;
   {
     std::vector<Tracker> v;
     v.reserve(2);  // avoid reallocation destructs during emplace
@@ -367,7 +370,7 @@ TEST(vector, resize_with_value) {
 
 TEST(vector, resize_shrink_calls_destructors) {
   Tracker::constructs = 0;
-  Tracker::destructs  = 0;
+  Tracker::destructs = 0;
   std::vector<Tracker> v(4);
   v.resize(2);
   ASSERT_EQ(v.size(), 2U);
@@ -519,7 +522,7 @@ TEST(vector, ordering) {
 
 TEST(vector, destructor_calls_element_destructors) {
   Tracker::constructs = 0;
-  Tracker::destructs  = 0;
+  Tracker::destructs = 0;
   {
     std::vector<Tracker> v;
     v.reserve(3);  // avoid reallocation destructs during emplace
@@ -533,7 +536,7 @@ TEST(vector, destructor_calls_element_destructors) {
 
 TEST(vector, copy_assign_destroys_old_elements) {
   Tracker::constructs = 0;
-  Tracker::destructs  = 0;
+  Tracker::destructs = 0;
   std::vector<Tracker> a(3);
   std::vector<Tracker> b(2);
   b = a;
@@ -584,7 +587,7 @@ TEST(vector, vector_of_vectors) {
 
 TEST(vector, resize_non_trivial_calls_constructors) {
   Tracker::constructs = 0;
-  Tracker::destructs  = 0;
+  Tracker::destructs = 0;
   std::vector<Tracker> v;
   v.resize(3);
   ASSERT_EQ(v.size(), 3U);

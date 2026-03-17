@@ -22,28 +22,28 @@ struct random_access_iterator_tag : bidirectional_iterator_tag {};
 template <typename Iter>
 struct iterator_traits {
   using iterator_category = typename Iter::iterator_category;
-  using value_type        = typename Iter::value_type;
-  using difference_type   = typename Iter::difference_type;
-  using pointer           = typename Iter::pointer;
-  using reference         = typename Iter::reference;
+  using value_type = typename Iter::value_type;
+  using difference_type = typename Iter::difference_type;
+  using pointer = typename Iter::pointer;
+  using reference = typename Iter::reference;
 };
 
 template <typename T>
 struct iterator_traits<T*> {
   using iterator_category = random_access_iterator_tag;
-  using value_type        = remove_cv_t<T>;
-  using difference_type   = ptrdiff_t;
-  using pointer           = T*;
-  using reference         = T&;
+  using value_type = remove_cv_t<T>;
+  using difference_type = ptrdiff_t;
+  using pointer = T*;
+  using reference = T&;
 };
 
 template <typename T>
 struct iterator_traits<const T*> {
   using iterator_category = random_access_iterator_tag;
-  using value_type        = T;
-  using difference_type   = ptrdiff_t;
-  using pointer           = const T*;
-  using reference         = const T&;
+  using value_type = T;
+  using difference_type = ptrdiff_t;
+  using pointer = const T*;
+  using reference = const T&;
 };
 
 // ===========================================================================
@@ -53,12 +53,12 @@ struct iterator_traits<const T*> {
 template <typename Iter>
 class reverse_iterator {
  public:
-  using iterator_type     = Iter;
+  using iterator_type = Iter;
   using iterator_category = typename iterator_traits<Iter>::iterator_category;
-  using value_type        = typename iterator_traits<Iter>::value_type;
-  using difference_type   = typename iterator_traits<Iter>::difference_type;
-  using pointer           = typename iterator_traits<Iter>::pointer;
-  using reference         = typename iterator_traits<Iter>::reference;
+  using value_type = typename iterator_traits<Iter>::value_type;
+  using difference_type = typename iterator_traits<Iter>::difference_type;
+  using pointer = typename iterator_traits<Iter>::pointer;
+  using reference = typename iterator_traits<Iter>::reference;
 
   constexpr reverse_iterator() : current_() {}
   constexpr explicit reverse_iterator(Iter it) : current_(it) {}
@@ -147,14 +147,14 @@ constexpr bool operator>=(const reverse_iterator<Iter1>& a, const reverse_iterat
 }
 
 template <typename Iter>
-constexpr reverse_iterator<Iter> operator+(
-    typename reverse_iterator<Iter>::difference_type n, const reverse_iterator<Iter>& it) {
+constexpr reverse_iterator<Iter> operator+(typename reverse_iterator<Iter>::difference_type n,
+                                           const reverse_iterator<Iter>& it) {
   return it + n;
 }
 
 template <typename Iter1, typename Iter2>
-constexpr auto operator-(const reverse_iterator<Iter1>& a,
-                         const reverse_iterator<Iter2>& b) -> decltype(b.base() - a.base()) {
+constexpr auto operator-(const reverse_iterator<Iter1>& a, const reverse_iterator<Iter2>& b)
+    -> decltype(b.base() - a.base()) {
   return b.base() - a.base();
 }
 

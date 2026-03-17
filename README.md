@@ -11,6 +11,8 @@
     * `lldb` (optional, for debugging with `make lldb`)
     * `gcc`/`g++` (host compilers for unit tests)
     * `make`
+    * `dosfstools`
+    * `mtools`
 3. To setup the project you can:
     * Build kernel binary and bootable ISO:
     ```bash

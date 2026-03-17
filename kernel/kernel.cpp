@@ -4,6 +4,8 @@
 #include <sys/io.h>
 
 #include "../tests/kernel/ktest.h"
+#include "ata.h"
+#include "fat16.h"
 #include "framebuffer.h"
 #include "gdt.h"
 #include "heap.h"
@@ -67,10 +69,16 @@ __attribute__((noreturn)) void kernel_main() {
            static_cast<unsigned>(fb.bpp), fb.pitch);
   }
 
+  // Detect the primary ATA drive (polling PIO, no DMA).
+  Ata::init();
+
   // Set up the VFS with device nodes and module-backed files.
   Vfs::init();
   Vfs::init_devfs();
   Vfs::init_ramfs();
+
+  // Mount FAT16 filesystem from ATA drive (registers /fat/<name> nodes).
+  Fat16::init_vfs();
 
   VfsNode* shell = Vfs::lookup("/bin/sh");
   if ((shell != nullptr) && (shell->data != nullptr)) {

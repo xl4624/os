@@ -9,8 +9,8 @@
 
 TEST(iterator_traits, pointer_category) {
   using traits = std::iterator_traits<int*>;
-  static_assert(
-      std::is_same_v<traits::iterator_category, std::random_access_iterator_tag>, "category");
+  static_assert(std::is_same_v<traits::iterator_category, std::random_access_iterator_tag>,
+                "category");
   static_assert(std::is_same_v<traits::value_type, int>, "value_type");
   static_assert(std::is_same_v<traits::pointer, int*>, "pointer");
   static_assert(std::is_same_v<traits::reference, int&>, "reference");
@@ -19,8 +19,8 @@ TEST(iterator_traits, pointer_category) {
 
 TEST(iterator_traits, const_pointer_category) {
   using traits = std::iterator_traits<const int*>;
-  static_assert(
-      std::is_same_v<traits::iterator_category, std::random_access_iterator_tag>, "category");
+  static_assert(std::is_same_v<traits::iterator_category, std::random_access_iterator_tag>,
+                "category");
   static_assert(std::is_same_v<traits::value_type, int>, "value_type");
   static_assert(std::is_same_v<traits::pointer, const int*>, "pointer");
   static_assert(std::is_same_v<traits::reference, const int&>, "reference");
@@ -89,7 +89,7 @@ TEST(reverse_iterator, distance) {
 TEST(reverse_iterator, comparisons) {
   std::array<int, 3> a = {1, 2, 3};
   auto first = a.rbegin();
-  auto last  = a.rend();
+  auto last = a.rend();
   ASSERT(first < last);
   ASSERT(last > first);
   ASSERT(first <= first);

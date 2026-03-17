@@ -16,6 +16,16 @@ inline void outb(uint16_t port, uint8_t val) {
   return ret;
 }
 
+inline void outw(uint16_t port, uint16_t val) {
+  __asm__ volatile("outw %w0, %w1" : : "a"(val), "Nd"(port) : "memory");
+}
+
+[[nodiscard]] inline uint16_t inw(uint16_t port) {
+  uint16_t ret;
+  __asm__ volatile("inw %w1, %w0" : "=a"(ret) : "Nd"(port) : "memory");
+  return ret;
+}
+
 inline void io_wait(void) { outb(0x80, 0); }
 
 __END_DECLS

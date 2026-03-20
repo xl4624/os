@@ -26,6 +26,8 @@ void msleep(unsigned int ms);
 void* sbrk(int increment);
 unsigned long long getticks(void);
 int lseek(int fd, int offset, int whence);
+int chdir(const char* path);
+char* getcwd(char* buf, unsigned int size);
 
 __END_DECLS
 

@@ -1,6 +1,7 @@
 #include "syscall.h"
 
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
@@ -155,6 +156,7 @@ static int32_t sys_getpid([[maybe_unused]] TrapFrame* regs) {
 
 // SYS_OPEN(path=ebx)
 // Opens a file by path. Returns fd on success, or negative errno on failure.
+// Supports relative paths by prepending the process CWD.
 static int32_t sys_open(TrapFrame* regs) {
   const uint32_t path_ptr = regs->ebx;
 
@@ -162,9 +164,124 @@ static int32_t sys_open(TrapFrame* regs) {
     return -EFAULT;
   }
 
-  const char* path = reinterpret_cast<const char*>(path_ptr);
-  const int32_t fd = Vfs::open(path);
+  const char* upath = reinterpret_cast<const char*>(path_ptr);
+  char abs_path[128];
+
+  if (upath[0] != '/') {
+    const Process* proc = Scheduler::current();
+    const size_t cwd_len = strlen(proc->cwd);
+    const size_t path_len = strlen(upath);
+    // +2 for potential '/' separator and null terminator
+    if (cwd_len + 1 + path_len + 1 > sizeof(abs_path)) {
+      return -ENAMETOOLONG;
+    }
+    memcpy(abs_path, proc->cwd, cwd_len);
+    if (abs_path[cwd_len - 1] != '/') {
+      abs_path[cwd_len] = '/';
+      memcpy(abs_path + cwd_len + 1, upath, path_len + 1);
+    } else {
+      memcpy(abs_path + cwd_len, upath, path_len + 1);
+    }
+    upath = abs_path;
+  }
+
+  const int32_t fd = Vfs::open(upath);
   return fd >= 0 ? fd : -ENOENT;
+}
+
+// SYS_CHDIR(path=ebx)
+// Changes the calling process's current working directory.
+// Returns 0 on success, or negative errno on error.
+static int32_t sys_chdir(TrapFrame* regs) {
+  const uint32_t path_ptr = regs->ebx;
+
+  if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
+    return -EFAULT;
+  }
+
+  const char* path = reinterpret_cast<const char*>(path_ptr);
+  char abs_path[128];
+
+  if (path[0] != '/') {
+    const Process* cur = Scheduler::current();
+    const size_t cwd_len = strlen(cur->cwd);
+    const size_t path_len = strlen(path);
+    if (cwd_len + 1 + path_len + 1 > sizeof(abs_path)) {
+      return -ENAMETOOLONG;
+    }
+    memcpy(abs_path, cur->cwd, cwd_len);
+    if (abs_path[cwd_len - 1] != '/') {
+      abs_path[cwd_len] = '/';
+      memcpy(abs_path + cwd_len + 1, path, path_len + 1);
+    } else {
+      memcpy(abs_path + cwd_len, path, path_len + 1);
+    }
+    path = abs_path;
+  }
+
+  // Strip trailing slash (unless root).
+  char norm[128];
+  strncpy(norm, path, sizeof(norm) - 1);
+  norm[sizeof(norm) - 1] = '\0';
+  size_t nlen = strlen(norm);
+  if (nlen > 1 && norm[nlen - 1] == '/') {
+    norm[nlen - 1] = '\0';
+  }
+
+  if (!Vfs::is_directory(norm)) {
+    return -ENOENT;
+  }
+
+  Process* proc = Scheduler::current();
+  strncpy(proc->cwd, norm, sizeof(proc->cwd) - 1);
+  proc->cwd[sizeof(proc->cwd) - 1] = '\0';
+  return 0;
+}
+
+// SYS_GETCWD(buf=ebx, size=ecx)
+// Copies the calling process's current working directory into buf.
+// Returns 0 on success, or negative errno on error.
+static int32_t sys_getcwd(TrapFrame* regs) {
+  const uint32_t buf_ptr = regs->ebx;
+  const uint32_t size = regs->ecx;
+
+  if (size == 0) {
+    return -EINVAL;
+  }
+  if (!validate_user_buffer(buf_ptr, size, /*writeable=*/true)) {
+    return -EFAULT;
+  }
+
+  const Process* proc = Scheduler::current();
+  const size_t cwd_len = strlen(proc->cwd) + 1;
+  if (cwd_len > size) {
+    return -ERANGE;
+  }
+  memcpy(reinterpret_cast<char*>(buf_ptr), proc->cwd, cwd_len);
+  return 0;
+}
+
+// SYS_GETDENTS(path=ebx, buf=ecx, count=edx)
+// Fills buf with up to count dirent entries for the given directory path.
+// Returns the number of entries written, or negative errno on error.
+static int32_t sys_getdents(TrapFrame* regs) {
+  const uint32_t path_ptr = regs->ebx;
+  const uint32_t buf_ptr = regs->ecx;
+  const uint32_t count = regs->edx;
+
+  if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
+    return -EFAULT;
+  }
+  if (count == 0) {
+    return 0;
+  }
+  if (!validate_user_buffer(buf_ptr, count * sizeof(dirent), /*writeable=*/true)) {
+    return -EFAULT;
+  }
+
+  const char* path = reinterpret_cast<const char*>(path_ptr);
+  auto* entries = reinterpret_cast<dirent*>(buf_ptr);
+  return static_cast<int32_t>(Vfs::getdents(path, entries, count));
 }
 
 // SYS_EXEC(path=ebx, argv=ecx)
@@ -597,6 +714,9 @@ static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
     sys_kill,       // 19 SYS_KILL
     sys_sigaction,  // 20 SYS_SIGACTION
     sys_sigreturn,  // 21 SYS_SIGRETURN
+    sys_chdir,      // 22 SYS_CHDIR
+    sys_getcwd,     // 23 SYS_GETCWD
+    sys_getdents,   // 24 SYS_GETDENTS
 };
 
 static_assert(syscall_table[SYS_EXIT] == sys_exit);
@@ -621,6 +741,9 @@ static_assert(syscall_table[SYS_FB_FLIP] == sys_fb_flip);
 static_assert(syscall_table[SYS_KILL] == sys_kill);
 static_assert(syscall_table[SYS_SIGACTION] == sys_sigaction);
 static_assert(syscall_table[SYS_SIGRETURN] == sys_sigreturn);
+static_assert(syscall_table[SYS_CHDIR] == sys_chdir);
+static_assert(syscall_table[SYS_GETCWD] == sys_getcwd);
+static_assert(syscall_table[SYS_GETDENTS] == sys_getdents);
 static_assert(syscall_table.size() == SYS_MAX);
 
 __BEGIN_DECLS

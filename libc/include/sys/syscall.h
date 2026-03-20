@@ -30,7 +30,10 @@
 #define SYS_KILL 19      /* custom */
 #define SYS_SIGACTION 20 /* custom */
 #define SYS_SIGRETURN 21 /* custom */
-#define SYS_MAX 22
+#define SYS_CHDIR 22     /* custom */
+#define SYS_GETCWD 23    /* custom */
+#define SYS_GETDENTS 24  /* custom */
+#define SYS_MAX 25
 
 #include <stdint.h>
 

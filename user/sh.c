@@ -229,7 +229,7 @@ static int run_builtin(Cmd* cmd) {
     printf("Built-in commands:\n");
     printf("  exit          exit the shell\n");
     printf("  help          show this message\n");
-    printf("  cd DIR        (not yet supported: requires chdir syscall)\n");
+    printf("  cd [DIR]      change working directory (default: /)\n");
     printf("  NAME=VALUE    set a shell variable\n");
     printf("  $NAME         expand a shell variable\n");
     printf("Pipeline:  cmd1 | cmd2\n");
@@ -240,7 +240,10 @@ static int run_builtin(Cmd* cmd) {
     _exit(0);
   }
   if (strcmp(cmd->argv[0], "cd") == 0) {
-    printf("sh: cd: not supported (no chdir syscall)\n");
+    const char* dir = cmd->argc >= 2 ? cmd->argv[1] : "/";
+    if (chdir(dir) < 0) {
+      printf("sh: cd: %s: no such directory\n", dir);
+    }
     return 1;
   }
   return 0;
@@ -387,11 +390,16 @@ static void run_pipeline(Pipeline* pl) {
 int main(void) {
   char raw[LINE_MAX];
   char expanded[LINE_MAX];
+  char cwd[PATH_MAX];
 
   printf("mysh -- type a command (try \"help\")\n");
 
   while (1) {
-    printf("$ ");
+    if (getcwd(cwd, sizeof(cwd)) != 0) {
+      printf("%s$ ", cwd);
+    } else {
+      printf("$ ");
+    }
 
     if (readline(raw, LINE_MAX) == 0) {
       continue;

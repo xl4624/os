@@ -99,6 +99,8 @@ Process* alloc_process() {
   memset(p, 0, sizeof(Process));
   p->pid = next_pid++;
   p->state = ProcessState::Ready;
+  p->cwd[0] = '/';
+  p->cwd[1] = '\0';
   return p;
 }
 
@@ -470,6 +472,9 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   // Inherit signal handlers; child starts with no pending signals.
   memcpy(child->signal_handlers, current_process->signal_handlers, sizeof(child->signal_handlers));
   child->pending_signals = 0;
+
+  // Inherit working directory.
+  memcpy(child->cwd, current_process->cwd, sizeof(child->cwd));
 
   child->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));
   assert(child->kernel_stack && "fork_current(): failed to allocate kernel stack");

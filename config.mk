@@ -13,5 +13,6 @@ INCLUDEDIR := $(PREFIX)/include
 LIBDIR     := $(PREFIX)/lib
 
 # ==== Common Flags ====
-BASE_CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include -O2 -g \
+BASE_CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include/c -O2 -g \
                -ffreestanding -Wall -Wextra -Wpedantic -Wconversion -MMD -MP
+BASE_CXXFLAGS := -isystem $(SYSROOT)/usr/include/cpp

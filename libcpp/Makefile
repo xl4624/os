@@ -1,6 +1,6 @@
 include ../config.mk
 
-CFLAGS := ${BASE_CFLAGS} -Iinclude
+CFLAGS := ${BASE_CFLAGS} $(BASE_CXXFLAGS) -Iinclude
 CPPFLAGS := -fno-exceptions -fno-rtti -fno-threadsafe-statics
 
 SRCS := $(shell find . -type f -name "*.cpp")
@@ -28,8 +28,8 @@ clean:
 install: install-headers install-libs
 
 install-headers:
-	mkdir -p $(SYSROOT)$(INCLUDEDIR)
-	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/.
+	mkdir -p $(SYSROOT)$(INCLUDEDIR)/cpp
+	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/cpp/.
 
 install-libs: $(TARGET)
 	mkdir -p $(SYSROOT)$(LIBDIR)

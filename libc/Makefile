@@ -40,8 +40,8 @@ clean:
 install: install-headers install-libs
 
 install-headers:
-	mkdir -p $(SYSROOT)$(INCLUDEDIR)
-	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/.
+	mkdir -p $(SYSROOT)$(INCLUDEDIR)/c
+	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/c/.
 
 install-libs: $(TARGET_K) $(TARGET_C)
 	mkdir -p $(SYSROOT)$(LIBDIR)

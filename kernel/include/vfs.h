@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dirent.h>
 #include <optional.h>
 #include <span.h>
 #include <stddef.h>
@@ -68,6 +69,15 @@ void init();
 
 // Close a VFS-backed file description. Frees the VfsFileDescription.
 void close(FileDescription* fd);
+
+// Returns true if path names a valid virtual directory: "/" always qualifies,
+// and any other absolute path qualifies if at least one VFS node has it as a
+// prefix (i.e. there is a node at path/<something>).
+[[nodiscard]] bool is_directory(const char* path);
+
+// Fill entries with the direct children of path. Returns the number of
+// entries written, or 0 if path is not a directory or is empty.
+uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries);
 
 // Populate ramfs nodes from multiboot modules. Each module becomes
 // a file at "/bin/<basename>".

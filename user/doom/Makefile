@@ -1,6 +1,6 @@
 include ../../config.mk
 
-CFLAGS_COMMON := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include \
+CFLAGS_COMMON := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include/c \
     -ffreestanding -O2 -g -nostdlib -D__is_libc
 LDFLAGS := -T ../link.ld -nostdlib --sysroot=$(SYSROOT)
 LIBS    := -L$(SYSROOT)/usr/lib -lc -lgcc

@@ -107,5 +107,6 @@ struct Process {
   // Signal state:
   uint32_t pending_signals;      // bitmask: bit N set means signal N is pending
   uint32_t signal_handlers[32];  // per-signal handler: kSigDfl / kSigIgn / user VA
+  char cwd[128];                 // current working directory (absolute path, null-terminated)
   Process* next;                 // intrusive list pointer (ready/blocked queues)
 };

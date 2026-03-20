@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string.h>
+#include_next <string.h>
 
 namespace std {
 

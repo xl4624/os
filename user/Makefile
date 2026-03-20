@@ -1,8 +1,8 @@
 include ../config.mk
 
-CFLAGS  := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include \
+CFLAGS  := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include/c \
            -ffreestanding -O2 -g -Wall -Wextra -nostdlib -mgeneral-regs-only
-CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS := $(CFLAGS) -isystem $(SYSROOT)/usr/include/cpp -fno-rtti -fno-exceptions
 LDFLAGS := -T link.ld -nostdlib --sysroot=$(SYSROOT)
 LIBS    := -L$(SYSROOT)/usr/lib -lc -lgcc
 

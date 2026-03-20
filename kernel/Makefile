@@ -2,7 +2,7 @@ include ../config.mk
 
 # ==== Build Settings ====
 CFLAGS := $(BASE_CFLAGS) -mgeneral-regs-only
-CPPFLAGS := -fno-exceptions -fno-rtti -fno-threadsafe-statics -D__is_kernel -I$(CURDIR)/include
+CPPFLAGS := $(BASE_CXXFLAGS) -fno-exceptions -fno-rtti -fno-threadsafe-statics -D__is_kernel -I$(CURDIR)/include
 
 # ==== Source and Object Files ====
 SRCS_CPP := $(shell find . -type f -name "*.cpp")
@@ -44,5 +44,5 @@ clean:
 	rm -f $(OBJS) $(DEPS)
 
 install:
-	mkdir -p $(SYSROOT)$(INCLUDEDIR)
-	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/.
+	mkdir -p $(SYSROOT)$(INCLUDEDIR)/c
+	cp -R -p include/. $(SYSROOT)$(INCLUDEDIR)/c/.

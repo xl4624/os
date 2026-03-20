@@ -268,6 +268,146 @@ void close(FileDescription* fd) {
   delete fd;
 }
 
+bool is_directory(const char* path) {
+  if (path == nullptr || path[0] != '/') {
+    return false;
+  }
+  // Root is always a valid directory.
+  if (path[1] == '\0') {
+    return true;
+  }
+  // Strip trailing slash for comparison.
+  char norm[kMaxPathLen];
+  strncpy(norm, path, kMaxPathLen - 1);
+  norm[kMaxPathLen - 1] = '\0';
+  const size_t len = strlen(norm);
+  if (len > 1 && norm[len - 1] == '/') {
+    norm[len - 1] = '\0';
+  }
+  // Build the prefix that a child node would start with.
+  char prefix[kMaxPathLen];
+  strncpy(prefix, norm, kMaxPathLen - 2);
+  prefix[kMaxPathLen - 2] = '\0';
+  const size_t prefix_len = strlen(prefix);
+  prefix[prefix_len] = '/';
+  prefix[prefix_len + 1] = '\0';
+
+  for (uint32_t i = 0; i < node_count; ++i) {
+    if (strncmp(node_table[i].name, prefix, prefix_len + 1) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
+  if (path == nullptr || path[0] != '/' || entries == nullptr || max_entries == 0) {
+    return 0;
+  }
+
+  char norm[kMaxPathLen];
+  strncpy(norm, path, kMaxPathLen - 1);
+  norm[kMaxPathLen - 1] = '\0';
+  const size_t norm_len_raw = strlen(norm);
+  if (norm_len_raw > 1 && norm[norm_len_raw - 1] == '/') {
+    norm[norm_len_raw - 1] = '\0';
+  }
+
+  uint32_t count = 0;
+
+  if (norm[1] == '\0') {
+    // Root: collect unique first path components.
+    // Use a small fixed array to deduplicate virtual directory names.
+    char seen[32][32];
+    uint32_t seen_count = 0;
+
+    for (uint32_t i = 0; i < node_count && count < max_entries; ++i) {
+      const char* name = node_table[i].name;
+      if (name[0] != '/') {
+        continue;
+      }
+
+      const char* start = name + 1;
+      const char* slash = strchr(start, '/');
+
+      char component[128];
+      bool is_virtual_dir;
+      if (slash != nullptr) {
+        // e.g. "/bin/sh" -> component "bin", virtual dir
+        const size_t clen = static_cast<size_t>(slash - start);
+        if (clen == 0 || clen >= sizeof(component)) {
+          continue;
+        }
+        strncpy(component, start, clen);
+        component[clen] = '\0';
+        is_virtual_dir = true;
+      } else {
+        // e.g. "/doom1.wad" -> direct root file
+        strncpy(component, start, sizeof(component) - 1);
+        component[sizeof(component) - 1] = '\0';
+        is_virtual_dir = false;
+      }
+
+      // Deduplicate virtual dirs via the seen[] list.
+      bool already_seen = false;
+      for (uint32_t j = 0; j < seen_count; ++j) {
+        if (strcmp(seen[j], component) == 0) {
+          already_seen = true;
+          break;
+        }
+      }
+      if (already_seen) {
+        continue;
+      }
+      if (seen_count < 32) {
+        strncpy(seen[seen_count++], component, 31);
+        seen[seen_count - 1][31] = '\0';
+      }
+
+      strncpy(entries[count].d_name, component, sizeof(entries[count].d_name) - 1);
+      entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
+      if (is_virtual_dir) {
+        entries[count].d_type = DT_DIR;
+        entries[count].d_size = 0;
+      } else {
+        entries[count].d_type =
+            node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
+        entries[count].d_size = static_cast<uint32_t>(node_table[i].size);
+      }
+      ++count;
+    }
+  } else {
+    // Non-root: collect direct children under norm + "/".
+    char prefix[kMaxPathLen];
+    strncpy(prefix, norm, kMaxPathLen - 2);
+    prefix[kMaxPathLen - 2] = '\0';
+    const size_t prefix_len = strlen(prefix);
+    prefix[prefix_len] = '/';
+    prefix[prefix_len + 1] = '\0';
+    const size_t full_prefix_len = prefix_len + 1;
+
+    for (uint32_t i = 0; i < node_count && count < max_entries; ++i) {
+      const char* name = node_table[i].name;
+      if (strncmp(name, prefix, full_prefix_len) != 0) {
+        continue;
+      }
+      const char* child = name + full_prefix_len;
+      if (child[0] == '\0' || strchr(child, '/') != nullptr) {
+        continue;  // skip empty or nested paths
+      }
+
+      strncpy(entries[count].d_name, child, sizeof(entries[count].d_name) - 1);
+      entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
+      entries[count].d_type =
+          node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
+      entries[count].d_size = static_cast<uint32_t>(node_table[i].size);
+      ++count;
+    }
+  }
+
+  return count;
+}
+
 void init_devfs() {
   auto* tty = register_node("/dev/tty", VfsNodeType::CharDev, &tty_ops);
   (void)tty;

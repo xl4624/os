@@ -14,10 +14,7 @@ struct Tracker {
   Tracker(const Tracker& o) : value(o.value) { ++constructs; }
   Tracker(Tracker&& o) noexcept : value(o.value) { ++constructs; }
   ~Tracker() { ++destructs; }
-  Tracker& operator=(const Tracker& o) {
-    value = o.value;
-    return *this;
-  }
+  Tracker& operator=(const Tracker& o) = default;
   bool operator==(const Tracker& o) const { return value == o.value; }
 };
 int Tracker::constructs = 0;
@@ -82,7 +79,7 @@ TEST(vector, move_construct) {
 }
 
 TEST(vector, size_zero_construct) {
-  std::vector<int> v(0);
+  const std::vector<int> v(0);
   ASSERT_TRUE(v.empty());
 }
 
@@ -186,7 +183,7 @@ TEST(vector, const_element_access) {
 // ===========================================================================
 
 TEST(vector, begin_end_loop) {
-  std::vector<int> v = {1, 2, 3, 4};
+  const std::vector<int> v = {1, 2, 3, 4};
   int sum = 0;
   for (const int x : v) {
     sum += x;
@@ -197,8 +194,8 @@ TEST(vector, begin_end_loop) {
 TEST(vector, cbegin_cend) {
   const std::vector<int> v = {2, 4, 6};
   int sum = 0;
-  for (auto it = v.cbegin(); it != v.cend(); ++it) {
-    sum += *it;
+  for (const int it : v) {
+    sum += it;
   }
   ASSERT_EQ(sum, 12);
 }
@@ -255,6 +252,7 @@ TEST(vector, shrink_to_fit_empty) {
 
 TEST(vector, push_back_grows) {
   std::vector<int> v;
+  v.reserve(10);
   for (int i = 0; i < 10; ++i) {
     v.push_back(i);
   }
@@ -383,7 +381,7 @@ TEST(vector, resize_shrink_calls_destructors) {
 
 TEST(vector, insert_at_end) {
   std::vector<int> v = {1, 2};
-  auto it = v.insert(v.end(), 3);
+  auto* it = v.insert(v.end(), 3);
   ASSERT_EQ(v.size(), 3U);
   ASSERT_EQ(*it, 3);
   ASSERT_EQ(v[2], 3);
@@ -391,7 +389,7 @@ TEST(vector, insert_at_end) {
 
 TEST(vector, insert_at_begin) {
   std::vector<int> v = {2, 3};
-  auto it = v.insert(v.begin(), 1);
+  auto* it = v.insert(v.begin(), 1);
   ASSERT_EQ(v.size(), 3U);
   ASSERT_EQ(*it, 1);
   ASSERT_EQ(v[0], 1);
@@ -424,7 +422,7 @@ TEST(vector, insert_move) {
 
 TEST(vector, erase_first_element) {
   std::vector<int> v = {1, 2, 3};
-  auto it = v.erase(v.begin());
+  auto* it = v.erase(v.begin());
   ASSERT_EQ(v.size(), 2U);
   ASSERT_EQ(v[0], 2);
   ASSERT_EQ(*it, 2);
@@ -432,7 +430,7 @@ TEST(vector, erase_first_element) {
 
 TEST(vector, erase_last_element) {
   std::vector<int> v = {1, 2, 3};
-  auto it = v.erase(v.end() - 1);
+  auto* it = v.erase(v.end() - 1);
   ASSERT_EQ(v.size(), 2U);
   ASSERT_EQ(v.back(), 2);
   ASSERT_EQ(it, v.end());
@@ -449,7 +447,7 @@ TEST(vector, erase_middle_element) {
 
 TEST(vector, erase_range) {
   std::vector<int> v = {1, 2, 3, 4, 5};
-  auto it = v.erase(v.begin() + 1, v.begin() + 4);
+  auto* it = v.erase(v.begin() + 1, v.begin() + 4);
   ASSERT_EQ(v.size(), 2U);
   ASSERT_EQ(v[0], 1);
   ASSERT_EQ(v[1], 5);
@@ -481,9 +479,9 @@ TEST(vector, swap) {
 // ===========================================================================
 
 TEST(vector, equality) {
-  std::vector<int> a = {1, 2, 3};
-  std::vector<int> b = {1, 2, 3};
-  std::vector<int> c = {1, 2, 4};
+  const std::vector<int> a = {1, 2, 3};
+  const std::vector<int> b = {1, 2, 3};
+  const std::vector<int> c = {1, 2, 4};
   ASSERT_TRUE(a == b);
   ASSERT_FALSE(a == c);
   ASSERT_TRUE(a != c);
@@ -491,22 +489,22 @@ TEST(vector, equality) {
 }
 
 TEST(vector, empty_vectors_equal) {
-  std::vector<int> a;
-  std::vector<int> b;
+  const std::vector<int> a;
+  const std::vector<int> b;
   ASSERT_TRUE(a == b);
   ASSERT_FALSE(a != b);
 }
 
 TEST(vector, different_sizes_not_equal) {
-  std::vector<int> a = {1, 2};
-  std::vector<int> b = {1, 2, 3};
+  const std::vector<int> a = {1, 2};
+  const std::vector<int> b = {1, 2, 3};
   ASSERT_FALSE(a == b);
   ASSERT_TRUE(a != b);
 }
 
 TEST(vector, ordering) {
-  std::vector<int> a = {1, 2, 3};
-  std::vector<int> b = {1, 2, 4};
+  const std::vector<int> a = {1, 2, 3};
+  const std::vector<int> b = {1, 2, 4};
   ASSERT_TRUE(a < b);
   ASSERT_FALSE(b < a);
   ASSERT_TRUE(b > a);
@@ -537,7 +535,7 @@ TEST(vector, destructor_calls_element_destructors) {
 TEST(vector, copy_assign_destroys_old_elements) {
   Tracker::constructs = 0;
   Tracker::destructs = 0;
-  std::vector<Tracker> a(3);
+  const std::vector<Tracker> a(3);
   std::vector<Tracker> b(2);
   b = a;
   // b's original 2 elements are destroyed.
@@ -564,6 +562,7 @@ TEST(vector, growth_factor) {
 
 TEST(vector, elements_survive_reallocation) {
   std::vector<int> v;
+  v.reserve(100);
   for (int i = 0; i < 100; ++i) {
     v.push_back(i);
   }

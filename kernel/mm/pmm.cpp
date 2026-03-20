@@ -18,7 +18,7 @@ const multiboot_memory_map_t* mmap_next(const multiboot_memory_map_t* entry) {
 
 }  // namespace
 
-PhysicalMemoryManager::PhysicalMemoryManager() {
+void PhysicalMemoryManager::init() {
   bitmap_.fill();  // All frames start as used; available regions freed below.
 
   const auto* info = phys_to_virt(paddr_t{mboot_info}).ptr<multiboot_info_t>();

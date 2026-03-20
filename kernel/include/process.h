@@ -94,16 +94,16 @@ struct Process {
   uint32_t pid;
   uint32_t parent_pid;  // pid of the parent process (0 for root processes)
   ProcessState state;
-  uint32_t kernel_esp;                          // saved kernel stack pointer (into kernel_stack)
-  paddr_t page_directory_phys;                  // CR3 value for this process
-  PageTable* page_directory;                    // virtual pointer to page directory
-  uint8_t* kernel_stack;                        // base of allocated kernel stack (for cleanup)
-  vaddr_t heap_break;                           // current program break for sbrk
-  uint64_t wake_tick;                           // tick at which a sleeping process should wake
-  int32_t exit_code;                            // exit code stored when process becomes zombie
-  std::array<FileDescription*, kMaxFds> fds{};  // per-process file descriptor table
-  std::array<ShmMapping, kMaxShmMappings> shm_mappings{};  // shared memory attachments
-  uint32_t shm_mapping_count;                              // number of active shm mappings
+  uint32_t kernel_esp;                        // saved kernel stack pointer (into kernel_stack)
+  paddr_t page_directory_phys;                // CR3 value for this process
+  PageTable* page_directory;                  // virtual pointer to page directory
+  uint8_t* kernel_stack;                      // base of allocated kernel stack (for cleanup)
+  vaddr_t heap_break;                         // current program break for sbrk
+  uint64_t wake_tick;                         // tick at which a sleeping process should wake
+  int32_t exit_code;                          // exit code stored when process becomes zombie
+  std::array<FileDescription*, kMaxFds> fds;  // per-process file descriptor table
+  std::array<ShmMapping, kMaxShmMappings> shm_mappings;  // shared memory attachments
+  uint32_t shm_mapping_count;                            // number of active shm mappings
   // Signal state:
   uint32_t pending_signals;      // bitmask: bit N set means signal N is pending
   uint32_t signal_handlers[32];  // per-signal handler: kSigDfl / kSigIgn / user VA

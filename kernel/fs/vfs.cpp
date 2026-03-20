@@ -334,7 +334,7 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
       bool is_virtual_dir;
       if (slash != nullptr) {
         // e.g. "/bin/sh" -> component "bin", virtual dir
-        const size_t clen = static_cast<size_t>(slash - start);
+        const auto clen = static_cast<size_t>(slash - start);
         if (clen == 0 || clen >= sizeof(component)) {
           continue;
         }
@@ -370,8 +370,7 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
         entries[count].d_type = DT_DIR;
         entries[count].d_size = 0;
       } else {
-        entries[count].d_type =
-            node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
+        entries[count].d_type = node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
         entries[count].d_size = static_cast<uint32_t>(node_table[i].size);
       }
       ++count;
@@ -398,8 +397,7 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
 
       strncpy(entries[count].d_name, child, sizeof(entries[count].d_name) - 1);
       entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
-      entries[count].d_type =
-          node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
+      entries[count].d_type = node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
       entries[count].d_size = static_cast<uint32_t>(node_table[i].size);
       ++count;
     }

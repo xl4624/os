@@ -1,19 +1,18 @@
 #include "../framework/test.h"
 
-TestCase kTests[kMaxTests];
-int kTestCount = 0;
 TestState kTestState;
 
 int main() {
-  if (kTestCount == 0) {
+  auto& tests = get_tests();
+
+  if (tests.empty()) {
     printf("No tests found!\n");
     return 1;
   }
 
   // Group by category
   char current_category[64] = "";
-  for (int i = 0; i < kTestCount; ++i) {
-    const TestCase& test = kTests[i];
+  for (const auto& test : tests) {
     const char* slash = strchr(test.name, '/');
     if (slash == nullptr) {
       continue;

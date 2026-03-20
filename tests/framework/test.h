@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector.h>
 
 struct TestCase {
   const char* name;
@@ -11,21 +12,14 @@ struct TestCase {
   int line;
 };
 
-static constexpr int kMaxTests = 512;
-
-// The list of registered test cases.
-extern TestCase kTests[kMaxTests];
-// The number of registered test cases.
-extern int kTestCount;
+inline std::vector<TestCase>& get_tests() {
+  static std::vector<TestCase> tests;
+  return tests;
+}
 
 struct TestRegistrar {
   TestRegistrar(const char* name, void (*func)(), const char* file, int line) {
-    if (kTestCount >= kMaxTests) {
-      printf("ERROR: Too many tests! Increase kMaxTests (currently %d)\n", kMaxTests);
-      printf("Failed to register: %s\n", name);
-      return;
-    }
-    kTests[kTestCount++] = {name, func, file, line};
+    get_tests().push_back({name, func, file, line});
   }
 };
 
@@ -61,5 +55,3 @@ extern TestState kTestState;
   static TestRegistrar registrar_##category##_##name(                     \
       #category "/" #name, test_##category##_##name, __FILE__, __LINE__); \
   static void test_##category##_##name()
-
-int run_all_tests();

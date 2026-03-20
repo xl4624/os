@@ -107,7 +107,9 @@ void format_name(const char name8[8], const char ext3[3], char* out, size_t max_
   }
 
   if (has_ext) {
-    if (pos + 1 < max_len) out[pos++] = '.';
+    if (pos + 1 < max_len) {
+      out[pos++] = '.';
+    }
     for (int i = 0; i < 3 && ext3[i] != ' '; ++i) {
       if (pos + 1 < max_len) {
         out[pos++] = static_cast<char>(tolower(static_cast<unsigned char>(ext3[i])));
@@ -137,7 +139,7 @@ int32_t fat16_read(VfsNode* node, std::span<uint8_t> buf, uint32_t offset) {
   uint32_t out_pos = 0;
 
   // Walk the cluster chain to the cluster containing 'offset'.
-  uint32_t cluster_idx = offset / bytes_per_cluster;
+  const uint32_t cluster_idx = offset / bytes_per_cluster;
   uint32_t cluster_off = offset % bytes_per_cluster;
 
   uint16_t cluster = fi->start_cluster;

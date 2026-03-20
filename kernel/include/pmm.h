@@ -90,8 +90,11 @@ class Bitmap {
 
 class PhysicalMemoryManager {
  public:
-  PhysicalMemoryManager();
+  PhysicalMemoryManager() = default;
   ~PhysicalMemoryManager() = default;
+
+  // Parses multiboot memory map and initializes the bitmap.
+  void init();
 
   // Returns the physical address of a free page frame, or 0 if out of memory.
   [[nodiscard]] paddr_t alloc();

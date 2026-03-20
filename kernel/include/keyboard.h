@@ -108,8 +108,11 @@ struct KeyEvent {
 
 class KeyboardDriver {
  public:
-  KeyboardDriver();
+  KeyboardDriver() = default;
   ~KeyboardDriver() = default;
+
+  // Registers the keyboard IRQ handler.
+  static void init();
   KeyboardDriver(const KeyboardDriver&) = delete;
   KeyboardDriver& operator=(const KeyboardDriver&) = delete;
 

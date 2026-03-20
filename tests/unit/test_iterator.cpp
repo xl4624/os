@@ -33,7 +33,7 @@ TEST(iterator_traits, const_pointer_category) {
 
 TEST(reverse_iterator, basic_traversal) {
   std::array<int, 4> a = {1, 2, 3, 4};
-  int expected[] = {4, 3, 2, 1};
+  const int expected[] = {4, 3, 2, 1};
   int i = 0;
   for (auto it = a.rbegin(); it != a.rend(); ++it) {
     ASSERT_EQ(*it, expected[i++]);
@@ -100,7 +100,7 @@ TEST(reverse_iterator, comparisons) {
 
 TEST(reverse_iterator, const_reverse_iterator) {
   const std::array<int, 3> a = {5, 6, 7};
-  int expected[] = {7, 6, 5};
+  const int expected[] = {7, 6, 5};
   int i = 0;
   for (auto it = a.rbegin(); it != a.rend(); ++it) {
     ASSERT_EQ(*it, expected[i++]);
@@ -108,7 +108,7 @@ TEST(reverse_iterator, const_reverse_iterator) {
 }
 
 TEST(reverse_iterator, crbegin_crend) {
-  std::array<int, 4> a = {1, 2, 3, 4};
+  const std::array<int, 4> a = {1, 2, 3, 4};
   int sum = 0;
   for (auto it = a.crbegin(); it != a.crend(); ++it) {
     sum += *it;
@@ -123,15 +123,15 @@ TEST(reverse_iterator, crbegin_crend) {
 TEST(iterator_free, c_array_begin_end) {
   int arr[4] = {1, 2, 3, 4};
   int sum = 0;
-  for (int* it = std::begin(arr); it != std::end(arr); ++it) {
-    sum += *it;
+  for (const int& it : arr) {
+    sum += it;
   }
   ASSERT_EQ(sum, 10);
 }
 
 TEST(iterator_free, c_array_rbegin_rend) {
   int arr[3] = {10, 20, 30};
-  int expected[] = {30, 20, 10};
+  const int expected[] = {30, 20, 10};
   int i = 0;
   for (auto it = std::rbegin(arr); it != std::rend(arr); ++it) {
     ASSERT_EQ(*it, expected[i++]);
@@ -139,10 +139,10 @@ TEST(iterator_free, c_array_rbegin_rend) {
 }
 
 TEST(iterator_free, container_begin_end) {
-  std::array<int, 3> a = {4, 5, 6};
+  const std::array<int, 3> a = {4, 5, 6};
   int sum = 0;
-  for (auto it = std::begin(a); it != std::end(a); ++it) {
-    sum += *it;
+  for (const int& it : a) {
+    sum += it;
   }
   ASSERT_EQ(sum, 15);
 }
@@ -150,8 +150,8 @@ TEST(iterator_free, container_begin_end) {
 TEST(iterator_free, cbegin_cend) {
   const std::array<int, 3> a = {1, 2, 3};
   int sum = 0;
-  for (auto it = std::cbegin(a); it != std::cend(a); ++it) {
-    sum += *it;
+  for (const int it : a) {
+    sum += it;
   }
   ASSERT_EQ(sum, 6);
 }

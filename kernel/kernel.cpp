@@ -10,10 +10,12 @@
 #include "gdt.h"
 #include "heap.h"
 #include "interrupt.h"
+#include "keyboard.h"
 #include "modules.h"
 #include "multiboot.h"
 #include "paging.h"
 #include "pit.h"
+#include "pmm.h"
 #include "scheduler.h"
 #include "syscall.h"
 #include "terminal.h"
@@ -34,11 +36,13 @@ extern char stack_top[];
 
 void kernel_init() {
   assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
-  VMM::map_all_physical_ram();  // must be first: extends phys_to_virt() range
+  kPmm.init();
+  VMM::map_all_physical_ram();  // must be after PMM: extends phys_to_virt() range
   GDT::init();
   TSS::init();
   TSS::set_kernel_stack(reinterpret_cast<uint32_t>(stack_top));
   Interrupt::init();
+  KeyboardDriver::init();
   Syscall::init();
   PIT::init();
   kHeap.init();

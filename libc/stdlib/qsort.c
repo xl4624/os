@@ -3,7 +3,7 @@
 
 static void swap(char* a, char* b, size_t size) {
   char tmp;
-  for (size_t i = 0; i < size; i++) {
+  for (size_t i = 0; i < size; ++i) {
     tmp = a[i];
     a[i] = b[i];
     b[i] = tmp;
@@ -31,7 +31,7 @@ void qsort(void* base, size_t nmemb, size_t size, int (*compar)(const void*, con
   char* arr = (char*)base;
 
   while (top > 0) {
-    top--;
+    --top;
     size_t lo = stack[top].lo;
     size_t hi = stack[top].hi;
 
@@ -52,17 +52,17 @@ void qsort(void* base, size_t nmemb, size_t size, int (*compar)(const void*, con
     }
 
     /* Pivot is now at mid; move to hi-1 if possible */
-    char* pivot = arr + mid * size;
+    char* pivot = arr + (mid * size);
 
     size_t i = lo;
     size_t j = hi;
 
     while (1) {
       while (compar(arr + (i * size), pivot) < 0) {
-        i++;
+        ++i;
       }
       while (j > lo && compar(arr + (j * size), pivot) > 0) {
-        j--;
+        --j;
       }
       if (i >= j) {
         break;
@@ -74,19 +74,19 @@ void qsort(void* base, size_t nmemb, size_t size, int (*compar)(const void*, con
       } else if (arr + (j * size) == pivot) {
         pivot = arr + (i * size);
       }
-      i++;
+      ++i;
       if (j > 0) {
-        j--;
+        --j;
       }
     }
 
     if (top + 2 < 64) {
       stack[top].lo = lo;
       stack[top].hi = (i > 0) ? i - 1 : 0;
-      top++;
+      ++top;
       stack[top].lo = i + 1;
       stack[top].hi = hi;
-      top++;
+      ++top;
     }
   }
 }

@@ -4,8 +4,6 @@
 #include <string.h>
 #include <sys/io.h>
 
-TestCase kTests[kMaxTests];
-int kTestCount = 0;
 TestState kTestState;
 
 // PS/2 Controller ports
@@ -67,11 +65,10 @@ namespace KTest {
 void run_all() {
   dbg_puts("=== Kernel Test Suite ===\n");
 
+  auto tests = get_tests();
   char current_category[64] = "";
 
-  for (int i = 0; i < kTestCount; ++i) {
-    const TestCase& tc = kTests[i];
-
+  for (auto tc : tests) {
     // Parse "category/test_name"
     const char* slash = strchr(tc.name, '/');
     if (slash == nullptr) {

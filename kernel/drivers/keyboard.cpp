@@ -150,7 +150,7 @@ static void keyboard_handler([[maybe_unused]] interrupt_frame* frame) {
   kKeyboard.process_scancode(scancode);
 }
 
-KeyboardDriver::KeyboardDriver() { Interrupt::register_handler(IRQ::Keyboard, keyboard_handler); }
+void KeyboardDriver::init() { Interrupt::register_handler(IRQ::Keyboard, keyboard_handler); }
 
 void KeyboardDriver::process_scancode(uint8_t scancode) {
   // First, try to process as a command response.

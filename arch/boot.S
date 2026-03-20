@@ -176,11 +176,11 @@ _higher_half:
     mov %edi, mboot_magic
     mov %esi, mboot_info
 
+    /* Kernel early init: PMM, VMM, GDT, IDT, heap */
+    call kernel_init
+
     /* Call C++ global constructors */
     call _init
-
-    /* Kernel early init: GDT, IDT, interrupts */
-    call kernel_init
 
     /* Enter high-level kernel */
     call kernel_main

@@ -23,13 +23,19 @@ static int s_kbd_fd = -1;
  */
 static unsigned char translate_key(uint8_t k) {
   /* Letters A-Z -> 'a'-'z' */
-  if (k >= 1 && k <= 26) return (unsigned char)('a' + k - 1);
+  if (k >= 1 && k <= 26) {
+    return (unsigned char)('a' + k - 1);
+  }
 
   /* Digits Num0-Num9 -> '0'-'9' */
-  if (k >= 27 && k <= 36) return (unsigned char)('0' + k - 27);
+  if (k >= 27 && k <= 36) {
+    return (unsigned char)('0' + k - 27);
+  }
 
   /* F1-F10 are sequential; F11/F12 are not */
-  if (k >= 60 && k <= 69) return (unsigned char)(KEY_F1 + (k - 60));
+  if (k >= 60 && k <= 69) {
+    return (unsigned char)(KEY_F1 + (k - 60));
+  }
 
   switch (k) {
     case 37:
@@ -88,11 +94,17 @@ void DG_SleepMs(uint32_t ms) { msleep(ms); }
 uint32_t DG_GetTicksMs(void) { return (uint32_t)(getticks() * 10); }
 
 int DG_GetKey(int* pressed, unsigned char* doomKey) {
-  if (s_kbd_fd < 0) return 0;
+  if (s_kbd_fd < 0) {
+    return 0;
+  }
   struct kbd_event ev;
-  if (read(s_kbd_fd, &ev, sizeof(ev)) <= 0) return 0;
+  if (read(s_kbd_fd, &ev, sizeof(ev)) <= 0) {
+    return 0;
+  }
   unsigned char dk = translate_key(ev.key);
-  if (dk == 0) return 0;
+  if (dk == 0) {
+    return 0;
+  }
   *pressed = ev.pressed;
   *doomKey = dk;
   return 1;
@@ -115,5 +127,7 @@ int main(int argc, char* argv[]) {
     argv = default_argv;
   }
   doomgeneric_Create(argc, argv);
-  for (;;) doomgeneric_Tick();
+  for (;;) {
+    doomgeneric_Tick();
+  }
 }

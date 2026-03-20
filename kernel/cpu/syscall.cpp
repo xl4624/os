@@ -223,7 +223,7 @@ static int32_t sys_chdir(TrapFrame* regs) {
   char norm[128];
   strncpy(norm, path, sizeof(norm) - 1);
   norm[sizeof(norm) - 1] = '\0';
-  size_t nlen = strlen(norm);
+  const size_t nlen = strlen(norm);
   if (nlen > 1 && norm[nlen - 1] == '/') {
     norm[nlen - 1] = '\0';
   }

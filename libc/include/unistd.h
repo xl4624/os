@@ -10,6 +10,13 @@
 
 __BEGIN_DECLS
 
+/* POSIX getopt -- full interface in <getopt.h> */
+extern char* optarg;
+extern int optind;
+extern int opterr;
+extern int optopt;
+int getopt(int argc, char* const argv[], const char* optstring);
+
 __attribute__((noreturn)) void _exit(int status);
 int getpid(void);
 int fork(void);

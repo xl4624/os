@@ -40,7 +40,9 @@
 #define SYS_UNLINK 29    /* custom */
 #define SYS_RENAME 30    /* custom */
 #define SYS_FCNTL 31     /* custom */
-#define SYS_MAX 32
+#define SYS_MOUNT 32     /* custom */
+#define SYS_UMOUNT 33    /* custom */
+#define SYS_MAX 34
 
 #include <stdint.h>
 

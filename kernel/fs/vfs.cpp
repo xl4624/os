@@ -9,7 +9,6 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <termios.h>
-#include <vector.h>
 
 #include "framebuffer.h"
 #include "keyboard.h"
@@ -19,20 +18,193 @@
 
 namespace {
 
-std::vector<VfsNode> node_table;
+VfsNode* root_node = nullptr;
 
 // ===========================================================================
-// Mount registry
+// Tree-based mount support
 // ===========================================================================
 
-struct MountEntry {
-  char prefix[kMaxPathLen];
-  const FsOps* ops;
-};
+// Find the nearest ancestor (or self) with mount_ops set.
+const FsOps* find_mount_ops(const VfsNode* node) {
+  for (const VfsNode* n = node; n != nullptr; n = n->parent) {
+    if (n->mount_ops != nullptr) {
+      return n->mount_ops;
+    }
+  }
+  return nullptr;
+}
 
-constexpr uint32_t kMaxMounts = 8;
-MountEntry mount_table[kMaxMounts];
-uint32_t mount_count = 0;
+// ===========================================================================
+// Tree helpers
+// ===========================================================================
+
+// Find a direct child of parent with the given name.
+VfsNode* find_child(VfsNode* parent, const char* name) {
+  for (VfsNode* c = parent->first_child; c != nullptr; c = c->next_sibling) {
+    if (strcmp(c->name, name) == 0) {
+      return c;
+    }
+  }
+  return nullptr;
+}
+
+// Add a child to a parent's child list (prepend).
+void add_child(VfsNode* parent, VfsNode* child) {
+  child->parent = parent;
+  child->next_sibling = parent->first_child;
+  parent->first_child = child;
+}
+
+// Remove a child from its parent's child list.
+void remove_child(VfsNode* child) {
+  VfsNode* parent = child->parent;
+  if (parent == nullptr) {
+    return;
+  }
+  if (parent->first_child == child) {
+    parent->first_child = child->next_sibling;
+  } else {
+    for (VfsNode* c = parent->first_child; c != nullptr; c = c->next_sibling) {
+      if (c->next_sibling == child) {
+        c->next_sibling = child->next_sibling;
+        break;
+      }
+    }
+  }
+  child->parent = nullptr;
+  child->next_sibling = nullptr;
+}
+
+// Allocate and initialise a new tree node.
+// Default mode based on node type.
+mode_t default_mode(VfsNodeType type) {
+  switch (type) {
+    case VfsNodeType::File:
+      return S_IFREG | 0644;
+    case VfsNodeType::CharDev:
+      return S_IFCHR | 0666;
+    case VfsNodeType::Directory:
+      return S_IFDIR | 0755;
+  }
+  return 0;
+}
+
+VfsNode* make_node(const char* name, VfsNodeType type, const VfsOps* ops, mode_t mode = 0) {
+  auto* node = new VfsNode{};
+  strncpy(node->name, name, kMaxNameLen - 1);
+  node->name[kMaxNameLen - 1] = '\0';
+  node->type = type;
+  node->ops = ops;
+  node->data = nullptr;
+  node->size = 0;
+  node->priv = nullptr;
+  node->mode = (mode != 0) ? mode : default_mode(type);
+  node->uid = 0;
+  node->gid = 0;
+  node->parent = nullptr;
+  node->first_child = nullptr;
+  node->next_sibling = nullptr;
+  node->mount_ops = nullptr;
+  return node;
+}
+
+// Walk the tree from root following the given absolute path.
+// Returns the node at path, or nullptr if any component is missing.
+// TODO: tree_lookup and register_node share the same component-by-component
+// path walk. Extract a shared next_component() iterator to deduplicate.
+VfsNode* tree_lookup(const char* path) {
+  if (root_node == nullptr) {
+    return nullptr;
+  }
+  if (path[0] == '/' && path[1] == '\0') {
+    return root_node;
+  }
+
+  VfsNode* cur = root_node;
+  const char* p = path + 1;  // skip leading '/'
+
+  while (*p != '\0') {
+    const char* slash = strchr(p, '/');
+    char component[kMaxNameLen];
+    size_t clen;
+    if (slash != nullptr) {
+      clen = static_cast<size_t>(slash - p);
+    } else {
+      clen = strlen(p);
+    }
+    if (clen == 0) {
+      // double slash or trailing slash -- skip
+      ++p;
+      continue;
+    }
+    if (clen >= kMaxNameLen) {
+      return nullptr;
+    }
+    memcpy(component, p, clen);
+    component[clen] = '\0';
+
+    cur = find_child(cur, component);
+    if (cur == nullptr) {
+      return nullptr;
+    }
+
+    p += clen;
+    if (*p == '/') {
+      ++p;
+    }
+  }
+  return cur;
+}
+
+// Build the full absolute path of a node into buf. Returns the length written.
+[[maybe_unused]] uint32_t node_path(const VfsNode* node, char* buf, uint32_t buf_size) {
+  if (node == root_node || node->parent == nullptr) {
+    if (buf_size > 1) {
+      buf[0] = '/';
+      buf[1] = '\0';
+      return 1;
+    }
+    buf[0] = '\0';
+    return 0;
+  }
+
+  // Build path by walking up to root, then reversing.
+  const VfsNode* ancestors[32];
+  uint32_t depth = 0;
+  for (const VfsNode* n = node; n != nullptr && n != root_node && depth < 32; n = n->parent) {
+    ancestors[depth++] = n;
+  }
+
+  uint32_t pos = 0;
+  for (uint32_t i = depth; i > 0; --i) {
+    if (pos + 1 < buf_size) {
+      buf[pos++] = '/';
+    }
+    const char* name = ancestors[i - 1]->name;
+    const size_t nlen = strlen(name);
+    for (size_t j = 0; j < nlen && pos + 1 < buf_size; ++j) {
+      buf[pos++] = name[j];
+    }
+  }
+  buf[pos] = '\0';
+  return pos;
+}
+
+// Recursively delete a tree node and all its children.
+// TODO: make iterative to avoid stack overflow on deep trees.
+// TODO: free node->priv (FAT metadata) before deleting -- currently leaks on unmount.
+void delete_tree(VfsNode* node) {
+  if (node == nullptr) {
+    return;
+  }
+  VfsNode* child = node->first_child;
+  while (child != nullptr) {
+    VfsNode* next = child->next_sibling;
+    delete_tree(child);
+    child = next;
+  }
+  delete node;
+}
 
 // ===========================================================================
 // TTY state (termios + ICANON line buffer)
@@ -296,48 +468,87 @@ const VfsOps ramfs_ops = {
 namespace Vfs {
 
 void init() {
-  node_table.clear();
-  node_table.reserve(256);
-  mount_count = 0;
+  delete_tree(root_node);
+  root_node = make_node("", VfsNodeType::Directory, nullptr);
 }
 
-VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops) {
+VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops, mode_t mode) {
   assert(path != nullptr && path[0] == '/' &&
          "VfsNode::register_node: path must be non-null and start with '/'");
   if (strlen(path) >= kMaxPathLen) {
     return nullptr;
   }
 
-  node_table.push_back({});
-  VfsNode* node = &node_table.back();
-  strncpy(node->name, path, kMaxPathLen - 1);
-  node->name[kMaxPathLen - 1] = '\0';
-  node->type = type;
-  node->ops = ops;
-  node->data = nullptr;
-  node->size = 0;
-  node->priv = nullptr;
-  return node;
+  // Walk the tree, creating intermediate Directory nodes as needed.
+  VfsNode* cur = root_node;
+  const char* p = path + 1;  // skip leading '/'
+
+  while (*p != '\0') {
+    const char* slash = strchr(p, '/');
+    char component[kMaxNameLen];
+    size_t clen;
+    if (slash != nullptr) {
+      clen = static_cast<size_t>(slash - p);
+    } else {
+      clen = strlen(p);
+    }
+    if (clen == 0) {
+      ++p;
+      continue;
+    }
+    if (clen >= kMaxNameLen) {
+      return nullptr;
+    }
+    memcpy(component, p, clen);
+    component[clen] = '\0';
+
+    p += clen;
+    if (*p == '/') {
+      ++p;
+    }
+
+    if (*p == '\0') {
+      // This is the final component -- create the leaf node.
+      VfsNode* existing = find_child(cur, component);
+      if (existing != nullptr) {
+        // Node already exists; update type and ops.
+        existing->type = type;
+        existing->ops = ops;
+        if (mode != 0) {
+          existing->mode = mode;
+        }
+        return existing;
+      }
+      VfsNode* leaf = make_node(component, type, ops, mode);
+      add_child(cur, leaf);
+      return leaf;
+    }
+
+    // Intermediate component -- find or create directory.
+    VfsNode* child = find_child(cur, component);
+    if (child == nullptr) {
+      child = make_node(component, VfsNodeType::Directory, nullptr);
+      add_child(cur, child);
+    }
+    cur = child;
+  }
+
+  // Path was just "/" -- return root.
+  return root_node;
 }
 
 void unregister_node(const char* path) {
   assert(path != nullptr && "unregister_node(): null path");
-  for (auto& node : node_table) {
-    if (strcmp(node.name, path) == 0) {
-      node.name[0] = '\0';  // soft-delete: skip in lookup/getdents
-      return;
-    }
+  VfsNode* node = tree_lookup(path);
+  if (node != nullptr && node != root_node) {
+    remove_child(node);
+    delete_tree(node);
   }
 }
 
 VfsNode* lookup(const char* path) {
   assert(path != nullptr && path[0] == '/' && "lookup(): path must be non-null and absolute");
-  for (auto& node : node_table) {
-    if (node.name[0] != '\0' && strcmp(node.name, path) == 0) {
-      return &node;
-    }
-  }
-  return nullptr;
+  return tree_lookup(path);
 }
 
 int32_t open(const char* path, int32_t flags, mode_t mode) {
@@ -345,20 +556,65 @@ int32_t open(const char* path, int32_t flags, mode_t mode) {
 
   VfsNode* node = lookup(path);
 
-  // O_CREAT: try to create the file if it does not exist.
+  // O_CREAT: try to create the file via the mounted filesystem.
+  // TODO: the parent-path extraction (strrchr + memcpy) is duplicated in
+  // open(), fs_mkdir(), fat_mkdir(), and fat_create(). Extract a path_parent() helper.
   if (node == nullptr && (flags & O_CREAT) != 0) {
-    for (uint32_t i = 0; i < mount_count; ++i) {
-      const size_t plen = strlen(mount_table[i].prefix);
-      if (strncmp(path, mount_table[i].prefix, plen) == 0 &&
-          (path[plen] == '/' || path[plen] == '\0') && mount_table[i].ops->create != nullptr) {
-        node = mount_table[i].ops->create(path, flags, mode);
-        break;
+    // Find the parent directory to determine which mount to use.
+    const char* last_slash = strrchr(path, '/');
+    if (last_slash != nullptr) {
+      char parent_path[kMaxPathLen];
+      const auto parent_len = static_cast<size_t>(last_slash - path);
+      if (parent_len == 0) {
+        parent_path[0] = '/';
+        parent_path[1] = '\0';
+      } else if (parent_len < kMaxPathLen) {
+        memcpy(parent_path, path, parent_len);
+        parent_path[parent_len] = '\0';
+      } else {
+        parent_path[0] = '\0';
+      }
+      const VfsNode* parent_node = tree_lookup(parent_path);
+      if (parent_node != nullptr) {
+        const FsOps* fs = find_mount_ops(parent_node);
+        if (fs != nullptr && fs->create != nullptr) {
+          node = fs->create(path, flags, mode);
+        }
       }
     }
   }
 
   if (node == nullptr) {
-    return -1;
+    return -ENOENT;
+  }
+
+  Process* proc = Scheduler::current();
+  if (proc == nullptr) {
+    return -ESRCH;
+  }
+
+  // Permission check (root bypasses).
+  // TODO: use S_IRUSR/S_IWUSR/O_ACCMODE constants instead of magic numbers.
+  if (proc->uid != 0) {
+    const int access = flags & 3;
+    mode_t need = 0;
+    if (access == O_RDONLY || access == O_RDWR) {
+      need |= 4;
+    }
+    if (access == O_WRONLY || access == O_RDWR) {
+      need |= 2;
+    }
+    mode_t have;
+    if (proc->uid == node->uid) {
+      have = (node->mode >> 6) & 7;
+    } else if (proc->gid == node->gid) {
+      have = (node->mode >> 3) & 7;
+    } else {
+      have = node->mode & 7;
+    }
+    if ((have & need) != need) {
+      return -EACCES;
+    }
   }
 
   // O_TRUNC: truncate an existing writable file.
@@ -367,29 +623,25 @@ int32_t open(const char* path, int32_t flags, mode_t mode) {
     node->ops->truncate(node);
   }
 
-  Process* proc = Scheduler::current();
-  if (proc == nullptr) {
-    return -1;
-  }
-
   auto slot = fd_alloc(proc->fds);
   if (!slot) {
-    return -1;
+    return -EMFILE;
   }
 
   auto* vfs_fd = new VfsFileDescription{.node = node, .offset = 0, .open_flags = flags};
   if (vfs_fd == nullptr) {
-    return -1;
+    return -ENOMEM;
   }
 
   auto* desc = new FileDescription{
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = vfs_fd};
   if (desc == nullptr) {
     delete vfs_fd;
-    return -1;
+    return -ENOMEM;
   }
 
   proc->fds[*slot] = desc;
+  proc->fd_flags[*slot] = ((flags & O_CLOEXEC) != 0) ? FD_CLOEXEC : 0;
   return static_cast<int32_t>(*slot);
 }
 
@@ -439,14 +691,7 @@ void close(FileDescription* fd) {
 
 bool is_directory(const char* path) {
   assert(path != nullptr && path[0] == '/' && "is_directory(): path must be non-null and absolute");
-  if (path[0] != '/') {
-    return false;
-  }
-  // Root is always a valid directory.
-  if (path[1] == '\0') {
-    return true;
-  }
-  // Strip trailing slash for comparison.
+  // Strip trailing slash for lookup.
   char norm[kMaxPathLen];
   strncpy(norm, path, kMaxPathLen - 1);
   norm[kMaxPathLen - 1] = '\0';
@@ -455,33 +700,11 @@ bool is_directory(const char* path) {
     norm[len - 1] = '\0';
   }
 
-  // An exact-match Directory node qualifies.
-  for (const auto& node : node_table) {
-    if (node.name[0] == '\0') {
-      continue;
-    }
-    if (node.type == VfsNodeType::Directory && strcmp(node.name, norm) == 0) {
-      return true;
-    }
+  const VfsNode* node = tree_lookup(norm);
+  if (node == nullptr) {
+    return false;
   }
-
-  // Build the prefix that a child node would start with.
-  char prefix[kMaxPathLen];
-  strncpy(prefix, norm, kMaxPathLen - 2);
-  prefix[kMaxPathLen - 2] = '\0';
-  const size_t prefix_len = strlen(prefix);
-  prefix[prefix_len] = '/';
-  prefix[prefix_len + 1] = '\0';
-
-  for (const auto& node : node_table) {
-    if (node.name[0] == '\0') {
-      continue;
-    }
-    if (strncmp(node.name, prefix, prefix_len + 1) == 0) {
-      return true;
-    }
-  }
-  return false;
+  return node->type == VfsNodeType::Directory;
 }
 
 uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
@@ -491,6 +714,7 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
     return 0;
   }
 
+  // Strip trailing slash.
   char norm[kMaxPathLen];
   strncpy(norm, path, kMaxPathLen - 1);
   norm[kMaxPathLen - 1] = '\0';
@@ -499,141 +723,108 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
     norm[norm_len_raw - 1] = '\0';
   }
 
+  const VfsNode* dir = tree_lookup(norm);
+  if (dir == nullptr) {
+    return 0;
+  }
+
   uint32_t count = 0;
-
-  if (norm[1] == '\0') {
-    // Root: collect unique first path components.
-    char seen[32][32];
-    uint32_t seen_count = 0;
-
-    for (const auto& tnode : node_table) {
-      if (count >= max_entries) {
-        break;
-      }
-      if (tnode.name[0] == '\0') {
-        continue;
-      }
-      const char* name = tnode.name;
-      if (name[0] != '/') {
-        continue;
-      }
-
-      const char* start = name + 1;
-      const char* slash = strchr(start, '/');
-
-      char component[128];
-      bool is_dir_entry;
-      if (slash != nullptr) {
-        const auto clen = static_cast<size_t>(slash - start);
-        if (clen == 0 || clen >= sizeof(component)) {
-          continue;
-        }
-        strncpy(component, start, clen);
-        component[clen] = '\0';
-        is_dir_entry = true;
-      } else {
-        strncpy(component, start, sizeof(component) - 1);
-        component[sizeof(component) - 1] = '\0';
-        is_dir_entry = (tnode.type == VfsNodeType::Directory);
-      }
-
-      bool already_seen = false;
-      for (uint32_t j = 0; j < seen_count; ++j) {
-        if (strcmp(seen[j], component) == 0) {
-          already_seen = true;
-          break;
-        }
-      }
-      if (already_seen) {
-        continue;
-      }
-      if (seen_count < 32) {
-        strncpy(seen[seen_count++], component, 31);
-        seen[seen_count - 1][31] = '\0';
-      }
-
-      strncpy(entries[count].d_name, component, sizeof(entries[count].d_name) - 1);
-      entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
-      if (is_dir_entry) {
-        entries[count].d_type = DT_DIR;
-        entries[count].d_size = 0;
-      } else {
-        entries[count].d_type = tnode.type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
-        entries[count].d_size = static_cast<uint32_t>(tnode.size);
-      }
-      ++count;
+  for (VfsNode* child = dir->first_child; child != nullptr && count < max_entries;
+       child = child->next_sibling) {
+    strncpy(entries[count].d_name, child->name, sizeof(entries[count].d_name) - 1);
+    entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
+    if (child->type == VfsNodeType::Directory) {
+      entries[count].d_type = DT_DIR;
+      entries[count].d_size = 0;
+    } else if (child->type == VfsNodeType::CharDev) {
+      entries[count].d_type = DT_CHR;
+      entries[count].d_size = static_cast<uint32_t>(child->size);
+    } else {
+      entries[count].d_type = DT_REG;
+      entries[count].d_size = static_cast<uint32_t>(child->size);
     }
-  } else {
-    // Non-root: collect direct children under norm + "/".
-    char prefix[kMaxPathLen];
-    strncpy(prefix, norm, kMaxPathLen - 2);
-    prefix[kMaxPathLen - 2] = '\0';
-    const size_t prefix_len = strlen(prefix);
-    prefix[prefix_len] = '/';
-    prefix[prefix_len + 1] = '\0';
-    const size_t full_prefix_len = prefix_len + 1;
-
-    for (const auto& tnode : node_table) {
-      if (count >= max_entries) {
-        break;
-      }
-      if (tnode.name[0] == '\0') {
-        continue;
-      }
-      const char* name = tnode.name;
-      if (strncmp(name, prefix, full_prefix_len) != 0) {
-        continue;
-      }
-      const char* child = name + full_prefix_len;
-      if (child[0] == '\0' || strchr(child, '/') != nullptr) {
-        continue;
-      }
-
-      strncpy(entries[count].d_name, child, sizeof(entries[count].d_name) - 1);
-      entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
-      if (tnode.type == VfsNodeType::Directory) {
-        entries[count].d_type = DT_DIR;
-        entries[count].d_size = 0;
-      } else if (tnode.type == VfsNodeType::CharDev) {
-        entries[count].d_type = DT_CHR;
-        entries[count].d_size = static_cast<uint32_t>(tnode.size);
-      } else {
-        entries[count].d_type = DT_REG;
-        entries[count].d_size = static_cast<uint32_t>(tnode.size);
-      }
-      ++count;
-    }
+    ++count;
   }
 
   return count;
 }
 
-void mount(const char* prefix, const FsOps* ops) {
-  assert(prefix != nullptr && "mount(): null prefix");
+int32_t mount(const char* path, const FsOps* ops) {
+  assert(path != nullptr && "mount(): null path");
   assert(ops != nullptr && "mount(): null fs ops");
-  if (mount_count >= kMaxMounts) {
-    return;
-  }
-  strncpy(mount_table[mount_count].prefix, prefix, kMaxPathLen - 1);
-  mount_table[mount_count].prefix[kMaxPathLen - 1] = '\0';
-  mount_table[mount_count].ops = ops;
-  ++mount_count;
-}
 
-// Find the mount entry whose prefix is a prefix of abs_path.
-static const FsOps* find_mount(const char* abs_path) {
-  for (uint32_t i = 0; i < mount_count; ++i) {
-    const size_t plen = strlen(mount_table[i].prefix);
-    if (strncmp(abs_path, mount_table[i].prefix, plen) == 0 &&
-        (abs_path[plen] == '/' || abs_path[plen] == '\0')) {
-      return mount_table[i].ops;
+  // Find or create the directory node at the mount point.
+  VfsNode* node = tree_lookup(path);
+  if (node == nullptr) {
+    node = register_node(path, VfsNodeType::Directory, nullptr);
+    if (node == nullptr) {
+      return -ENOMEM;
     }
   }
-  return nullptr;
+
+  node->mount_ops = ops;
+
+  // Call the filesystem's mount callback if provided.
+  if (ops->mount != nullptr) {
+    const int32_t rc = ops->mount(node);
+    if (rc < 0) {
+      node->mount_ops = nullptr;
+      return rc;
+    }
+  }
+
+  return 0;
+}
+
+int32_t unmount(const char* path) {
+  assert(path != nullptr && "unmount(): null path");
+
+  VfsNode* node = tree_lookup(path);
+  if (node == nullptr || node->mount_ops == nullptr) {
+    return -EINVAL;
+  }
+
+  // Call the filesystem's unmount callback if provided.
+  if (node->mount_ops->unmount != nullptr) {
+    node->mount_ops->unmount(node);
+  }
+
+  // Remove all children (the mounted filesystem's subtree).
+  while (node->first_child != nullptr) {
+    VfsNode* child = node->first_child;
+    remove_child(child);
+    delete_tree(child);
+  }
+
+  node->mount_ops = nullptr;
+  return 0;
 }
 
 int32_t fs_mkdir(const char* abs_path) {
-  const FsOps* ops = find_mount(abs_path);
+  // Walk the tree to find the nearest mount ancestor.
+  // First check if parent exists.
+  const VfsNode* node = tree_lookup(abs_path);
+  const VfsNode* start = (node != nullptr) ? node : root_node;
+  // If the path doesn't exist, find the parent.
+  if (node == nullptr) {
+    const char* last_slash = strrchr(abs_path, '/');
+    if (last_slash != nullptr) {
+      char parent_path[kMaxPathLen];
+      const auto plen = static_cast<size_t>(last_slash - abs_path);
+      if (plen == 0) {
+        parent_path[0] = '/';
+        parent_path[1] = '\0';
+      } else {
+        memcpy(parent_path, abs_path, plen);
+        parent_path[plen] = '\0';
+      }
+      const VfsNode* parent = tree_lookup(parent_path);
+      if (parent != nullptr) {
+        start = parent;
+      }
+    }
+  }
+  const FsOps* ops = find_mount_ops(start);
   if (ops == nullptr || ops->mkdir == nullptr) {
     return -ENOENT;
   }
@@ -641,7 +832,8 @@ int32_t fs_mkdir(const char* abs_path) {
 }
 
 int32_t fs_unlink(const char* abs_path) {
-  const FsOps* ops = find_mount(abs_path);
+  const VfsNode* node = tree_lookup(abs_path);
+  const FsOps* ops = find_mount_ops(node != nullptr ? node : root_node);
   if (ops == nullptr || ops->unlink == nullptr) {
     return -ENOENT;
   }
@@ -649,48 +841,38 @@ int32_t fs_unlink(const char* abs_path) {
 }
 
 int32_t fs_rename(const char* old_path, const char* new_path) {
-  const FsOps* ops = find_mount(old_path);
+  const VfsNode* node = tree_lookup(old_path);
+  const FsOps* ops = find_mount_ops(node != nullptr ? node : root_node);
   if (ops == nullptr || ops->rename == nullptr) {
     return -ENOENT;
   }
   return ops->rename(old_path, new_path);
 }
 
-int32_t stat_path(const char* path, struct stat* buf) {
-  assert(path != nullptr && "stat_path(): null path");
-  assert(buf != nullptr && "stat_path(): null stat buffer");
+int32_t stat_node(const VfsNode* node, struct stat* buf) {
+  assert(node != nullptr && "stat_node(): null node");
+  assert(buf != nullptr && "stat_node(): null stat buffer");
   memset(buf, 0, sizeof(*buf));
 
+  buf->st_mode = node->mode;
+  buf->st_uid = static_cast<uid_t>(node->uid);
+  buf->st_gid = static_cast<gid_t>(node->gid);
+  if (node->type == VfsNodeType::File) {
+    buf->st_size = static_cast<off_t>(node->size);
+  }
+
+  // Use node address as inode number.
+  buf->st_ino = static_cast<ino_t>(reinterpret_cast<uintptr_t>(node));
+  return 0;
+}
+
+int32_t stat_path(const char* path, struct stat* buf) {
+  assert(path != nullptr && "stat_path(): null path");
   const VfsNode* node = lookup(path);
   if (node == nullptr) {
-    if (is_directory(path)) {
-      buf->st_mode = S_IFDIR | 0755;
-      return 0;
-    }
     return -ENOENT;
   }
-
-  switch (node->type) {
-    case VfsNodeType::File:
-      buf->st_mode = S_IFREG | 0644;
-      buf->st_size = static_cast<off_t>(node->size);
-      break;
-    case VfsNodeType::CharDev:
-      buf->st_mode = S_IFCHR | 0666;
-      break;
-    case VfsNodeType::Directory:
-      buf->st_mode = S_IFDIR | 0755;
-      break;
-  }
-
-  // Use vector index as inode number.
-  for (uint32_t i = 0; i < static_cast<uint32_t>(node_table.size()); ++i) {
-    if (&node_table[i] == node) {
-      buf->st_ino = static_cast<ino_t>(i);
-      break;
-    }
-  }
-  return 0;
+  return stat_node(node, buf);
 }
 
 void init_devfs() {
@@ -711,7 +893,7 @@ int32_t ioctl(FileDescription* fd, uint32_t request, void* arg) {
   auto* vfs_fd = fd->vfs;
   if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
       (vfs_fd->node->ops->ioctl == nullptr)) {
-    return -25;  // -ENOTTY
+    return -ENOTTY;
   }
   return vfs_fd->node->ops->ioctl(vfs_fd->node, request, arg);
 }
@@ -757,10 +939,10 @@ void init_ramfs() {
       strncpy(root_path + 1, name, kMaxPathLen - 2);
       root_path[kMaxPathLen - 1] = '\0';
 
-      auto* root_node = register_node(root_path, VfsNodeType::File, &ramfs_ops);
-      if (root_node != nullptr) {
-        root_node->data = mod->data;
-        root_node->size = mod->len;
+      auto* root_file = register_node(root_path, VfsNodeType::File, &ramfs_ops);
+      if (root_file != nullptr) {
+        root_file->data = mod->data;
+        root_file->size = mod->len;
       }
     }
   }

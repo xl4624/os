@@ -263,8 +263,7 @@ static int32_t sys_open(TrapFrame* regs) {
 
   const auto flags = static_cast<int32_t>(regs->ecx);
   const mode_t mode = (flags & O_CREAT) != 0 ? static_cast<mode_t>(regs->edx) : 0;
-  const int32_t fd = Vfs::open(abs_path, flags, mode);
-  return fd >= 0 ? fd : -ENOENT;
+  return Vfs::open(abs_path, flags, mode);
 }
 
 // SYS_CHDIR(path=ebx)
@@ -443,6 +442,15 @@ static int32_t sys_exec(TrapFrame* regs) {
     AddressSpace::load(new_pd_phys);
   }
 
+  // Close file descriptors marked FD_CLOEXEC.
+  for (uint32_t i = 0; i < kMaxFds; ++i) {
+    if (proc->fds[i] != nullptr && (proc->fd_flags[i] & FD_CLOEXEC) != 0) {
+      file_close(proc->fds[i]);
+      proc->fds[i] = nullptr;
+      proc->fd_flags[i] = 0;
+    }
+  }
+
   // Overwrite the current syscall TrapFrame in-place with the new process's
   // initial register state. When syscall_dispatch returns through TRAP_ENTRY,
   // the macro restores from this same frame and irets directly into the new
@@ -558,6 +566,7 @@ static int32_t sys_dup2(TrapFrame* regs) {
 
   proc->fds[newfd] = proc->fds[oldfd];
   proc->fds[newfd]->ref();
+  proc->fd_flags[newfd] = 0;  // dup2 clears FD_CLOEXEC on the new fd
   return static_cast<int32_t>(newfd);
 }
 
@@ -815,7 +824,7 @@ static int32_t sys_fstat(TrapFrame* regs) {
     return -EFAULT;
   }
   auto* buf = reinterpret_cast<struct stat*>(buf_ptr);
-  return Vfs::stat_path(fd->vfs->node->name, buf);
+  return Vfs::stat_node(fd->vfs->node, buf);
 }
 
 // SYS_MKDIR(path=ebx, mode=ecx)
@@ -867,8 +876,78 @@ static int32_t sys_rename(TrapFrame* regs) {
   return Vfs::fs_rename(old_path, new_path);
 }
 
-// SYS_FCNTL(fd=ebx, cmd=ecx, arg=edx) -- stub
-static int32_t sys_fcntl([[maybe_unused]] TrapFrame* regs) { return -EINVAL; }
+// SYS_FCNTL(fd=ebx, cmd=ecx, arg=edx)
+static int32_t sys_fcntl(TrapFrame* regs) {
+  const uint32_t fd = regs->ebx;
+  const auto cmd = static_cast<int32_t>(regs->ecx);
+  const uint32_t arg = regs->edx;
+
+  Process* proc = Scheduler::current();
+  if (fd >= kMaxFds || proc->fds[fd] == nullptr) {
+    return -EBADF;
+  }
+
+  switch (cmd) {
+    case F_DUPFD: {
+      auto slot = fd_alloc_from(proc->fds, arg);
+      if (!slot) {
+        return -EMFILE;
+      }
+      proc->fds[*slot] = proc->fds[fd];
+      proc->fds[*slot]->ref();
+      proc->fd_flags[*slot] = 0;
+      return static_cast<int32_t>(*slot);
+    }
+    case F_GETFD:
+      return static_cast<int32_t>(proc->fd_flags[fd]);
+    case F_SETFD:
+      proc->fd_flags[fd] = arg & FD_CLOEXEC;
+      return 0;
+    case F_GETFL: {
+      const FileDescription* desc = proc->fds[fd];
+      if (desc->type == FileType::VfsNode && desc->vfs != nullptr) {
+        return desc->vfs->open_flags;
+      }
+      if (desc->type == FileType::PipeRead) {
+        return O_RDONLY;
+      }
+      if (desc->type == FileType::PipeWrite) {
+        return O_WRONLY;
+      }
+      return O_RDWR;
+    }
+    case F_SETFL: {
+      // Only O_APPEND and O_NONBLOCK are modifiable via F_SETFL.
+      constexpr int32_t kModifiable = O_APPEND | O_NONBLOCK;
+      const FileDescription* desc = proc->fds[fd];
+      if (desc->type == FileType::VfsNode && desc->vfs != nullptr) {
+        desc->vfs->open_flags =
+            (desc->vfs->open_flags & ~kModifiable) | (static_cast<int32_t>(arg) & kModifiable);
+        return 0;
+      }
+      return -EINVAL;
+    }
+    default:
+      return -EINVAL;
+  }
+}
+
+// SYS_MOUNT(target=ebx, fstype=ecx) -- stub
+// TODO: implement; the actual mount currently happens at boot via Fat::init_vfs().
+static int32_t sys_mount([[maybe_unused]] TrapFrame* regs) { return -ENOSYS; }
+
+// SYS_UMOUNT(target=ebx)
+static int32_t sys_umount(TrapFrame* regs) {
+  const uint32_t target_ptr = regs->ebx;
+
+  char target[128];
+  const int32_t rc = resolve_abs_path(target_ptr, target, sizeof(target));
+  if (rc < 0) {
+    return rc;
+  }
+
+  return Vfs::unmount(target);
+}
 
 // ===========================================================================
 // Dispatch table
@@ -909,6 +988,8 @@ static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
     sys_unlink,     // 29 SYS_UNLINK
     sys_rename,     // 30 SYS_RENAME
     sys_fcntl,      // 31 SYS_FCNTL
+    sys_mount,      // 32 SYS_MOUNT
+    sys_umount,     // 33 SYS_UMOUNT
 };
 
 static_assert(syscall_table[SYS_EXIT] == sys_exit);
@@ -943,6 +1024,8 @@ static_assert(syscall_table[SYS_MKDIR] == sys_mkdir);
 static_assert(syscall_table[SYS_UNLINK] == sys_unlink);
 static_assert(syscall_table[SYS_RENAME] == sys_rename);
 static_assert(syscall_table[SYS_FCNTL] == sys_fcntl);
+static_assert(syscall_table[SYS_MOUNT] == sys_mount);
+static_assert(syscall_table[SYS_UMOUNT] == sys_umount);
 static_assert(syscall_table.size() == SYS_MAX);
 
 __BEGIN_DECLS

@@ -103,7 +103,7 @@ TEST(vfs, register_and_lookup) {
   Vfs::init();
   VfsNode* node = Vfs::register_node("/dev/test", VfsNodeType::CharDev, &counting_ops);
   ASSERT_NOT_NULL(node);
-  ASSERT_STR_EQ(node->name, "/dev/test");
+  ASSERT_STR_EQ(node->name, "test");
   ASSERT_EQ(node->type, VfsNodeType::CharDev);
 
   const VfsNode* found = Vfs::lookup("/dev/test");

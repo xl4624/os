@@ -36,9 +36,12 @@ struct VfsFileDescription {
   int32_t open_flags;
 };
 
-// A single node in the VFS. Represents a file, device, or directory.
+// Maximum component name length (filename or directory name, not full path).
+static constexpr uint32_t kMaxNameLen = 64;
+
+// A single node in the VFS tree. Represents a file, device, or directory.
 struct VfsNode {
-  char name[kMaxPathLen];  // full path (e.g. "/dev/tty", "/bin/sh")
+  char name[kMaxNameLen];  // component name (e.g. "tty", "sh"); root is ""
   VfsNodeType type;
   const VfsOps* ops;
 
@@ -48,10 +51,25 @@ struct VfsNode {
 
   // For mutable FAT nodes: per-file mutable metadata (FatFileInfo* or FatDirInfo*).
   void* priv;
+
+  // Permissions and ownership.
+  mode_t mode;
+  uint32_t uid;
+  uint32_t gid;
+
+  // Tree structure (child-sibling representation).
+  VfsNode* parent;
+  VfsNode* first_child;
+  VfsNode* next_sibling;
+
+  // Mount point: non-null if a filesystem is mounted on this node.
+  const struct FsOps* mount_ops;
 };
 
-// Filesystem-level operations for a mounted volume (mkdir, unlink, etc.).
+// Filesystem-level operations for a mounted volume.
 struct FsOps {
+  int32_t (*mount)(VfsNode* mount_point);
+  void (*unmount)(VfsNode* mount_point);
   int32_t (*mkdir)(const char* abs_path);
   int32_t (*unlink)(const char* abs_path);
   int32_t (*rename)(const char* old_path, const char* new_path);
@@ -67,8 +85,9 @@ namespace Vfs {
 void init();
 
 // Register a new node. Returns a pointer to the node, or nullptr if
-// the name is too long.
-[[nodiscard]] VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops);
+// the name is too long. If mode is 0, a default is assigned based on type.
+[[nodiscard]] VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops,
+                                     mode_t mode = 0);
 
 // Soft-delete a node by path (clears its name so it is skipped by lookup).
 void unregister_node(const char* path);
@@ -101,10 +120,13 @@ void close(FileDescription* fd);
 // entries written, or 0 if path is not a directory or is empty.
 uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries);
 
-// Register a filesystem at a mount prefix (e.g. "/fat").
-void mount(const char* prefix, const FsOps* ops);
+// Mount a filesystem at the given path. Calls ops->mount() if provided.
+int32_t mount(const char* path, const FsOps* ops);
 
-// Filesystem-level operations -- dispatched to the matching mount.
+// Unmount the filesystem at the given path.
+int32_t unmount(const char* path);
+
+// Filesystem-level operations -- dispatched to the nearest mount ancestor.
 int32_t fs_mkdir(const char* abs_path);
 int32_t fs_unlink(const char* abs_path);
 int32_t fs_rename(const char* old_path, const char* new_path);
@@ -112,6 +134,9 @@ int32_t fs_rename(const char* old_path, const char* new_path);
 // Fill buf with stat information for the given path.
 // Returns 0 on success, or negative errno on failure.
 int32_t stat_path(const char* path, struct stat* buf);
+
+// Fill buf with stat information for a VfsNode directly.
+int32_t stat_node(const VfsNode* node, struct stat* buf);
 
 // Populate ramfs nodes from multiboot modules. Each module becomes
 // a file at "/bin/<basename>".

@@ -102,11 +102,14 @@ struct Process {
   uint64_t wake_tick;                         // tick at which a sleeping process should wake
   int32_t exit_code;                          // exit code stored when process becomes zombie
   std::array<FileDescription*, kMaxFds> fds;  // per-process file descriptor table
+  std::array<uint32_t, kMaxFds> fd_flags;     // per-fd flags (e.g. FD_CLOEXEC)
   std::array<ShmMapping, kMaxShmMappings> shm_mappings;  // shared memory attachments
   uint32_t shm_mapping_count;                            // number of active shm mappings
   // Signal state:
   uint32_t pending_signals;      // bitmask: bit N set means signal N is pending
   uint32_t signal_handlers[32];  // per-signal handler: kSigDfl / kSigIgn / user VA
   char cwd[128];                 // current working directory (absolute path, null-terminated)
+  uint32_t uid;                  // user id (0 = root)
+  uint32_t gid;                  // group id (0 = root)
   Process* next;                 // intrusive list pointer (ready/blocked queues)
 };

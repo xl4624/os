@@ -774,7 +774,7 @@ int32_t fat_unlink(const char* abs_path) {
 int32_t fat_rename(const char* old_path, const char* new_path) {
   assert(s.mounted && "fat_rename(): filesystem not mounted");
 
-  VfsNode* node = Vfs::lookup(old_path);
+  const VfsNode* node = Vfs::lookup(old_path);
   if (node == nullptr) {
     return -ENOENT;
   }
@@ -847,8 +847,18 @@ int32_t fat_rename(const char* old_path, const char* new_path) {
   // Update in-memory state.
   fi->dir_entry_sector = new_lba;
   fi->dir_entry_offset = new_off;
-  strncpy(node->name, new_path, kMaxPathLen - 1);
-  node->name[kMaxPathLen - 1] = '\0';
+
+  // Move the node in the VFS tree: unregister from old location, re-register
+  // at new location, and transfer the metadata to the new node.
+  void* saved_priv = node->priv;
+  const size_t saved_size = node->size;
+  const VfsOps* saved_ops = node->ops;
+  Vfs::unregister_node(old_path);
+  VfsNode* new_node = Vfs::register_node(new_path, VfsNodeType::File, saved_ops);
+  if (new_node != nullptr) {
+    new_node->priv = saved_priv;
+    new_node->size = saved_size;
+  }
 
   return 0;
 }
@@ -928,6 +938,8 @@ VfsNode* fat_create(const char* abs_path, [[maybe_unused]] int32_t flags,
 }
 
 const FsOps fat_fs_ops = {
+    .mount = nullptr,
+    .unmount = nullptr,
     .mkdir = fat_mkdir,
     .unlink = fat_unlink,
     .rename = fat_rename,

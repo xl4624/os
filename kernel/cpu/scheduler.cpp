@@ -443,8 +443,9 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   child->heap_break = current_process->heap_break;
   child->parent_pid = current_process->pid;
 
-  // Inherit the parent's file descriptor table.
+  // Inherit the parent's file descriptor table and per-fd flags.
   child->fds = current_process->fds;
+  child->fd_flags = current_process->fd_flags;
   for (auto* fd : child->fds) {
     if (fd != nullptr) {
       fd->ref();
@@ -475,8 +476,10 @@ uint32_t fork_current(const TrapFrame* parent_regs) {
   memcpy(child->signal_handlers, current_process->signal_handlers, sizeof(child->signal_handlers));
   child->pending_signals = 0;
 
-  // Inherit working directory.
+  // Inherit working directory and credentials.
   memcpy(child->cwd, current_process->cwd, sizeof(child->cwd));
+  child->uid = current_process->uid;
+  child->gid = current_process->gid;
 
   child->kernel_stack = reinterpret_cast<uint8_t*>(kmalloc(kKernelStackSize));
   assert(child->kernel_stack && "fork_current(): failed to allocate kernel stack");

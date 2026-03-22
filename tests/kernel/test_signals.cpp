@@ -56,7 +56,7 @@ TEST(signals, empty_state_is_zero) {
 }
 
 TEST(signals, default_constructed_process_is_empty) {
-  Process p{};
+  const Process p{};
   ASSERT_EQ(p.state, ProcessState::Empty);
   ASSERT_EQ(p.pid, 0U);
   ASSERT_EQ(p.pending_signals, 0U);
@@ -87,7 +87,7 @@ TEST(signals, new_process_handlers_are_sigdfl) {
 TEST(signals, send_signal_sets_pending_bit) {
   TestElf elf;
   make_test_elf(elf);
-  Process* p = Scheduler::create_process(
+  const Process* p = Scheduler::create_process(
       std::span<const uint8_t>{reinterpret_cast<const uint8_t*>(&elf), sizeof(elf)},
       "test_send_signal");
   ASSERT_NOT_NULL(p);
@@ -168,7 +168,7 @@ TEST(signals, broadcast_signal_skips_zombie) {
 
 TEST(signals, broadcast_signal_skips_empty) {
   // An Empty slot (pid=0 after Process{}) must not receive broadcast signals.
-  Process empty{};
+  const Process empty{};
   // Empty slots are not in the process table, so this is a logical check:
   // empty.state == Empty means broadcast_signal will never call send_signal on it.
   ASSERT_EQ(empty.state, ProcessState::Empty);

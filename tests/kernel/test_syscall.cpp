@@ -35,15 +35,15 @@ struct UserPathPage {
     strncpy(kva, str, PAGE_SIZE - 1);
     kva[PAGE_SIZE - 1] = '\0';
 
-    Process* proc = Scheduler::current();
+    const Process* proc = Scheduler::current();
     // Map into the currently active page directory so that both
     // validate_user_buffer and direct kernel reads of the user pointer work.
     AddressSpace::map(proc->page_directory, kUserAddr, page_phys,
                       /*writeable=*/true, /*user=*/true);
   }
 
-  void restore() {
-    Process* proc = Scheduler::current();
+  static void restore() {
+    const Process* proc = Scheduler::current();
     // unmap also frees the physical page back to the PMM.
     AddressSpace::unmap(proc->page_directory, kUserAddr);
   }

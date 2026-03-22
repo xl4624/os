@@ -33,10 +33,10 @@ bool make_pipe(uint32_t& rfd, uint32_t& wfd) {
     return false;
   }
 
-  auto rd = std::make_unique<FileDescription>(
-      FileDescription{FileType::PipeRead, 1, pipe.get(), nullptr});
-  auto wr = std::make_unique<FileDescription>(
-      FileDescription{FileType::PipeWrite, 1, pipe.get(), nullptr});
+  auto rd = std::make_unique<FileDescription>(FileDescription{
+      .type = FileType::PipeRead, .ref_count = 1, .pipe = pipe.get(), .vfs = nullptr});
+  auto wr = std::make_unique<FileDescription>(FileDescription{
+      .type = FileType::PipeWrite, .ref_count = 1, .pipe = pipe.get(), .vfs = nullptr});
   if (!rd || !wr) {
     return false;
   }

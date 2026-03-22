@@ -331,12 +331,13 @@ int32_t open(const char* path) {
     return -1;
   }
 
-  auto* vfs_fd = new VfsFileDescription{node, 0};
+  auto* vfs_fd = new VfsFileDescription{.node = node, .offset = 0};
   if (vfs_fd == nullptr) {
     return -1;
   }
 
-  auto* desc = new FileDescription{FileType::VfsNode, 1, nullptr, vfs_fd};
+  auto* desc = new FileDescription{
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = vfs_fd};
   if (desc == nullptr) {
     delete vfs_fd;
     return -1;

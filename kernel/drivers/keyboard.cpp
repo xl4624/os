@@ -59,37 +59,37 @@ static_assert(sizeof(kScancodeTable) / sizeof(Key::Value) == kScancodeTableSize,
 // clang-format off
 struct AsciiPair { char normal; char shifted; };
 static constexpr AsciiPair kAsciiTable[Key::COUNT] = {
-    {0, 0},                                   // Unknown
-    {'a','A'}, {'b','B'}, {'c','C'},          // A  B  C
-    {'d','D'}, {'e','E'}, {'f','F'},          // D  E  F
-    {'g','G'}, {'h','H'}, {'i','I'},          // G  H  I
-    {'j','J'}, {'k','K'}, {'l','L'},          // J  K  L
-    {'m','M'}, {'n','N'}, {'o','O'},          // M  N  O
-    {'p','P'}, {'q','Q'}, {'r','R'},          // P  Q  R
-    {'s','S'}, {'t','T'}, {'u','U'},          // S  T  U
-    {'v','V'}, {'w','W'}, {'x','X'},          // V  W  X
-    {'y','Y'}, {'z','Z'},                     // Y  Z
-    {'0',')'}, {'1','!'}, {'2','@'},          // Num0  Num1  Num2
-    {'3','#'}, {'4','$'}, {'5','%'},          // Num3  Num4  Num5
-    {'6','^'}, {'7','&'}, {'8','*'},          // Num6  Num7  Num8
-    {'9','('},                                // Num9
-    {' ',' '}, {'\n','\n'},                  // Space  Enter
-    {'\b','\b'}, {'\t','\t'},                // Backspace  Tab
-    {0, 0},                                   // Esc
-    {'-','_'}, {'=','+'},                    // Minus  Equals
-    {'[','{'}, {']','}'},                    // LeftBracket  RightBracket
-    {'\\','|'},                               // Backslash
-    {';',':'}, {'\'','"'}, {'`','~'},        // Semicolon  Apostrophe  Grave
-    {',','<'}, {'.','>'}, {'/','?'},         // Comma  Period  Slash
+    {.normal=0, .shifted=0},                                   // Unknown
+    {.normal='a',.shifted='A'}, {.normal='b',.shifted='B'}, {.normal='c',.shifted='C'},          // A  B  C
+    {.normal='d',.shifted='D'}, {.normal='e',.shifted='E'}, {.normal='f',.shifted='F'},          // D  E  F
+    {.normal='g',.shifted='G'}, {.normal='h',.shifted='H'}, {.normal='i',.shifted='I'},          // G  H  I
+    {.normal='j',.shifted='J'}, {.normal='k',.shifted='K'}, {.normal='l',.shifted='L'},          // J  K  L
+    {.normal='m',.shifted='M'}, {.normal='n',.shifted='N'}, {.normal='o',.shifted='O'},          // M  N  O
+    {.normal='p',.shifted='P'}, {.normal='q',.shifted='Q'}, {.normal='r',.shifted='R'},          // P  Q  R
+    {.normal='s',.shifted='S'}, {.normal='t',.shifted='T'}, {.normal='u',.shifted='U'},          // S  T  U
+    {.normal='v',.shifted='V'}, {.normal='w',.shifted='W'}, {.normal='x',.shifted='X'},          // V  W  X
+    {.normal='y',.shifted='Y'}, {.normal='z',.shifted='Z'},                     // Y  Z
+    {.normal='0',.shifted=')'}, {.normal='1',.shifted='!'}, {.normal='2',.shifted='@'},          // Num0  Num1  Num2
+    {.normal='3',.shifted='#'}, {.normal='4',.shifted='$'}, {.normal='5',.shifted='%'},          // Num3  Num4  Num5
+    {.normal='6',.shifted='^'}, {.normal='7',.shifted='&'}, {.normal='8',.shifted='*'},          // Num6  Num7  Num8
+    {.normal='9',.shifted='('},                                // Num9
+    {.normal=' ',.shifted=' '}, {.normal='\n',.shifted='\n'},                  // Space  Enter
+    {.normal='\b',.shifted='\b'}, {.normal='\t',.shifted='\t'},                // Backspace  Tab
+    {.normal=0, .shifted=0},                                   // Esc
+    {.normal='-',.shifted='_'}, {.normal='=',.shifted='+'},                    // Minus  Equals
+    {.normal='[',.shifted='{'}, {.normal=']',.shifted='}'},                    // LeftBracket  RightBracket
+    {.normal='\\',.shifted='|'},                               // Backslash
+    {.normal=';',.shifted=':'}, {.normal='\'',.shifted='"'}, {.normal='`',.shifted='~'},        // Semicolon  Apostrophe  Grave
+    {.normal=',',.shifted='<'}, {.normal='.',.shifted='>'}, {.normal='/',.shifted='?'},         // Comma  Period  Slash
     // Modifiers (no ASCII)
-    {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, // LeftShift..CapsLock
+    {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, // LeftShift..CapsLock
     // Function keys (no ASCII)
-    {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},         // F1..F6
-    {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},         // F7..F12
+    {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0},         // F1..F6
+    {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0},         // F7..F12
     // Navigation keys (no ASCII)
-    {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},         // Insert..PageDown
+    {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0},         // Insert..PageDown
     // Arrow keys (no ASCII)
-    {0,0}, {0,0}, {0,0}, {0,0},                       // Up  Down  Left  Right
+    {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0}, {.normal=0,.shifted=0},                       // Up  Down  Left  Right
 };
 // clang-format on
 
@@ -275,7 +275,8 @@ KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
   // The 0xE0 prefix byte is not a key event itself; set the flag and bail.
   if (scancode == kExtended) {
     extended_scancode_ = true;
-    return KeyEvent{Key{}, false, '\0', shift_, ctrl_, alt_};
+    return KeyEvent{
+        .key = Key{}, .pressed = false, .ascii = '\0', .shift = shift_, .ctrl = ctrl_, .alt = alt_};
   }
 
   const bool pressed = (scancode & kReleaseBit) == 0;
@@ -306,5 +307,6 @@ KeyEvent KeyboardDriver::scancode_to_event(uint8_t scancode) {
 
   // ctrl/alt combinations suppress printable output.
   const char ascii = (pressed && !ctrl_ && !alt_) ? key.ascii(shift_) : '\0';
-  return KeyEvent{key, pressed, ascii, shift_, ctrl_, alt_};
+  return KeyEvent{
+      .key = key, .pressed = pressed, .ascii = ascii, .shift = shift_, .ctrl = ctrl_, .alt = alt_};
 }

@@ -37,7 +37,7 @@ PageDir create() {
   memcpy(&pd->entry[kKernelPdeStart], &boot_page_directory.entry[kKernelPdeStart],
          (PAGES_PER_TABLE - kKernelPdeStart) * sizeof(PageEntry));
 
-  return {pd_phys, pd};
+  return {.phys = pd_phys, .virt = pd};
 }
 
 void map(PageTable* pd, vaddr_t virt, paddr_t phys, bool writeable, bool user) {
@@ -152,7 +152,7 @@ PageDir copy(const PageTable* src_pd) {
     }
   }
 
-  return {new_phys, new_pd};
+  return {.phys = new_phys, .virt = new_pd};
 }
 
 void destroy(PageTable* pd, paddr_t pd_phys) {

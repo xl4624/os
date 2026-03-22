@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/cdefs.h>
 #include <sys/syscall.h>
+#include <utility.h>
 
 #include "address_space.h"
 #include "elf.h"
@@ -508,7 +509,7 @@ int32_t waitpid_current(int32_t pid, int32_t* exit_code_ptr) {
       continue;
     }
     // When waiting for a specific pid, skip non-matching children.
-    if (pid > 0 && child.pid != static_cast<uint32_t>(pid)) {
+    if (pid > 0 && std::cmp_not_equal(child.pid, pid)) {
       continue;
     }
     if (child.state == ProcessState::Zombie) {

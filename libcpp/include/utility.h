@@ -321,4 +321,17 @@ T* addressof(T& v) noexcept {
 template <class T>
 constexpr const T* addressof(const T&&) = delete;
 
+template <class T, class U>
+constexpr bool cmp_not_equal(T t, U u) noexcept {
+  if constexpr (is_signed<T>::value == is_signed<U>::value) {
+    return t != u;
+  } else if constexpr (is_signed<T>::value) {
+    // T is signed, U is unsigned: negative T can never equal U.
+    return t < 0 || static_cast<U>(t) != u;
+  } else {
+    // T is unsigned, U is signed: negative U can never equal T.
+    return u < 0 || t != static_cast<T>(u);
+  }
+}
+
 }  // namespace std

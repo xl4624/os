@@ -113,7 +113,8 @@ TEST(fd, write_null_fd_slot) {
 TEST(fd, close_valid_fd) {
   Process* proc = Scheduler::current();
 
-  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr, nullptr};
+  auto* desc = new FileDescription{
+      .type = FileType::PipeRead, .ref_count = 1, .pipe = nullptr, .vfs = nullptr};
 
   auto slot = fd_alloc(proc->fds);
   ASSERT(slot.has_value());
@@ -143,7 +144,8 @@ TEST(fd, close_invalid_fd) {
 TEST(fd, dup2_copies_fd) {
   Process* proc = Scheduler::current();
 
-  auto* desc = new FileDescription{FileType::PipeRead, 1, nullptr, nullptr};
+  auto* desc = new FileDescription{
+      .type = FileType::PipeRead, .ref_count = 1, .pipe = nullptr, .vfs = nullptr};
 
   auto slot = fd_alloc(proc->fds);
   ASSERT(slot.has_value());

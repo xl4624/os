@@ -298,7 +298,7 @@ void init_vfs() {
         continue;
       }
 
-      auto* fi = new Fat16FileInfo{de.first_cluster, de.file_size};
+      auto* fi = new Fat16FileInfo{.start_cluster = de.first_cluster, .file_size = de.file_size};
       node->data = reinterpret_cast<const uint8_t*>(fi);
       node->size = de.file_size;
     }

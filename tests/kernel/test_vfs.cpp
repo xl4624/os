@@ -309,7 +309,7 @@ TEST(vfs, devfs_null_read_eof) {
   VfsNode* null_node = Vfs::lookup("/dev/null");
   ASSERT_NOT_NULL(null_node);
 
-  VfsFileDescription vfs_fd = {null_node, 0};
+  VfsFileDescription vfs_fd = {.node = null_node, .offset = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
@@ -325,7 +325,7 @@ TEST(vfs, devfs_null_write_discards) {
   VfsNode* null_node = Vfs::lookup("/dev/null");
   ASSERT_NOT_NULL(null_node);
 
-  VfsFileDescription vfs_fd = {null_node, 0};
+  VfsFileDescription vfs_fd = {.node = null_node, .offset = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 

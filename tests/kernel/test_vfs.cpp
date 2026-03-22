@@ -1,4 +1,5 @@
 #include <algorithm.h>
+#include <errno.h>
 #include <string.h>
 
 #include "file.h"
@@ -265,7 +266,7 @@ TEST(vfs, open_returns_fd) {
 TEST(vfs, open_not_found) {
   Vfs::init();
   const int32_t fd = Vfs::open("/nonexistent", 0);
-  ASSERT_EQ(fd, -1);
+  ASSERT_EQ(fd, -ENOENT);
 }
 
 TEST(vfs, open_read_write_through_fd) {

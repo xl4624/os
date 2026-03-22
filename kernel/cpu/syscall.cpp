@@ -596,13 +596,29 @@ static int32_t sys_shmdt(TrapFrame* regs) {
   return Shm::detach(vaddr, size);
 }
 
-// SYS_GETTICKS()
-// Returns the number of PIT ticks since boot (10 ms resolution).
-// The 64-bit tick count is split: low 32 bits in eax, high 32 bits in edx.
-static int32_t sys_getticks(TrapFrame* regs) {
+// SYS_CLOCK_GETTIME(clk_id=ebx, tp=ecx)
+// Fills a userspace timespec with the current monotonic time.
+static int32_t sys_clock_gettime(TrapFrame* regs) {
+  const auto clk_id = static_cast<int32_t>(regs->ebx);
+  const uint32_t tp_ptr = regs->ecx;
+
+  // Only CLOCK_MONOTONIC is supported (same value as in libc time.h).
+  if (clk_id != 1) {
+    return -EINVAL;
+  }
+
+  if (!validate_user_buffer(tp_ptr, 8, /*writeable=*/true)) {
+    return -EFAULT;
+  }
+
   const uint64_t ticks = PIT::get_ticks();
-  regs->edx = static_cast<uint32_t>(ticks >> 32);
-  return static_cast<int32_t>(ticks & 0xFFFFFFFF);
+  constexpr uint32_t kTicksPerSec = 100;
+  constexpr uint32_t kNsPerTick = 10'000'000;  // 10 ms = 10,000,000 ns
+
+  auto* tp = reinterpret_cast<int32_t*>(tp_ptr);
+  tp[0] = static_cast<int32_t>(ticks / kTicksPerSec);                 // tv_sec
+  tp[1] = static_cast<int32_t>((ticks % kTicksPerSec) * kNsPerTick);  // tv_nsec
+  return 0;
 }
 
 // SYS_LSEEK(fd=ebx, offset=ecx, whence=edx)
@@ -956,40 +972,40 @@ static int32_t sys_umount(TrapFrame* regs) {
 using syscall_fn = int32_t (*)(TrapFrame*);
 
 static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
-    sys_exit,       // 0  SYS_EXIT
-    sys_fork,       // 1  SYS_FORK
-    sys_read,       // 2  SYS_READ
-    sys_write,      // 3  SYS_WRITE
-    sys_open,       // 4  SYS_OPEN
-    sys_close,      // 5  SYS_CLOSE
-    sys_waitpid,    // 6  SYS_WAITPID
-    sys_exec,       // 7  SYS_EXEC
-    sys_lseek,      // 8  SYS_LSEEK
-    sys_getpid,     // 9  SYS_GETPID
-    sys_pipe,       // 10 SYS_PIPE
-    sys_sbrk,       // 11 SYS_SBRK
-    sys_dup2,       // 12 SYS_DUP2
-    sys_sleep,      // 13 SYS_SLEEP
-    sys_shmget,     // 14 SYS_SHMGET
-    sys_shmat,      // 15 SYS_SHMAT
-    sys_shmdt,      // 16 SYS_SHMDT
-    sys_getticks,   // 17 SYS_GETTICKS
-    sys_fb_flip,    // 18 SYS_FB_FLIP
-    sys_kill,       // 19 SYS_KILL
-    sys_sigaction,  // 20 SYS_SIGACTION
-    sys_sigreturn,  // 21 SYS_SIGRETURN
-    sys_chdir,      // 22 SYS_CHDIR
-    sys_getcwd,     // 23 SYS_GETCWD
-    sys_getdents,   // 24 SYS_GETDENTS
-    sys_ioctl,      // 25 SYS_IOCTL
-    sys_stat,       // 26 SYS_STAT
-    sys_fstat,      // 27 SYS_FSTAT
-    sys_mkdir,      // 28 SYS_MKDIR
-    sys_unlink,     // 29 SYS_UNLINK
-    sys_rename,     // 30 SYS_RENAME
-    sys_fcntl,      // 31 SYS_FCNTL
-    sys_mount,      // 32 SYS_MOUNT
-    sys_umount,     // 33 SYS_UMOUNT
+    sys_exit,           // 0  SYS_EXIT
+    sys_fork,           // 1  SYS_FORK
+    sys_read,           // 2  SYS_READ
+    sys_write,          // 3  SYS_WRITE
+    sys_open,           // 4  SYS_OPEN
+    sys_close,          // 5  SYS_CLOSE
+    sys_waitpid,        // 6  SYS_WAITPID
+    sys_exec,           // 7  SYS_EXEC
+    sys_lseek,          // 8  SYS_LSEEK
+    sys_getpid,         // 9  SYS_GETPID
+    sys_pipe,           // 10 SYS_PIPE
+    sys_sbrk,           // 11 SYS_SBRK
+    sys_dup2,           // 12 SYS_DUP2
+    sys_clock_gettime,  // 13 SYS_CLOCK_GETTIME
+    sys_sleep,          // 14 SYS_SLEEP
+    sys_shmget,         // 15 SYS_SHMGET
+    sys_shmat,          // 16 SYS_SHMAT
+    sys_shmdt,          // 17 SYS_SHMDT
+    sys_fb_flip,        // 18 SYS_FB_FLIP
+    sys_kill,           // 19 SYS_KILL
+    sys_sigaction,      // 20 SYS_SIGACTION
+    sys_sigreturn,      // 21 SYS_SIGRETURN
+    sys_chdir,          // 22 SYS_CHDIR
+    sys_getcwd,         // 23 SYS_GETCWD
+    sys_getdents,       // 24 SYS_GETDENTS
+    sys_ioctl,          // 25 SYS_IOCTL
+    sys_stat,           // 26 SYS_STAT
+    sys_fstat,          // 27 SYS_FSTAT
+    sys_mkdir,          // 28 SYS_MKDIR
+    sys_unlink,         // 29 SYS_UNLINK
+    sys_rename,         // 30 SYS_RENAME
+    sys_fcntl,          // 31 SYS_FCNTL
+    sys_mount,          // 32 SYS_MOUNT
+    sys_umount,         // 33 SYS_UMOUNT
 };
 
 static_assert(syscall_table[SYS_EXIT] == sys_exit);
@@ -1005,11 +1021,11 @@ static_assert(syscall_table[SYS_GETPID] == sys_getpid);
 static_assert(syscall_table[SYS_PIPE] == sys_pipe);
 static_assert(syscall_table[SYS_SBRK] == sys_sbrk);
 static_assert(syscall_table[SYS_DUP2] == sys_dup2);
+static_assert(syscall_table[SYS_CLOCK_GETTIME] == sys_clock_gettime);
 static_assert(syscall_table[SYS_SLEEP] == sys_sleep);
 static_assert(syscall_table[SYS_SHMGET] == sys_shmget);
 static_assert(syscall_table[SYS_SHMAT] == sys_shmat);
 static_assert(syscall_table[SYS_SHMDT] == sys_shmdt);
-static_assert(syscall_table[SYS_GETTICKS] == sys_getticks);
 static_assert(syscall_table[SYS_FB_FLIP] == sys_fb_flip);
 static_assert(syscall_table[SYS_KILL] == sys_kill);
 static_assert(syscall_table[SYS_SIGACTION] == sys_sigaction);

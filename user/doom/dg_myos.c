@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <sys/fb.h>
 #include <sys/kbd.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "doomgeneric/doomgeneric/doomgeneric.h"
@@ -88,7 +89,11 @@ void DG_DrawFrame(void) { fb_flip(DG_ScreenBuffer, DOOMGENERIC_RESX, DOOMGENERIC
 
 void DG_SleepMs(uint32_t ms) { msleep(ms); }
 
-uint32_t DG_GetTicksMs(void) { return (uint32_t)(getticks() * 10); }
+uint32_t DG_GetTicksMs(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (uint32_t)ts.tv_sec * 1000 + (uint32_t)(ts.tv_nsec / 1000000);
+}
 
 int DG_GetKey(int* pressed, unsigned char* doomKey) {
   if (s_kbd_fd < 0) {

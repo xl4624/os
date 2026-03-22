@@ -24,7 +24,6 @@ int pipe(int pipefd[2]);
 unsigned int sleep(unsigned int seconds);
 void msleep(unsigned int ms);
 void* sbrk(int increment);
-unsigned long long getticks(void);
 int lseek(int fd, int offset, int whence);
 int chdir(const char* path);
 char* getcwd(char* buf, unsigned int size);

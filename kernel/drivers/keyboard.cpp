@@ -8,6 +8,7 @@
 #include "interrupt.h"
 #include "qemu.h"
 #include "scheduler.h"
+#include "terminal.h"
 
 static constexpr uint16_t kDataPort = 0x60;
 static constexpr uint8_t kExtended = 0xE0;
@@ -17,6 +18,8 @@ static constexpr uint8_t kExtUp = 0x48;
 static constexpr uint8_t kExtDown = 0x50;
 static constexpr uint8_t kExtLeft = 0x4B;
 static constexpr uint8_t kExtRight = 0x4D;
+static constexpr uint8_t kExtPageUp = 0x49;
+static constexpr uint8_t kExtPageDown = 0x51;
 
 // PS/2 scan set 1 make-codes 0x00–0x44 -> Key::Value.
 // The array is indexed directly by scancode byte.
@@ -110,6 +113,10 @@ Key Key::from_extended_scancode(uint8_t scancode) {
       return {Left};
     case kExtRight:
       return {Right};
+    case kExtPageUp:
+      return {PageUp};
+    case kExtPageDown:
+      return {PageDown};
     case 0x1D:
       return {RightCtrl};
     case 0x38:
@@ -167,6 +174,27 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
     ke.key = event.key.value();
     ke.pressed = event.pressed ? 1 : 0;
     static_cast<void>(event_buffer_.push(ke));
+  }
+
+  // Shift+PageUp/PageDown: scroll the terminal without buffering the key.
+  if (event.pressed && event.shift) {
+    if (event.key == Key::PageUp) {
+      kTerminal.scroll_view(static_cast<int>(Terminal::kRows));
+      return;
+    }
+    if (event.key == Key::PageDown) {
+      kTerminal.scroll_view(-static_cast<int>(Terminal::kRows));
+      return;
+    }
+  }
+
+  // Any non-scroll keypress resets the scrollback view to live.
+  if (event.pressed && event.key != Key::Unknown) {
+    if (event.key != Key::LeftShift && event.key != Key::RightShift && event.key != Key::LeftCtrl &&
+        event.key != Key::RightCtrl && event.key != Key::LeftAlt && event.key != Key::RightAlt &&
+        event.key != Key::CapsLock) {
+      kTerminal.scroll_view(-(static_cast<int>(Terminal::kScrollbackLines)));
+    }
   }
 
   // Ctrl+C: send SIGINT to all running processes, or exit QEMU if none exist.

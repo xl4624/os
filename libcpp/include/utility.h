@@ -72,11 +72,9 @@ struct is_move_assignable
 template <typename T>
 inline constexpr bool is_move_assignable_v = is_move_assignable_v<T>;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-builtins"
 template <class T>
 struct is_trivially_destructible : integral_constant<bool, __has_trivial_destructor(T)> {};
-#pragma GCC diagnostic pop
+
 
 template <class T>
 inline constexpr bool is_trivially_destructible_v = is_trivially_destructible<T>::value;

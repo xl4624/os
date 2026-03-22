@@ -121,7 +121,7 @@ TEST(reverse_iterator, crbegin_crend) {
 // ===========================================================================
 
 TEST(iterator_free, c_array_begin_end) {
-  int arr[4] = {1, 2, 3, 4};
+  const int arr[4] = {1, 2, 3, 4};
   int sum = 0;
   for (const int& it : arr) {
     sum += it;

@@ -186,7 +186,7 @@ int32_t fat16_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<c
   return -1;
 }
 
-const VfsOps fat16_ops = {fat16_read, fat16_write};
+const VfsOps fat16_ops = {.read = fat16_read, .write = fat16_write, .ioctl = nullptr};
 
 }  // namespace
 

@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
 
 #define LINE_MAX 256
@@ -19,7 +21,7 @@ static char var_vals[MAX_VARS][VAR_VAL_MAX];
 static int num_vars = 0;
 
 static void set_var(const char* name, const char* val) {
-  for (int i = 0; i < num_vars; i++) {
+  for (int i = 0; i < num_vars; ++i) {
     if (strcmp(var_names[i], name) == 0) {
       strncpy(var_vals[i], val, VAR_VAL_MAX - 1);
       var_vals[i][VAR_VAL_MAX - 1] = '\0';
@@ -31,12 +33,12 @@ static void set_var(const char* name, const char* val) {
     var_names[num_vars][VAR_NAME_MAX - 1] = '\0';
     strncpy(var_vals[num_vars], val, VAR_VAL_MAX - 1);
     var_vals[num_vars][VAR_VAL_MAX - 1] = '\0';
-    num_vars++;
+    ++num_vars;
   }
 }
 
 static const char* get_var(const char* name) {
-  for (int i = 0; i < num_vars; i++) {
+  for (int i = 0; i < num_vars; ++i) {
     if (strcmp(var_names[i], name) == 0) {
       return var_vals[i];
     }
@@ -45,38 +47,193 @@ static const char* get_var(const char* name) {
 }
 
 // ===========================================================================
+// Raw-mode terminal setup
+// ===========================================================================
+
+static struct termios g_saved_termios;
+
+static void enter_raw_mode(void) {
+  struct termios raw;
+  tcgetattr(0, &g_saved_termios);
+  raw = g_saved_termios;
+  raw.c_lflag &= (unsigned int)(~(ICANON | ECHO | ECHOE));
+  tcsetattr(0, TCSANOW, &raw);
+}
+
+static void restore_termios(void) { tcsetattr(0, TCSANOW, &g_saved_termios); }
+
+// ===========================================================================
+// Command history
+// ===========================================================================
+
+#define HIST_MAX 32
+
+static char g_hist[HIST_MAX][LINE_MAX];
+static int g_hist_len = 0;
+
+static void hist_push(const char* line) {
+  if (line[0] == '\0') {
+    return;
+  }
+  /* Avoid duplicate of the most recent entry. */
+  if (g_hist_len > 0 && strcmp(g_hist[g_hist_len - 1], line) == 0) {
+    return;
+  }
+  if (g_hist_len < HIST_MAX) {
+    strncpy(g_hist[g_hist_len], line, LINE_MAX - 1);
+    g_hist[g_hist_len][LINE_MAX - 1] = '\0';
+    ++g_hist_len;
+  } else {
+    /* Shift history up, discard oldest. */
+    for (int i = 1; i < HIST_MAX; ++i) {
+      strncpy(g_hist[i - 1], g_hist[i], LINE_MAX - 1);
+      g_hist[i - 1][LINE_MAX - 1] = '\0';
+    }
+    strncpy(g_hist[HIST_MAX - 1], line, LINE_MAX - 1);
+    g_hist[HIST_MAX - 1][LINE_MAX - 1] = '\0';
+  }
+}
+
+// ===========================================================================
 // Input reading
 // ===========================================================================
 
+/* Read one byte from stdin, retrying until one is available. */
+static char readbyte(void) {
+  char c;
+  while (read(0, &c, 1) != 1) {
+  }
+  return c;
+}
+
 /*
- * Read one line from stdin into buf (up to max-1 chars plus null terminator).
- * Echoes each character and handles backspace. Blocks until newline.
+ * Redraw the current line in place.
+ * Moves to column 1, prints prompt + buf, erases to EOL, then positions
+ * the cursor at 'cursor' within the line (1-based column for CSI G).
+ */
+static void redraw_line(const char* prompt, const char* buf, int len, int cursor) {
+  /* CR to move to column 1. */
+  putchar('\r');
+  /* Print prompt. */
+  printf("%s", prompt);
+  /* Print buffer. */
+  for (int i = 0; i < len; ++i) {
+    putchar(buf[i]);
+  }
+  /* Erase to end of line. */
+  printf("\x1b[K");
+  /* Position cursor: prompt length + cursor offset, 1-based. */
+  int prompt_len = (int)strlen(prompt);
+  int col = prompt_len + cursor + 1; /* 1-based */
+  printf("\x1b[%dG", col);
+}
+
+/*
+ * Read one line from stdin into buf (up to max-1 chars plus null terminator)
+ * in raw mode, with cursor movement and command history.
  * Returns the number of characters in the line (not counting the terminator).
  */
-static int readline(char* buf, int max) {
-  int n = 0;
+static int readline(char* buf, int max, const char* prompt) {
+  int len = 0;    /* number of chars in buf */
+  int cursor = 0; /* cursor position within buf (0..len) */
+  int hist_pos = g_hist_len;
+  char tmp[LINE_MAX]; /* scratch for history browsing */
+
+  buf[0] = '\0';
+
   while (1) {
-    char c;
-    if (read(0, &c, 1) != 1) {
-      continue;
-    }
-    if (c == '\n' || c == '\r') {
+    char c = readbyte();
+
+    if (c == '\r' || c == '\n') {
+      /* Commit line. */
+      buf[len] = '\0';
       putchar('\n');
-      buf[n] = '\0';
-      return n;
+      hist_push(buf);
+      return len;
     }
-    if (c == '\b' || c == 127) {
-      if (n > 0) {
-        n--;
-        putchar('\b');
-        putchar(' ');
-        putchar('\b');
+
+    if (c == '\x1b') {
+      /* Escape sequence: read '[' then final byte. */
+      char c2 = readbyte();
+      if (c2 != '[') {
+        continue;
+      }
+      char c3 = readbyte();
+      switch (c3) {
+        case 'A': /* Up: previous history. */
+          if (hist_pos > 0) {
+            if (hist_pos == g_hist_len) {
+              /* Save current buf into tmp so we can restore on Down. */
+              buf[len] = '\0';
+              strncpy(tmp, buf, LINE_MAX - 1);
+              tmp[LINE_MAX - 1] = '\0';
+            }
+            --hist_pos;
+            strncpy(buf, g_hist[hist_pos], (size_t)(max - 1));
+            buf[max - 1] = '\0';
+            len = (int)strlen(buf);
+            cursor = len;
+            redraw_line(prompt, buf, len, cursor);
+          }
+          break;
+        case 'B': /* Down: next history. */
+          if (hist_pos < g_hist_len) {
+            ++hist_pos;
+            if (hist_pos == g_hist_len) {
+              strncpy(buf, tmp, (size_t)(max - 1));
+              buf[max - 1] = '\0';
+            } else {
+              strncpy(buf, g_hist[hist_pos], (size_t)(max - 1));
+              buf[max - 1] = '\0';
+            }
+            len = (int)strlen(buf);
+            cursor = len;
+            redraw_line(prompt, buf, len, cursor);
+          }
+          break;
+        case 'C': /* Right: advance cursor. */
+          if (cursor < len) {
+            ++cursor;
+            printf("\x1b[C");
+          }
+          break;
+        case 'D': /* Left: retreat cursor. */
+          if (cursor > 0) {
+            --cursor;
+            printf("\x1b[D");
+          }
+          break;
+        default:
+          break;
       }
       continue;
     }
-    if (c >= ' ' && n < max - 1) {
-      buf[n++] = c;
-      putchar(c);
+
+    if (c == '\b' || c == 127) {
+      /* Backspace: delete char before cursor. */
+      if (cursor > 0) {
+        /* Shift chars left. */
+        for (int i = cursor - 1; i < len - 1; ++i) {
+          buf[i] = buf[i + 1];
+        }
+        --len;
+        --cursor;
+        buf[len] = '\0';
+        redraw_line(prompt, buf, len, cursor);
+      }
+      continue;
+    }
+
+    if (c >= ' ' && len < max - 1) {
+      /* Insert printable char at cursor. */
+      for (int i = len; i > cursor; --i) {
+        buf[i] = buf[i - 1];
+      }
+      buf[cursor] = c;
+      ++len;
+      ++cursor;
+      buf[len] = '\0';
+      redraw_line(prompt, buf, len, cursor);
     }
   }
 }
@@ -98,7 +255,7 @@ static void expand_vars(const char* src, char* dst, int dsz) {
       dst[di++] = src[si++];
       continue;
     }
-    si++; /* skip '$' */
+    ++si; /* skip '$' */
     char vname[VAR_NAME_MAX];
     int vi = 0;
     while (is_var_char(src[si]) && vi < (int)sizeof(vname) - 1) {
@@ -136,7 +293,7 @@ typedef struct {
 /* Advance past leading spaces; trim trailing spaces in place. */
 static char* trim(char* s) {
   while (*s == ' ') {
-    s++;
+    ++s;
   }
   int len = (int)strlen(s);
   while (len > 0 && s[len - 1] == ' ') {
@@ -204,7 +361,7 @@ static int try_assignment(const char* word) {
     return 0;
   }
   /* All characters before '=' must be valid name characters. */
-  for (const char* p = word; p < eq; p++) {
+  for (const char* p = word; p < eq; ++p) {
     if (!is_var_char(*p)) {
       return 0;
     }
@@ -286,10 +443,10 @@ static void run_pipeline(Pipeline* pl) {
   /* Create (ncmds - 1) pipes connecting consecutive commands. */
   int pipes[MAX_CMDS - 1][2];
   int npipes = pl->ncmds - 1;
-  for (int i = 0; i < npipes; i++) {
+  for (int i = 0; i < npipes; ++i) {
     if (pipe(pipes[i]) < 0) {
       printf("sh: pipe failed\n");
-      for (int j = 0; j < i; j++) {
+      for (int j = 0; j < i; ++j) {
         close(pipes[j][0]);
         close(pipes[j][1]);
       }
@@ -299,7 +456,7 @@ static void run_pipeline(Pipeline* pl) {
 
   /* Fork one child per command and wire up its stdin/stdout. */
   int pids[MAX_CMDS];
-  for (int i = 0; i < pl->ncmds; i++) {
+  for (int i = 0; i < pl->ncmds; ++i) {
     Cmd* cmd = &pl->cmds[i];
     if (cmd->argc == 0) {
       pids[i] = -1;
@@ -323,7 +480,7 @@ static void run_pipeline(Pipeline* pl) {
         dup2(pipes[i][1], 1);
       }
       /* Close all pipe ends; the child only uses the dup2'd copies. */
-      for (int j = 0; j < npipes; j++) {
+      for (int j = 0; j < npipes; ++j) {
         close(pipes[j][0]);
         close(pipes[j][1]);
       }
@@ -370,13 +527,13 @@ static void run_pipeline(Pipeline* pl) {
   }
 
   /* Parent: close all pipe ends so children get EOF when peers exit. */
-  for (int i = 0; i < npipes; i++) {
+  for (int i = 0; i < npipes; ++i) {
     close(pipes[i][0]);
     close(pipes[i][1]);
   }
 
   /* Wait for every child to finish. */
-  for (int i = 0; i < pl->ncmds; i++) {
+  for (int i = 0; i < pl->ncmds; ++i) {
     if (pids[i] > 0) {
       wait_child(pids[i]);
     }
@@ -391,17 +548,24 @@ int main(void) {
   char raw[LINE_MAX];
   char expanded[LINE_MAX];
   char cwd[PATH_MAX];
+  char prompt[PATH_MAX + 4];
+
+  enter_raw_mode();
+  atexit(restore_termios);
 
   printf("mysh -- type a command (try \"help\")\n");
 
   while (1) {
     if (getcwd(cwd, sizeof(cwd)) != 0) {
-      printf("%s$ ", cwd);
+      snprintf(prompt, sizeof(prompt), "%s$ ", cwd);
     } else {
-      printf("$ ");
+      prompt[0] = '$';
+      prompt[1] = ' ';
+      prompt[2] = '\0';
     }
+    printf("%s", prompt);
 
-    if (readline(raw, LINE_MAX) == 0) {
+    if (readline(raw, LINE_MAX, prompt) == 0) {
       continue;
     }
 

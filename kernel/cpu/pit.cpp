@@ -37,7 +37,7 @@ void init() {
   initialized = true;
 }
 
-void tick() { ++ticks; }
+void tick() { ticks = ticks + 1; }
 
 uint64_t get_ticks() {
   assert(initialized && "PIT::get_ticks(): called before PIT::init()");

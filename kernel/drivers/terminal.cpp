@@ -1,5 +1,6 @@
 #include "terminal.h"
 
+#include <algorithm.h>
 #include <string.h>
 #include <sys/param.h>
 
@@ -51,7 +52,7 @@ bool Terminal::init() {
 }
 
 void Terminal::draw_glyph(char c, uint8_t color, size_t row, size_t col) {
-  if (!active_) {
+  if (!active_ || scroll_offset_ > 0) {
     return;
   }
 
@@ -163,7 +164,9 @@ void Terminal::put_char(char c) {
     return;
   }
 
-  if (c == '\n') {
+  if (c == '\r') {
+    col_ = 0;
+  } else if (c == '\n') {
     col_ = 0;
     if (++row_ == kRows) {
       scroll();
@@ -247,7 +250,17 @@ void Terminal::handle_key(KeyEvent event) {
 }
 
 void Terminal::scroll() {
-  // Shift all rows up by one in the cell buffer.
+  // Save the top row into the scrollback ring buffer before shifting it out.
+  const size_t slot = scrollback_head_;
+  for (size_t c = 0; c < kColumns; ++c) {
+    scrollback_[slot][c] = cells_[0][c];
+  }
+  scrollback_head_ = (scrollback_head_ + 1) % kScrollbackLines;
+  if (lines_scrolled_ < kScrollbackLines) {
+    ++lines_scrolled_;
+  }
+
+  // Shift all rows up by one in the live cell buffer.
   memmove(&cells_[0], &cells_[1], sizeof(Cell) * kColumns * (kRows - 1));
 
   // Clear the bottom row in the cell buffer.
@@ -255,7 +268,8 @@ void Terminal::scroll() {
     cells_[kRows - 1][c] = {0, color_};
   }
 
-  if (active_) {
+  // Only update the framebuffer if the user is viewing the live screen.
+  if (active_ && scroll_offset_ == 0) {
     // Scroll framebuffer pixels: shift rows up by kFontHeight pixels.
     const uint32_t row_bytes = static_cast<uint32_t>(kFontHeight) * pitch_;
     auto total_rows = static_cast<uint32_t>(kRows - 1);
@@ -280,6 +294,58 @@ void Terminal::scroll() {
   --row_;
 }
 
+void Terminal::redraw_all() {
+  if (!active_) {
+    return;
+  }
+  // Draw kRows rows onto the framebuffer from history + live buffers.
+  // For screen row r (0=top), content is taken from N lines before the live
+  // bottom, where N = (kRows - 1 - r) + scroll_offset_.
+  //   N < kRows         => live cells_[kRows - 1 - N] = cells_[r - scroll_offset_]
+  //   N >= kRows        => scrollback, hist_back = N - kRows entries back from newest
+  for (size_t r = 0; r < kRows; ++r) {
+    const size_t offset_from_bottom = (kRows - 1U - r) + scroll_offset_;
+    const Cell* src_row = nullptr;
+    Cell blank_row[kColumns];
+    if (offset_from_bottom < kRows) {
+      src_row = cells_[kRows - 1U - offset_from_bottom];
+    } else {
+      const size_t hist_back = offset_from_bottom - kRows;  // 0 = most recently scrolled
+      if (hist_back < lines_scrolled_) {
+        const size_t idx =
+            (scrollback_head_ + kScrollbackLines - 1U - hist_back) % kScrollbackLines;
+        src_row = scrollback_[idx];
+      } else {
+        // Beyond available history; draw a blank row.
+        for (auto& c : blank_row) {
+          c = {0, 0x07};
+        }
+        src_row = blank_row;
+      }
+    }
+    for (size_t c = 0; c < kColumns; ++c) {
+      const char ch = src_row[c].ch != 0 ? src_row[c].ch : ' ';
+      // Temporarily clear scroll_offset_ so draw_glyph actually draws.
+      const size_t saved = scroll_offset_;
+      scroll_offset_ = 0;
+      draw_glyph(ch, src_row[c].color, r, c);
+      scroll_offset_ = saved;
+    }
+  }
+}
+
+void Terminal::scroll_view(int delta) {
+  if (delta > 0) {
+    const auto up = static_cast<size_t>(delta);
+    scroll_offset_ += up;
+    scroll_offset_ = std::min(scroll_offset_, lines_scrolled_);
+  } else if (delta < 0) {
+    const auto down = static_cast<size_t>(-delta);
+    scroll_offset_ = (down >= scroll_offset_) ? 0U : scroll_offset_ - down;
+  }
+  redraw_all();
+}
+
 void Terminal::clear_line(size_t row) {
   for (size_t c = 0; c < kColumns; ++c) {
     cells_[row][c] = {0, color_};
@@ -291,6 +357,7 @@ void Terminal::set_color(uint8_t color) { color_ = color; }
 
 void Terminal::clear() {
   color_ = 0x07;  // light grey on black
+  scroll_offset_ = 0;
 
   // Clear all cells and fill the framebuffer with the background color.
   const uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
@@ -376,6 +443,24 @@ void Terminal::dispatch_csi(char final_byte) {
         cursor_visible_ = false;
       }
       break;
+    case 'K':
+      // Erase from cursor to end of line (only EL 0 / default supported).
+      if (p0 == 0) {
+        for (size_t c = col_; c < kColumns; ++c) {
+          cells_[row_][c] = {0, color_};
+          draw_glyph(' ', color_, row_, c);
+        }
+      }
+      break;
+    case 'G': {
+      // Cursor horizontal absolute: move to column n (1-based).
+      auto new_col = static_cast<size_t>((p0 == 0 ? 1U : static_cast<size_t>(p0)) - 1U);
+      if (new_col >= kColumns) {
+        new_col = kColumns - 1U;
+      }
+      col_ = new_col;
+      break;
+    }
     case 'm':
       apply_sgr(static_cast<uint8_t>(esc_param_count_ + 1U));
       break;

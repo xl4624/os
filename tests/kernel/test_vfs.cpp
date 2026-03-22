@@ -26,10 +26,10 @@ int32_t counting_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> 
   return static_cast<int32_t>(buf.size());
 }
 
-const VfsOps counting_ops = {counting_read, counting_write};
+const VfsOps counting_ops = {.read = counting_read, .write = counting_write, .ioctl = nullptr};
 
-const VfsOps read_only_ops = {counting_read, nullptr};
-const VfsOps write_only_ops = {nullptr, counting_write};
+const VfsOps read_only_ops = {.read = counting_read, .write = nullptr, .ioctl = nullptr};
+const VfsOps write_only_ops = {.read = nullptr, .write = counting_write, .ioctl = nullptr};
 
 }  // namespace
 

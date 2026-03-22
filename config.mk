@@ -15,4 +15,4 @@ LIBDIR     := $(PREFIX)/lib
 # ==== Common Flags ====
 BASE_CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include/c -O2 -g \
                -ffreestanding -Wall -Wextra -Wpedantic -Wconversion -MMD -MP
-BASE_CXXFLAGS := -isystem $(SYSROOT)/usr/include/cpp
+BASE_CXXFLAGS := -std=gnu++20 -isystem $(SYSROOT)/usr/include/cpp

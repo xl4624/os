@@ -17,6 +17,7 @@ class Terminal {
   static constexpr size_t kFontHeight = 16;
   static constexpr size_t kColumns = 80;
   static constexpr size_t kRows = 25;
+  static constexpr size_t kScrollbackLines = 200;
 
   Terminal() = default;
   ~Terminal() = default;
@@ -38,6 +39,10 @@ class Terminal {
   void clear();
   void set_position(size_t row, size_t col);
 
+  // Scroll the visible window by delta rows (positive = up, negative = down).
+  // Clamped to [0, kScrollbackLines]. Redraws the framebuffer.
+  void scroll_view(int delta);
+
   // Test accessors for reading cell contents.
   [[nodiscard]] char cell_char(size_t row, size_t col) const { return cells_[row][col].ch; }
   [[nodiscard]] uint8_t cell_color(size_t row, size_t col) const { return cells_[row][col].color; }
@@ -56,6 +61,7 @@ class Terminal {
   void clear_line(size_t row);
   void dispatch_csi(char final_byte);
   void apply_sgr(uint8_t nparams);
+  void redraw_all();
 
   // Convert a 4-bit color index to a 32-bit XRGB framebuffer color.
   [[nodiscard]] static uint32_t color_to_rgb(uint8_t color_index);
@@ -75,7 +81,16 @@ class Terminal {
     char ch = 0;
     uint8_t color = 0x07;
   };
+  // Live visible content (rows 0..kRows-1 = top..bottom of current screen).
   Cell cells_[kRows][kColumns]{};
+  // Ring buffer of lines scrolled off the top. scrollback_head_ points to the
+  // next write slot; lines_scrolled_ tracks how many valid entries there are
+  // (capped at kScrollbackLines).
+  Cell scrollback_[kScrollbackLines][kColumns]{};
+  size_t scrollback_head_ = 0;
+  size_t lines_scrolled_ = 0;
+  // How many rows we are currently scrolled back from the live view (0=live).
+  size_t scroll_offset_ = 0;
 
   EscState esc_state_ = EscState::Normal;
   bool csi_private_ = false;

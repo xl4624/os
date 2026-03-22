@@ -5,6 +5,8 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <unique_ptr.h>
 
 #include "address_space.h"
@@ -685,6 +687,43 @@ static int32_t sys_sigreturn(TrapFrame* regs) {
   return static_cast<int32_t>(sf->saved_eax);
 }
 
+// SYS_IOCTL(fd=ebx, request=ecx, arg=edx)
+// Performs a device-specific control operation on a file descriptor.
+// Returns 0 on success, or negative errno on error.
+static int32_t sys_ioctl(TrapFrame* regs) {
+  const uint32_t fd_num = regs->ebx;
+  const uint32_t request = regs->ecx;
+  const uint32_t arg_ptr = regs->edx;
+
+  const Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
+    return -EBADF;
+  }
+
+  const FileDescription* fd = proc->fds[fd_num];
+  if (fd->type != FileType::VfsNode || fd->vfs == nullptr) {
+    return -ENOTTY;
+  }
+
+  void* arg = reinterpret_cast<void*>(arg_ptr);
+
+  // Validate the argument buffer for known requests.
+  if (request == TIOCGWINSZ &&
+      !validate_user_buffer(arg_ptr, sizeof(struct winsize), /*writeable=*/true)) {
+    return -EFAULT;
+  }
+  if ((request == TCGETS) &&
+      !validate_user_buffer(arg_ptr, sizeof(struct termios), /*writeable=*/true)) {
+    return -EFAULT;
+  }
+  if ((request == TCSETS) &&
+      !validate_user_buffer(arg_ptr, sizeof(struct termios), /*writeable=*/false)) {
+    return -EFAULT;
+  }
+
+  return Vfs::ioctl(const_cast<FileDescription*>(fd), request, arg);
+}
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -717,6 +756,7 @@ static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
     sys_chdir,      // 22 SYS_CHDIR
     sys_getcwd,     // 23 SYS_GETCWD
     sys_getdents,   // 24 SYS_GETDENTS
+    sys_ioctl,      // 25 SYS_IOCTL
 };
 
 static_assert(syscall_table[SYS_EXIT] == sys_exit);
@@ -744,6 +784,7 @@ static_assert(syscall_table[SYS_SIGRETURN] == sys_sigreturn);
 static_assert(syscall_table[SYS_CHDIR] == sys_chdir);
 static_assert(syscall_table[SYS_GETCWD] == sys_getcwd);
 static_assert(syscall_table[SYS_GETDENTS] == sys_getdents);
+static_assert(syscall_table[SYS_IOCTL] == sys_ioctl);
 static_assert(syscall_table.size() == SYS_MAX);
 
 __BEGIN_DECLS

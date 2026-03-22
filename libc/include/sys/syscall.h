@@ -33,7 +33,8 @@
 #define SYS_CHDIR 22     /* custom */
 #define SYS_GETCWD 23    /* custom */
 #define SYS_GETDENTS 24  /* custom */
-#define SYS_MAX 25
+#define SYS_IOCTL 25     /* custom */
+#define SYS_MAX 26
 
 #include <stdint.h>
 

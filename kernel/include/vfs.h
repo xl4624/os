@@ -25,6 +25,7 @@ enum class VfsNodeType : uint8_t {
 struct VfsOps {
   int32_t (*read)(struct VfsNode* node, std::span<uint8_t> buf, uint32_t offset);
   int32_t (*write)(struct VfsNode* node, std::span<const uint8_t> buf, uint32_t offset);
+  int32_t (*ioctl)(struct VfsNode* node, uint32_t request, void* arg);
 };
 
 // An open-file description backed by a VFS node. Tracks the per-fd
@@ -66,6 +67,9 @@ void init();
 
 // Write to a VFS-backed file description.
 [[nodiscard]] int32_t write(FileDescription* fd, std::span<const uint8_t> buf);
+
+// Perform a device-specific control operation on a VFS-backed file description.
+[[nodiscard]] int32_t ioctl(FileDescription* fd, uint32_t request, void* arg);
 
 // Close a VFS-backed file description. Frees the VfsFileDescription.
 void close(FileDescription* fd);

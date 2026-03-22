@@ -1,8 +1,11 @@
 #include "vfs.h"
 
 #include <algorithm.h>
+#include <errno.h>
 #include <string.h>
 #include <sys/fb.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 
 #include "framebuffer.h"
 #include "keyboard.h"
@@ -16,14 +19,108 @@ uint32_t node_count = 0;
 VfsNode node_table[kMaxVfsNodes];
 
 // ===========================================================================
+// TTY state (termios + ICANON line buffer)
+// ===========================================================================
+
+struct TtyState {
+  struct termios termios;
+  char line_buf[256];
+  size_t line_len;
+  size_t line_pos;  // bytes already handed to the caller
+};
+
+TtyState tty_state = {{0, 0, 0, ICANON | ECHO | ECHOE | ISIG, {}}, {}, 0, 0};
+
+// ===========================================================================
 // devfs operations
 // ===========================================================================
 
 int32_t tty_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
                  [[maybe_unused]] uint32_t offset) {
-  char* cbuf = reinterpret_cast<char*>(buf.data());
-  const size_t n = kKeyboard.read(cbuf, buf.size());
-  return static_cast<int32_t>(n);
+  // Raw mode: return whatever is in the keyboard buffer immediately.
+  if ((tty_state.termios.c_lflag & ICANON) == 0U) {
+    char* cbuf = reinterpret_cast<char*>(buf.data());
+    const size_t n = kKeyboard.read(cbuf, buf.size());
+    return static_cast<int32_t>(n);
+  }
+
+  // Canonical mode: accumulate into line_buf until '\n', then serve line.
+  // If there is already buffered data from a previous '\n', hand it out.
+  if (tty_state.line_pos < tty_state.line_len) {
+    const size_t avail = tty_state.line_len - tty_state.line_pos;
+    const size_t to_copy = avail < buf.size() ? avail : buf.size();
+    memcpy(buf.data(), tty_state.line_buf + tty_state.line_pos, to_copy);
+    tty_state.line_pos += to_copy;
+    if (tty_state.line_pos >= tty_state.line_len) {
+      tty_state.line_len = 0;
+      tty_state.line_pos = 0;
+    }
+    return static_cast<int32_t>(to_copy);
+  }
+
+  // Read new characters from keyboard into the line buffer.
+  char c;
+  while (kKeyboard.read(&c, 1) == 1) {
+    if (c == '\b' || c == 127) {
+      if (tty_state.line_len > 0) {
+        --tty_state.line_len;
+        if ((tty_state.termios.c_lflag & ECHOE) != 0U) {
+          terminal_write("\b \b");
+        }
+      }
+      continue;
+    }
+    if ((tty_state.termios.c_lflag & ECHO) != 0U) {
+      const char echo_str[2] = {(c == '\r') ? '\n' : c, '\0'};
+      terminal_write(echo_str);
+    }
+    const char store = (c == '\r') ? '\n' : c;
+    if (tty_state.line_len < sizeof(tty_state.line_buf) - 1) {
+      tty_state.line_buf[tty_state.line_len++] = store;
+    }
+    if (store == '\n') {
+      // Line complete: serve it.
+      const size_t to_copy = tty_state.line_len < buf.size() ? tty_state.line_len : buf.size();
+      memcpy(buf.data(), tty_state.line_buf, to_copy);
+      tty_state.line_pos = to_copy;
+      if (tty_state.line_pos >= tty_state.line_len) {
+        tty_state.line_len = 0;
+        tty_state.line_pos = 0;
+      }
+      return static_cast<int32_t>(to_copy);
+    }
+  }
+
+  // No newline yet; ask the scheduler to retry.
+  return 0;
+}
+
+int32_t tty_ioctl([[maybe_unused]] VfsNode* node, uint32_t request, void* arg) {
+  switch (request) {
+    case TIOCGWINSZ: {
+      auto* ws = static_cast<struct winsize*>(arg);
+      ws->ws_row = 25;
+      ws->ws_col = 80;
+      ws->ws_xpixel = 0;
+      ws->ws_ypixel = 0;
+      return 0;
+    }
+    case TCGETS: {
+      auto* t = static_cast<struct termios*>(arg);
+      *t = tty_state.termios;
+      return 0;
+    }
+    case TCSETS: {
+      const auto* t = static_cast<const struct termios*>(arg);
+      tty_state.termios = *t;
+      // TCSAFLUSH semantics: discard pending input.
+      tty_state.line_len = 0;
+      tty_state.line_pos = 0;
+      return 0;
+    }
+    default:
+      return -ENOTTY;
+  }
 }
 
 int32_t tty_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
@@ -32,7 +129,7 @@ int32_t tty_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
   return static_cast<int32_t>(buf.size());
 }
 
-const VfsOps tty_ops = {tty_read, tty_write};
+const VfsOps tty_ops = {.read = tty_read, .write = tty_write, .ioctl = tty_ioctl};
 
 int32_t null_read([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<uint8_t> buf,
                   [[maybe_unused]] uint32_t offset) {
@@ -44,7 +141,7 @@ int32_t null_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
   return static_cast<int32_t>(buf.size());  // discard
 }
 
-const VfsOps null_ops = {null_read, null_write};
+const VfsOps null_ops = {.read = null_read, .write = null_write, .ioctl = nullptr};
 
 int32_t kbd_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
                  [[maybe_unused]] uint32_t offset) {
@@ -62,7 +159,7 @@ int32_t kbd_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<con
   return -1;  // not writable
 }
 
-const VfsOps kbd_ops = {kbd_read, kbd_write};
+const VfsOps kbd_ops = {.read = kbd_read, .write = kbd_write, .ioctl = nullptr};
 
 // ===========================================================================
 // framebuffer device operations
@@ -141,7 +238,7 @@ int32_t fb_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf, u
   return static_cast<int32_t>(to_write);
 }
 
-const VfsOps fb_ops = {fb_read, fb_write};
+const VfsOps fb_ops = {.read = fb_read, .write = fb_write, .ioctl = nullptr};
 
 // ===========================================================================
 // ramfs operations
@@ -163,7 +260,7 @@ int32_t ramfs_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<c
   return -1;  // read-only
 }
 
-const VfsOps ramfs_ops = {ramfs_read, ramfs_write};
+const VfsOps ramfs_ops = {.read = ramfs_read, .write = ramfs_write, .ioctl = nullptr};
 
 }  // namespace
 
@@ -420,6 +517,15 @@ void init_devfs() {
     auto* fb = register_node("/dev/fb", VfsNodeType::CharDev, &fb_ops);
     (void)fb;
   }
+}
+
+int32_t ioctl(FileDescription* fd, uint32_t request, void* arg) {
+  auto* vfs_fd = fd->vfs;
+  if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
+      (vfs_fd->node->ops->ioctl == nullptr)) {
+    return -25;  // -ENOTTY
+  }
+  return vfs_fd->node->ops->ioctl(vfs_fd->node, request, arg);
 }
 
 void init_ramfs() {

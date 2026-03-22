@@ -2,7 +2,7 @@ include ../config.mk
 
 # ==== Build Settings ====
 CFLAGS := $(BASE_CFLAGS) -mgeneral-regs-only
-CPPFLAGS := $(BASE_CXXFLAGS) -fno-exceptions -fno-rtti -fno-threadsafe-statics -D__is_kernel -I$(CURDIR)/include
+CPPFLAGS := $(BASE_CXXFLAGS) -fno-exceptions -fno-rtti -fno-threadsafe-statics -D__is_libk -I$(CURDIR)/include
 
 # ==== Source and Object Files ====
 SRCS_CPP := $(shell find . -type f -name "*.cpp")

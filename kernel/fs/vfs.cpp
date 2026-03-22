@@ -3,10 +3,13 @@
 #include <algorithm.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <string.h>
 #include <sys/fb.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <termios.h>
+#include <vector.h>
 
 #include "framebuffer.h"
 #include "keyboard.h"
@@ -16,8 +19,20 @@
 
 namespace {
 
-uint32_t node_count = 0;
-VfsNode node_table[kMaxVfsNodes];
+std::vector<VfsNode> node_table;
+
+// ===========================================================================
+// Mount registry
+// ===========================================================================
+
+struct MountEntry {
+  char prefix[kMaxPathLen];
+  const FsOps* ops;
+};
+
+constexpr uint32_t kMaxMounts = 8;
+MountEntry mount_table[kMaxMounts];
+uint32_t mount_count = 0;
 
 // ===========================================================================
 // TTY state (termios + ICANON line buffer)
@@ -139,7 +154,8 @@ int32_t tty_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
   return static_cast<int32_t>(buf.size());
 }
 
-const VfsOps tty_ops = {.read = tty_read, .write = tty_write, .ioctl = tty_ioctl};
+const VfsOps tty_ops = {
+    .read = tty_read, .write = tty_write, .ioctl = tty_ioctl, .truncate = nullptr};
 
 int32_t null_read([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<uint8_t> buf,
                   [[maybe_unused]] uint32_t offset) {
@@ -151,7 +167,8 @@ int32_t null_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
   return static_cast<int32_t>(buf.size());  // discard
 }
 
-const VfsOps null_ops = {.read = null_read, .write = null_write, .ioctl = nullptr};
+const VfsOps null_ops = {
+    .read = null_read, .write = null_write, .ioctl = nullptr, .truncate = nullptr};
 
 int32_t kbd_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
                  [[maybe_unused]] uint32_t offset) {
@@ -169,7 +186,8 @@ int32_t kbd_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<con
   return -1;  // not writable
 }
 
-const VfsOps kbd_ops = {.read = kbd_read, .write = kbd_write, .ioctl = nullptr};
+const VfsOps kbd_ops = {
+    .read = kbd_read, .write = kbd_write, .ioctl = nullptr, .truncate = nullptr};
 
 // ===========================================================================
 // framebuffer device operations
@@ -248,7 +266,7 @@ int32_t fb_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf, u
   return static_cast<int32_t>(to_write);
 }
 
-const VfsOps fb_ops = {.read = fb_read, .write = fb_write, .ioctl = nullptr};
+const VfsOps fb_ops = {.read = fb_read, .write = fb_write, .ioctl = nullptr, .truncate = nullptr};
 
 // ===========================================================================
 // ramfs operations
@@ -270,55 +288,83 @@ int32_t ramfs_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<c
   return -1;  // read-only
 }
 
-const VfsOps ramfs_ops = {.read = ramfs_read, .write = ramfs_write, .ioctl = nullptr};
+const VfsOps ramfs_ops = {
+    .read = ramfs_read, .write = ramfs_write, .ioctl = nullptr, .truncate = nullptr};
 
 }  // namespace
 
 namespace Vfs {
 
 void init() {
-  node_count = 0;
-  memset(node_table, 0, sizeof(node_table));
+  node_table.clear();
+  node_table.reserve(256);
+  mount_count = 0;
 }
 
 VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops) {
-  assert(path != nullptr);
-  assert(path[0] == '/');
-  if (node_count >= kMaxVfsNodes) {
-    return nullptr;
-  }
+  assert(path != nullptr && path[0] == '/' &&
+         "VfsNode::register_node: path must be non-null and start with '/'");
   if (strlen(path) >= kMaxPathLen) {
     return nullptr;
   }
 
-  VfsNode* node = &node_table[node_count];
+  node_table.push_back({});
+  VfsNode* node = &node_table.back();
   strncpy(node->name, path, kMaxPathLen - 1);
   node->name[kMaxPathLen - 1] = '\0';
   node->type = type;
   node->ops = ops;
   node->data = nullptr;
   node->size = 0;
-  ++node_count;
+  node->priv = nullptr;
   return node;
 }
 
+void unregister_node(const char* path) {
+  assert(path != nullptr && "unregister_node(): null path");
+  for (auto& node : node_table) {
+    if (strcmp(node.name, path) == 0) {
+      node.name[0] = '\0';  // soft-delete: skip in lookup/getdents
+      return;
+    }
+  }
+}
+
 VfsNode* lookup(const char* path) {
-  assert(path != nullptr);
-  assert(path[0] == '/');
-  for (uint32_t i = 0; i < node_count; ++i) {
-    if (strcmp(node_table[i].name, path) == 0) {
-      return &node_table[i];
+  assert(path != nullptr && path[0] == '/' && "lookup(): path must be non-null and absolute");
+  for (auto& node : node_table) {
+    if (node.name[0] != '\0' && strcmp(node.name, path) == 0) {
+      return &node;
     }
   }
   return nullptr;
 }
 
-int32_t open(const char* path) {
-  assert(path != nullptr);
-  assert(path[0] == '/');
+int32_t open(const char* path, int32_t flags, mode_t mode) {
+  assert(path != nullptr && path[0] == '/' && "open(): path must be non-null and absolute");
+
   VfsNode* node = lookup(path);
+
+  // O_CREAT: try to create the file if it does not exist.
+  if (node == nullptr && (flags & O_CREAT) != 0) {
+    for (uint32_t i = 0; i < mount_count; ++i) {
+      const size_t plen = strlen(mount_table[i].prefix);
+      if (strncmp(path, mount_table[i].prefix, plen) == 0 &&
+          (path[plen] == '/' || path[plen] == '\0') && mount_table[i].ops->create != nullptr) {
+        node = mount_table[i].ops->create(path, flags, mode);
+        break;
+      }
+    }
+  }
+
   if (node == nullptr) {
     return -1;
+  }
+
+  // O_TRUNC: truncate an existing writable file.
+  if ((flags & O_TRUNC) != 0 && node->type == VfsNodeType::File && node->ops != nullptr &&
+      node->ops->truncate != nullptr) {
+    node->ops->truncate(node);
   }
 
   Process* proc = Scheduler::current();
@@ -331,7 +377,7 @@ int32_t open(const char* path) {
     return -1;
   }
 
-  auto* vfs_fd = new VfsFileDescription{.node = node, .offset = 0};
+  auto* vfs_fd = new VfsFileDescription{.node = node, .offset = 0, .open_flags = flags};
   if (vfs_fd == nullptr) {
     return -1;
   }
@@ -348,7 +394,7 @@ int32_t open(const char* path) {
 }
 
 int32_t read(FileDescription* fd, std::span<uint8_t> buf) {
-  assert(fd != nullptr);
+  assert(fd != nullptr && "read(): null file description");
   auto* vfs_fd = fd->vfs;
   if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
       (vfs_fd->node->ops->read == nullptr)) {
@@ -363,11 +409,16 @@ int32_t read(FileDescription* fd, std::span<uint8_t> buf) {
 }
 
 int32_t write(FileDescription* fd, std::span<const uint8_t> buf) {
-  assert(fd != nullptr);
+  assert(fd != nullptr && "write(): null file description");
   auto* vfs_fd = fd->vfs;
   if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
       (vfs_fd->node->ops->write == nullptr)) {
     return -1;
+  }
+
+  // O_APPEND: seek to end before each write.
+  if ((vfs_fd->open_flags & O_APPEND) != 0) {
+    vfs_fd->offset = static_cast<uint32_t>(vfs_fd->node->size);
   }
 
   const int32_t n = vfs_fd->node->ops->write(vfs_fd->node, buf, vfs_fd->offset);
@@ -378,7 +429,7 @@ int32_t write(FileDescription* fd, std::span<const uint8_t> buf) {
 }
 
 void close(FileDescription* fd) {
-  assert(fd != nullptr);
+  assert(fd != nullptr && "close(): null file description");
   if (fd->vfs != nullptr) {
     delete fd->vfs;
     fd->vfs = nullptr;
@@ -387,8 +438,7 @@ void close(FileDescription* fd) {
 }
 
 bool is_directory(const char* path) {
-  assert(path != nullptr);
-  assert(path[0] == '/');
+  assert(path != nullptr && path[0] == '/' && "is_directory(): path must be non-null and absolute");
   if (path[0] != '/') {
     return false;
   }
@@ -404,6 +454,17 @@ bool is_directory(const char* path) {
   if (len > 1 && norm[len - 1] == '/') {
     norm[len - 1] = '\0';
   }
+
+  // An exact-match Directory node qualifies.
+  for (const auto& node : node_table) {
+    if (node.name[0] == '\0') {
+      continue;
+    }
+    if (node.type == VfsNodeType::Directory && strcmp(node.name, norm) == 0) {
+      return true;
+    }
+  }
+
   // Build the prefix that a child node would start with.
   char prefix[kMaxPathLen];
   strncpy(prefix, norm, kMaxPathLen - 2);
@@ -412,8 +473,11 @@ bool is_directory(const char* path) {
   prefix[prefix_len] = '/';
   prefix[prefix_len + 1] = '\0';
 
-  for (uint32_t i = 0; i < node_count; ++i) {
-    if (strncmp(node_table[i].name, prefix, prefix_len + 1) == 0) {
+  for (const auto& node : node_table) {
+    if (node.name[0] == '\0') {
+      continue;
+    }
+    if (strncmp(node.name, prefix, prefix_len + 1) == 0) {
       return true;
     }
   }
@@ -421,9 +485,8 @@ bool is_directory(const char* path) {
 }
 
 uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
-  assert(path != nullptr);
-  assert(path[0] == '/');
-  assert(entries != nullptr);
+  assert(path != nullptr && path[0] == '/' && "getdents(): path must be non-null and absolute");
+  assert(entries != nullptr && "getdents(): null entries buffer");
   if (max_entries == 0) {
     return 0;
   }
@@ -440,12 +503,17 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
 
   if (norm[1] == '\0') {
     // Root: collect unique first path components.
-    // Use a small fixed array to deduplicate virtual directory names.
     char seen[32][32];
     uint32_t seen_count = 0;
 
-    for (uint32_t i = 0; i < node_count && count < max_entries; ++i) {
-      const char* name = node_table[i].name;
+    for (const auto& tnode : node_table) {
+      if (count >= max_entries) {
+        break;
+      }
+      if (tnode.name[0] == '\0') {
+        continue;
+      }
+      const char* name = tnode.name;
       if (name[0] != '/') {
         continue;
       }
@@ -454,24 +522,21 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
       const char* slash = strchr(start, '/');
 
       char component[128];
-      bool is_virtual_dir;
+      bool is_dir_entry;
       if (slash != nullptr) {
-        // e.g. "/bin/sh" -> component "bin", virtual dir
         const auto clen = static_cast<size_t>(slash - start);
         if (clen == 0 || clen >= sizeof(component)) {
           continue;
         }
         strncpy(component, start, clen);
         component[clen] = '\0';
-        is_virtual_dir = true;
+        is_dir_entry = true;
       } else {
-        // e.g. "/doom1.wad" -> direct root file
         strncpy(component, start, sizeof(component) - 1);
         component[sizeof(component) - 1] = '\0';
-        is_virtual_dir = false;
+        is_dir_entry = (tnode.type == VfsNodeType::Directory);
       }
 
-      // Deduplicate virtual dirs via the seen[] list.
       bool already_seen = false;
       for (uint32_t j = 0; j < seen_count; ++j) {
         if (strcmp(seen[j], component) == 0) {
@@ -489,12 +554,12 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
 
       strncpy(entries[count].d_name, component, sizeof(entries[count].d_name) - 1);
       entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
-      if (is_virtual_dir) {
+      if (is_dir_entry) {
         entries[count].d_type = DT_DIR;
         entries[count].d_size = 0;
       } else {
-        entries[count].d_type = node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
-        entries[count].d_size = static_cast<uint32_t>(node_table[i].size);
+        entries[count].d_type = tnode.type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
+        entries[count].d_size = static_cast<uint32_t>(tnode.size);
       }
       ++count;
     }
@@ -508,20 +573,34 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
     prefix[prefix_len + 1] = '\0';
     const size_t full_prefix_len = prefix_len + 1;
 
-    for (uint32_t i = 0; i < node_count && count < max_entries; ++i) {
-      const char* name = node_table[i].name;
+    for (const auto& tnode : node_table) {
+      if (count >= max_entries) {
+        break;
+      }
+      if (tnode.name[0] == '\0') {
+        continue;
+      }
+      const char* name = tnode.name;
       if (strncmp(name, prefix, full_prefix_len) != 0) {
         continue;
       }
       const char* child = name + full_prefix_len;
       if (child[0] == '\0' || strchr(child, '/') != nullptr) {
-        continue;  // skip empty or nested paths
+        continue;
       }
 
       strncpy(entries[count].d_name, child, sizeof(entries[count].d_name) - 1);
       entries[count].d_name[sizeof(entries[count].d_name) - 1] = '\0';
-      entries[count].d_type = node_table[i].type == VfsNodeType::CharDev ? DT_CHR : DT_REG;
-      entries[count].d_size = static_cast<uint32_t>(node_table[i].size);
+      if (tnode.type == VfsNodeType::Directory) {
+        entries[count].d_type = DT_DIR;
+        entries[count].d_size = 0;
+      } else if (tnode.type == VfsNodeType::CharDev) {
+        entries[count].d_type = DT_CHR;
+        entries[count].d_size = static_cast<uint32_t>(tnode.size);
+      } else {
+        entries[count].d_type = DT_REG;
+        entries[count].d_size = static_cast<uint32_t>(tnode.size);
+      }
       ++count;
     }
   }
@@ -529,13 +608,102 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
   return count;
 }
 
+void mount(const char* prefix, const FsOps* ops) {
+  assert(prefix != nullptr && "mount(): null prefix");
+  assert(ops != nullptr && "mount(): null fs ops");
+  if (mount_count >= kMaxMounts) {
+    return;
+  }
+  strncpy(mount_table[mount_count].prefix, prefix, kMaxPathLen - 1);
+  mount_table[mount_count].prefix[kMaxPathLen - 1] = '\0';
+  mount_table[mount_count].ops = ops;
+  ++mount_count;
+}
+
+// Find the mount entry whose prefix is a prefix of abs_path.
+static const FsOps* find_mount(const char* abs_path) {
+  for (uint32_t i = 0; i < mount_count; ++i) {
+    const size_t plen = strlen(mount_table[i].prefix);
+    if (strncmp(abs_path, mount_table[i].prefix, plen) == 0 &&
+        (abs_path[plen] == '/' || abs_path[plen] == '\0')) {
+      return mount_table[i].ops;
+    }
+  }
+  return nullptr;
+}
+
+int32_t fs_mkdir(const char* abs_path) {
+  const FsOps* ops = find_mount(abs_path);
+  if (ops == nullptr || ops->mkdir == nullptr) {
+    return -ENOENT;
+  }
+  return ops->mkdir(abs_path);
+}
+
+int32_t fs_unlink(const char* abs_path) {
+  const FsOps* ops = find_mount(abs_path);
+  if (ops == nullptr || ops->unlink == nullptr) {
+    return -ENOENT;
+  }
+  return ops->unlink(abs_path);
+}
+
+int32_t fs_rename(const char* old_path, const char* new_path) {
+  const FsOps* ops = find_mount(old_path);
+  if (ops == nullptr || ops->rename == nullptr) {
+    return -ENOENT;
+  }
+  return ops->rename(old_path, new_path);
+}
+
+int32_t stat_path(const char* path, struct stat* buf) {
+  assert(path != nullptr && "stat_path(): null path");
+  assert(buf != nullptr && "stat_path(): null stat buffer");
+  memset(buf, 0, sizeof(*buf));
+
+  const VfsNode* node = lookup(path);
+  if (node == nullptr) {
+    if (is_directory(path)) {
+      buf->st_mode = S_IFDIR | 0755;
+      return 0;
+    }
+    return -ENOENT;
+  }
+
+  switch (node->type) {
+    case VfsNodeType::File:
+      buf->st_mode = S_IFREG | 0644;
+      buf->st_size = static_cast<off_t>(node->size);
+      break;
+    case VfsNodeType::CharDev:
+      buf->st_mode = S_IFCHR | 0666;
+      break;
+    case VfsNodeType::Directory:
+      buf->st_mode = S_IFDIR | 0755;
+      break;
+  }
+
+  // Use vector index as inode number.
+  for (uint32_t i = 0; i < static_cast<uint32_t>(node_table.size()); ++i) {
+    if (&node_table[i] == node) {
+      buf->st_ino = static_cast<ino_t>(i);
+      break;
+    }
+  }
+  return 0;
+}
+
 void init_devfs() {
-  assert(register_node("/dev/tty", VfsNodeType::CharDev, &tty_ops) != nullptr);
-  assert(register_node("/dev/null", VfsNodeType::CharDev, &null_ops) != nullptr);
-  assert(register_node("/dev/kbd", VfsNodeType::CharDev, &kbd_ops) != nullptr);
+  assert(register_node("/dev/tty", VfsNodeType::CharDev, &tty_ops) != nullptr &&
+         "init_devfs(): failed to register /dev/tty");
+  assert(register_node("/dev/null", VfsNodeType::CharDev, &null_ops) != nullptr &&
+         "init_devfs(): failed to register /dev/null");
+  assert(register_node("/dev/kbd", VfsNodeType::CharDev, &kbd_ops) != nullptr &&
+         "init_devfs(): failed to register /dev/kbd");
 
   if (Framebuffer::is_available()) {
-    assert(register_node("/dev/fb", VfsNodeType::CharDev, &fb_ops) != nullptr);
+    assert(register_node("/dev/fb", VfsNodeType::CharDev, &fb_ops) != nullptr &&
+           "init_devfs(): failed to register /dev/fb");
   }
 }
 

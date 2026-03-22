@@ -28,6 +28,8 @@ unsigned long long getticks(void);
 int lseek(int fd, int offset, int whence);
 int chdir(const char* path);
 char* getcwd(char* buf, unsigned int size);
+int unlink(const char* path);
+int fcntl(int fd, int cmd, ...);
 
 __END_DECLS
 

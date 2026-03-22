@@ -6,6 +6,9 @@
 
 #include "process.h"
 
+// Forward declaration for is_vfs_node_open.
+struct VfsNode;
+
 /*
  * Round-robin preemptive scheduler.
  *
@@ -103,5 +106,9 @@ void broadcast_signal(uint32_t signum);
 // redirects execution to the user handler (user VA in signal_handlers[]).
 // frame is the TrapFrame about to be restored; only acts for user-mode frames.
 void check_pending_signals(TrapFrame* frame);
+
+// Returns true if any non-zombie process currently has the given VFS node open.
+// Used by fat_unlink to refuse deletion of open files.
+[[nodiscard]] bool is_vfs_node_open(const VfsNode* node);
 
 }  // namespace Scheduler

@@ -93,6 +93,7 @@ TEST(tty, clear_resets_to_origin) {
 // terminal_set_position
 // ===========================================================================
 
+// TODO: Fix terminal putchar output during ktest. It's cluttering the test log.
 TEST(tty, set_position_moves_cursor) {
   terminal_clear();
   terminal_set_position(3, 5);

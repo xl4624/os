@@ -34,7 +34,13 @@
 #define SYS_GETCWD 23    /* custom */
 #define SYS_GETDENTS 24  /* custom */
 #define SYS_IOCTL 25     /* custom */
-#define SYS_MAX 26
+#define SYS_STAT 26      /* custom */
+#define SYS_FSTAT 27     /* custom */
+#define SYS_MKDIR 28     /* custom */
+#define SYS_UNLINK 29    /* custom */
+#define SYS_RENAME 30    /* custom */
+#define SYS_FCNTL 31     /* custom */
+#define SYS_MAX 32
 
 #include <stdint.h>
 

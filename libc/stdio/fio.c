@@ -10,12 +10,6 @@ int remove(const char* path) {
   return -1;
 }
 
-int rename(const char* oldpath, const char* newpath) {
-  (void)oldpath;
-  (void)newpath;
-  return -1;
-}
-
 #else /* __is_libc */
 
 #include <fcntl.h>
@@ -202,15 +196,6 @@ int fflush(FILE* file) {
   return 0;  // All writes are unbuffered; nothing to flush.
 }
 
-int remove(const char* path) {
-  (void)path;
-  return -1;  // Not implemented.
-}
-
-int rename(const char* oldpath, const char* newpath) {
-  (void)oldpath;
-  (void)newpath;
-  return -1;  // Not implemented.
-}
+int remove(const char* path) { return unlink(path); }
 
 #endif /* __is_libc */

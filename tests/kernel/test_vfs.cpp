@@ -252,7 +252,7 @@ TEST(vfs, open_returns_fd) {
   ASSERT_NOT_NULL(node);
   node->size = 10;
 
-  const int32_t fd = Vfs::open("/dev/test");
+  const int32_t fd = Vfs::open("/dev/test", 0);
   ASSERT_TRUE(fd >= 0);
 
   // Clean up: close the fd.
@@ -264,7 +264,7 @@ TEST(vfs, open_returns_fd) {
 
 TEST(vfs, open_not_found) {
   Vfs::init();
-  const int32_t fd = Vfs::open("/nonexistent");
+  const int32_t fd = Vfs::open("/nonexistent", 0);
   ASSERT_EQ(fd, -1);
 }
 
@@ -274,7 +274,7 @@ TEST(vfs, open_read_write_through_fd) {
   ASSERT_NOT_NULL(node);
   node->size = 3;
 
-  const int32_t fd_num = Vfs::open("/dev/echo");
+  const int32_t fd_num = Vfs::open("/dev/echo", 0);
   ASSERT_TRUE(fd_num >= 0);
 
   Process* proc = Scheduler::current();
@@ -357,7 +357,7 @@ TEST(vfs, close_vfs_fd) {
   ASSERT_NOT_NULL(node);
   node->size = 1;
 
-  const int32_t fd_num = Vfs::open("/dev/test");
+  const int32_t fd_num = Vfs::open("/dev/test", 0);
   ASSERT_TRUE(fd_num >= 0);
 
   Process* proc = Scheduler::current();

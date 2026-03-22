@@ -35,7 +35,7 @@ __BEGIN_DECLS
 extern char stack_top[];
 
 void kernel_init() {
-  assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC);
+  assert(mboot_magic == MULTIBOOT_BOOTLOADER_MAGIC && "kernel_init(): invalid multiboot magic");
   kPmm.init();
   VMM::map_all_physical_ram();  // must be after PMM: extends phys_to_virt() range
   GDT::init();
@@ -81,8 +81,8 @@ __attribute__((noreturn)) void kernel_main() {
   Vfs::init_devfs();
   Vfs::init_ramfs();
 
-  // Mount FAT16 filesystem from ATA drive (registers /fat/<name> nodes).
-  Fat16::init_vfs();
+  // Mount FAT filesystem from ATA drive (registers /fat/ nodes).
+  Fat::init_vfs();
 
   VfsNode* shell = Vfs::lookup("/bin/sh");
   if ((shell != nullptr) && (shell->data != nullptr)) {

@@ -1,8 +1,10 @@
+#include <stdint.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 
-/* TODO: implement mkdir for our VFS */
 int mkdir(const char* path, mode_t mode) {
-  (void)path;
   (void)mode;
-  return -1;
+  int32_t ret;
+  __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_MKDIR), "b"(path));
+  return __syscall_ret(ret);
 }

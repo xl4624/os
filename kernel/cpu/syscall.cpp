@@ -3,9 +3,11 @@
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <termios.h>
 #include <unique_ptr.h>
 
@@ -159,9 +161,9 @@ static int32_t sys_getpid([[maybe_unused]] TrapFrame* regs) {
 // Resolves '.' and '..' components in an absolute path in-place.
 // path must start with '/'. size is the buffer capacity.
 static void canonicalize_path(char* path, size_t size) {
-  assert(path != nullptr);
-  assert(path[0] == '/');
-  assert(size >= 2);
+  assert(path != nullptr && path[0] == '/' &&
+         "canonicalize_path(): path must be non-null and absolute");
+  assert(size >= 2 && "canonicalize_path(): buffer too small");
   char out[128];
   size_t out_len = 1;
   out[0] = '/';
@@ -218,25 +220,18 @@ static void canonicalize_path(char* path, size_t size) {
   memcpy(path, out, out_len + 1);
 }
 
-// SYS_OPEN(path=ebx)
-// Opens a file by path. Returns fd on success, or negative errno on failure.
-// Supports relative paths by prepending the process CWD.
-static int32_t sys_open(TrapFrame* regs) {
-  const uint32_t path_ptr = regs->ebx;
-
+// Resolve a user path to an absolute canonicalized path.
+// Returns 0 on success or negative errno on failure.
+static int32_t resolve_abs_path(uint32_t path_ptr, char* abs_path, size_t abs_len) {
   if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
     return -EFAULT;
   }
-
   const char* upath = reinterpret_cast<const char*>(path_ptr);
-  char abs_path[128];
-
   if (upath[0] != '/') {
     const Process* proc = Scheduler::current();
     const size_t cwd_len = strlen(proc->cwd);
     const size_t path_len = strlen(upath);
-    // +2 for potential '/' separator and null terminator
-    if (cwd_len + 1 + path_len + 1 > sizeof(abs_path)) {
+    if (cwd_len + 1 + path_len + 1 > abs_len) {
       return -ENAMETOOLONG;
     }
     memcpy(abs_path, proc->cwd, cwd_len);
@@ -247,13 +242,28 @@ static int32_t sys_open(TrapFrame* regs) {
       memcpy(abs_path + cwd_len, upath, path_len + 1);
     }
   } else {
-    strncpy(abs_path, upath, sizeof(abs_path) - 1);
-    abs_path[sizeof(abs_path) - 1] = '\0';
+    strncpy(abs_path, upath, abs_len - 1);
+    abs_path[abs_len - 1] = '\0';
+  }
+  canonicalize_path(abs_path, abs_len);
+  return 0;
+}
+
+// SYS_OPEN(path=ebx)
+// Opens a file by path. Returns fd on success, or negative errno on failure.
+// Supports relative paths by prepending the process CWD.
+static int32_t sys_open(TrapFrame* regs) {
+  const uint32_t path_ptr = regs->ebx;
+
+  char abs_path[128];
+  const int32_t rc = resolve_abs_path(path_ptr, abs_path, sizeof(abs_path));
+  if (rc < 0) {
+    return rc;
   }
 
-  canonicalize_path(abs_path, sizeof(abs_path));
-
-  const int32_t fd = Vfs::open(abs_path);
+  const auto flags = static_cast<int32_t>(regs->ecx);
+  const mode_t mode = (flags & O_CREAT) != 0 ? static_cast<mode_t>(regs->edx) : 0;
+  const int32_t fd = Vfs::open(abs_path, flags, mode);
   return fd >= 0 ? fd : -ENOENT;
 }
 
@@ -263,45 +273,23 @@ static int32_t sys_open(TrapFrame* regs) {
 static int32_t sys_chdir(TrapFrame* regs) {
   const uint32_t path_ptr = regs->ebx;
 
-  if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
-    return -EFAULT;
-  }
-
-  const char* path = reinterpret_cast<const char*>(path_ptr);
   char abs_path[128];
-
-  if (path[0] != '/') {
-    const Process* cur = Scheduler::current();
-    const size_t cwd_len = strlen(cur->cwd);
-    const size_t path_len = strlen(path);
-    if (cwd_len + 1 + path_len + 1 > sizeof(abs_path)) {
-      return -ENAMETOOLONG;
-    }
-    memcpy(abs_path, cur->cwd, cwd_len);
-    if (abs_path[cwd_len - 1] != '/') {
-      abs_path[cwd_len] = '/';
-      memcpy(abs_path + cwd_len + 1, path, path_len + 1);
-    } else {
-      memcpy(abs_path + cwd_len, path, path_len + 1);
-    }
-    path = abs_path;
+  const int32_t rc = resolve_abs_path(path_ptr, abs_path, sizeof(abs_path));
+  if (rc < 0) {
+    return rc;
   }
 
-  char norm[128];
-  strncpy(norm, path, sizeof(norm) - 1);
-  norm[sizeof(norm) - 1] = '\0';
-  canonicalize_path(norm, sizeof(norm));
-  const size_t nlen = strlen(norm);
-  if (nlen > 1 && norm[nlen - 1] == '/') {
-    norm[nlen - 1] = '\0';
+  const size_t len = strlen(abs_path);
+  if (len > 1 && abs_path[len - 1] == '/') {
+    abs_path[len - 1] = '\0';
   }
 
-  if (!Vfs::is_directory(norm)) {
+  if (!Vfs::is_directory(abs_path)) {
     return -ENOENT;
   }
 
   Process* proc = Scheduler::current();
-  strncpy(proc->cwd, norm, sizeof(proc->cwd) - 1);
+  strncpy(proc->cwd, abs_path, sizeof(proc->cwd) - 1);
   proc->cwd[sizeof(proc->cwd) - 1] = '\0';
   return 0;
 }
@@ -790,6 +778,98 @@ static int32_t sys_ioctl(TrapFrame* regs) {
   return Vfs::ioctl(const_cast<FileDescription*>(fd), request, arg);
 }
 
+// SYS_STAT(path=ebx, buf=ecx)
+// Returns 0 on success, or negative errno on failure.
+static int32_t sys_stat(TrapFrame* regs) {
+  const uint32_t path_ptr = regs->ebx;
+  const uint32_t buf_ptr = regs->ecx;
+
+  char abs_path[128];
+  const int32_t rc = resolve_abs_path(path_ptr, abs_path, sizeof(abs_path));
+  if (rc < 0) {
+    return rc;
+  }
+
+  if (!validate_user_buffer(buf_ptr, sizeof(struct stat), /*writeable=*/true)) {
+    return -EFAULT;
+  }
+  auto* buf = reinterpret_cast<struct stat*>(buf_ptr);
+  return Vfs::stat_path(abs_path, buf);
+}
+
+// SYS_FSTAT(fd=ebx, buf=ecx)
+// Returns 0 on success, or negative errno on failure.
+static int32_t sys_fstat(TrapFrame* regs) {
+  const uint32_t fd_num = regs->ebx;
+  const uint32_t buf_ptr = regs->ecx;
+
+  const Process* proc = Scheduler::current();
+  if (fd_num >= kMaxFds || proc->fds[fd_num] == nullptr) {
+    return -EBADF;
+  }
+  const FileDescription* fd = proc->fds[fd_num];
+  if (fd->type != FileType::VfsNode || fd->vfs == nullptr || fd->vfs->node == nullptr) {
+    return -EBADF;
+  }
+  if (!validate_user_buffer(buf_ptr, sizeof(struct stat), /*writeable=*/true)) {
+    return -EFAULT;
+  }
+  auto* buf = reinterpret_cast<struct stat*>(buf_ptr);
+  return Vfs::stat_path(fd->vfs->node->name, buf);
+}
+
+// SYS_MKDIR(path=ebx, mode=ecx)
+// Returns 0 on success, or negative errno on failure.
+static int32_t sys_mkdir(TrapFrame* regs) {
+  const uint32_t path_ptr = regs->ebx;
+
+  char abs_path[128];
+  const int32_t rc = resolve_abs_path(path_ptr, abs_path, sizeof(abs_path));
+  if (rc < 0) {
+    return rc;
+  }
+
+  return Vfs::fs_mkdir(abs_path);
+}
+
+// SYS_UNLINK(path=ebx)
+// Returns 0 on success, or negative errno on failure.
+static int32_t sys_unlink(TrapFrame* regs) {
+  const uint32_t path_ptr = regs->ebx;
+
+  char abs_path[128];
+  const int32_t rc = resolve_abs_path(path_ptr, abs_path, sizeof(abs_path));
+  if (rc < 0) {
+    return rc;
+  }
+
+  return Vfs::fs_unlink(abs_path);
+}
+
+// SYS_RENAME(old=ebx, new=ecx)
+// Returns 0 on success, or negative errno on failure.
+static int32_t sys_rename(TrapFrame* regs) {
+  const uint32_t old_ptr = regs->ebx;
+  const uint32_t new_ptr = regs->ecx;
+
+  char old_path[128];
+  const int32_t rc1 = resolve_abs_path(old_ptr, old_path, sizeof(old_path));
+  if (rc1 < 0) {
+    return rc1;
+  }
+
+  char new_path[128];
+  const int32_t rc2 = resolve_abs_path(new_ptr, new_path, sizeof(new_path));
+  if (rc2 < 0) {
+    return rc2;
+  }
+
+  return Vfs::fs_rename(old_path, new_path);
+}
+
+// SYS_FCNTL(fd=ebx, cmd=ecx, arg=edx) -- stub
+static int32_t sys_fcntl([[maybe_unused]] TrapFrame* regs) { return -EINVAL; }
+
 // ===========================================================================
 // Dispatch table
 // ===========================================================================
@@ -823,6 +903,12 @@ static constexpr std::array<syscall_fn, SYS_MAX> syscall_table = {
     sys_getcwd,     // 23 SYS_GETCWD
     sys_getdents,   // 24 SYS_GETDENTS
     sys_ioctl,      // 25 SYS_IOCTL
+    sys_stat,       // 26 SYS_STAT
+    sys_fstat,      // 27 SYS_FSTAT
+    sys_mkdir,      // 28 SYS_MKDIR
+    sys_unlink,     // 29 SYS_UNLINK
+    sys_rename,     // 30 SYS_RENAME
+    sys_fcntl,      // 31 SYS_FCNTL
 };
 
 static_assert(syscall_table[SYS_EXIT] == sys_exit);
@@ -851,6 +937,12 @@ static_assert(syscall_table[SYS_CHDIR] == sys_chdir);
 static_assert(syscall_table[SYS_GETCWD] == sys_getcwd);
 static_assert(syscall_table[SYS_GETDENTS] == sys_getdents);
 static_assert(syscall_table[SYS_IOCTL] == sys_ioctl);
+static_assert(syscall_table[SYS_STAT] == sys_stat);
+static_assert(syscall_table[SYS_FSTAT] == sys_fstat);
+static_assert(syscall_table[SYS_MKDIR] == sys_mkdir);
+static_assert(syscall_table[SYS_UNLINK] == sys_unlink);
+static_assert(syscall_table[SYS_RENAME] == sys_rename);
+static_assert(syscall_table[SYS_FCNTL] == sys_fcntl);
 static_assert(syscall_table.size() == SYS_MAX);
 
 __BEGIN_DECLS

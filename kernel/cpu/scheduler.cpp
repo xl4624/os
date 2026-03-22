@@ -26,6 +26,7 @@
 #include "process.h"
 #include "shm.h"
 #include "tss.h"
+#include "vfs.h"
 
 __BEGIN_DECLS
 
@@ -659,6 +660,24 @@ void check_pending_signals(TrapFrame* frame) {
     deliver_to_user_handler(frame, sig, handler);
     return;  // deliver one signal at a time
   }
+}
+
+bool is_vfs_node_open(const VfsNode* node) {
+  for (uint32_t i = 0; i < kMaxProcesses; ++i) {
+    if (process_table[i].state == ProcessState::Empty) {
+      continue;
+    }
+    for (uint32_t j = 0; j < kMaxFds; ++j) {
+      const FileDescription* fd = process_table[i].fds[j];
+      if (fd == nullptr || fd->type != FileType::VfsNode || fd->vfs == nullptr) {
+        continue;
+      }
+      if (fd->vfs->node == node) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace Scheduler

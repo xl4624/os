@@ -312,7 +312,7 @@ TEST(syscall, getcwd_returns_current_cwd) {
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 
   // Allocate a user-space page to receive the result.
-  UserPathPage up("");
+  const UserPathPage up("");
 
   TrapFrame frame = {};
   frame.eax = SYS_GETCWD;
@@ -325,7 +325,7 @@ TEST(syscall, getcwd_returns_current_cwd) {
   const char* kva = phys_to_virt(up.page_phys).ptr<char>();
   ASSERT_STR_EQ(kva, "/");
 
-  up.restore();
+  UserPathPage::restore();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 }
 
@@ -336,7 +336,7 @@ TEST(syscall, chdir_absolute_path) {
   Process* proc = Scheduler::current();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 
-  UserPathPage up("/bin");
+  const UserPathPage up("/bin");
 
   TrapFrame frame = {};
   frame.eax = SYS_CHDIR;
@@ -345,7 +345,7 @@ TEST(syscall, chdir_absolute_path) {
   ASSERT_EQ(frame.eax, 0U);
   ASSERT_STR_EQ(proc->cwd, "/bin");
 
-  up.restore();
+  UserPathPage::restore();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 }
 
@@ -357,7 +357,7 @@ TEST(syscall, chdir_relative_path) {
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 
   // Relative path "bin" from "/" should resolve to "/bin".
-  UserPathPage up("bin");
+  const UserPathPage up("bin");
 
   TrapFrame frame = {};
   frame.eax = SYS_CHDIR;
@@ -366,7 +366,7 @@ TEST(syscall, chdir_relative_path) {
   ASSERT_EQ(frame.eax, 0U);
   ASSERT_STR_EQ(proc->cwd, "/bin");
 
-  up.restore();
+  UserPathPage::restore();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 }
 
@@ -377,7 +377,7 @@ TEST(syscall, chdir_dot_dot) {
   Process* proc = Scheduler::current();
   strncpy(proc->cwd, "/bin", sizeof(proc->cwd));
 
-  UserPathPage up("..");
+  const UserPathPage up("..");
 
   TrapFrame frame = {};
   frame.eax = SYS_CHDIR;
@@ -386,7 +386,7 @@ TEST(syscall, chdir_dot_dot) {
   ASSERT_EQ(frame.eax, 0U);
   ASSERT_STR_EQ(proc->cwd, "/");
 
-  up.restore();
+  UserPathPage::restore();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 }
 
@@ -397,7 +397,7 @@ TEST(syscall, chdir_dot) {
   Process* proc = Scheduler::current();
   strncpy(proc->cwd, "/bin", sizeof(proc->cwd));
 
-  UserPathPage up(".");
+  const UserPathPage up(".");
 
   TrapFrame frame = {};
   frame.eax = SYS_CHDIR;
@@ -406,7 +406,7 @@ TEST(syscall, chdir_dot) {
   ASSERT_EQ(frame.eax, 0U);
   ASSERT_STR_EQ(proc->cwd, "/bin");
 
-  up.restore();
+  UserPathPage::restore();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 }
 
@@ -416,7 +416,7 @@ TEST(syscall, chdir_dot_dot_at_root_stays_root) {
   Process* proc = Scheduler::current();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 
-  UserPathPage up("..");
+  const UserPathPage up("..");
 
   TrapFrame frame = {};
   frame.eax = SYS_CHDIR;
@@ -425,7 +425,7 @@ TEST(syscall, chdir_dot_dot_at_root_stays_root) {
   ASSERT_EQ(frame.eax, 0U);
   ASSERT_STR_EQ(proc->cwd, "/");
 
-  up.restore();
+  UserPathPage::restore();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 }
 
@@ -435,7 +435,7 @@ TEST(syscall, chdir_nonexistent) {
   Process* proc = Scheduler::current();
   strncpy(proc->cwd, "/", sizeof(proc->cwd));
 
-  UserPathPage up("/nonexistent");
+  const UserPathPage up("/nonexistent");
 
   TrapFrame frame = {};
   frame.eax = SYS_CHDIR;
@@ -445,5 +445,5 @@ TEST(syscall, chdir_nonexistent) {
   // CWD must be unchanged on failure.
   ASSERT_STR_EQ(proc->cwd, "/");
 
-  up.restore();
+  UserPathPage::restore();
 }

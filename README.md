@@ -1,5 +1,8 @@
 # os
 
+A hobby x86 OS written in C/C++. Boots via GRUB into a small shell with a virtual filesystem, preemptive multitasking, pipes, shared memory, and
+  ring-3 user processes. Supports running DOOM as a userspace program.
+
 1. Setup the i868-elf Cross Compiler
     * Follow the [GCC Cross-Compiler](https://wiki.osdev.org/GCC_Cross-Compiler) guide
     * Should have `i686-elf-gcc`, `i686-elf-as`, etc. after
@@ -43,6 +46,10 @@
     ```bash
     make install
     ```
+
+# Usage
+
+The shell supports basic line editing. Use `Shift+PageUp`/`Shift+PageDown` to scroll through terminal history -- any keypress snaps you back to the live view. `Ctrl+C` kills the running process.
 
 # Notes
 

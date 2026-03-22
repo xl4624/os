@@ -1,3 +1,5 @@
+typedef int _iso_c_forbids_empty_tu;
+
 #ifdef __is_libc
 
 #include <sys/ioctl.h>

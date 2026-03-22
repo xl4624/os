@@ -9,9 +9,13 @@ static constexpr uint16_t kDebugconPort = 0xE9;
 
 __BEGIN_DECLS
 
+bool tty_debugcon_enabled = true;
+
 void terminal_putchar(char c) {
   kTerminal.write_char(c);
-  outb(kDebugconPort, static_cast<uint8_t>(c));
+  if (tty_debugcon_enabled) {
+    outb(kDebugconPort, static_cast<uint8_t>(c));
+  }
 }
 
 void terminal_clear(void) { kTerminal.clear(); }

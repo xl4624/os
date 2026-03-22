@@ -6,6 +6,7 @@
 
 __BEGIN_DECLS
 
+extern bool tty_debugcon_enabled;
 void terminal_putchar(char c);
 void terminal_clear(void);
 void terminal_set_position(unsigned int row, unsigned int col);

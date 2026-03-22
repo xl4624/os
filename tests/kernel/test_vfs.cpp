@@ -27,10 +27,13 @@ int32_t counting_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> 
   return static_cast<int32_t>(buf.size());
 }
 
-const VfsOps counting_ops = {.read = counting_read, .write = counting_write, .ioctl = nullptr};
+const VfsOps counting_ops = {
+    .read = counting_read, .write = counting_write, .ioctl = nullptr, .truncate = nullptr};
 
-const VfsOps read_only_ops = {.read = counting_read, .write = nullptr, .ioctl = nullptr};
-const VfsOps write_only_ops = {.read = nullptr, .write = counting_write, .ioctl = nullptr};
+const VfsOps read_only_ops = {
+    .read = counting_read, .write = nullptr, .ioctl = nullptr, .truncate = nullptr};
+const VfsOps write_only_ops = {
+    .read = nullptr, .write = counting_write, .ioctl = nullptr, .truncate = nullptr};
 
 }  // namespace
 
@@ -152,7 +155,7 @@ TEST(vfs, read_chardev) {
   ASSERT_NOT_NULL(node);
   node->size = 5;
 
-  VfsFileDescription vfs_fd = {.node = node, .offset = 0};
+  VfsFileDescription vfs_fd = {.node = node, .offset = 0, .open_flags = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
@@ -171,7 +174,7 @@ TEST(vfs, write_chardev) {
   VfsNode* node = Vfs::register_node("/dev/test", VfsNodeType::CharDev, &counting_ops);
   ASSERT_NOT_NULL(node);
 
-  VfsFileDescription vfs_fd = {.node = node, .offset = 0};
+  VfsFileDescription vfs_fd = {.node = node, .offset = 0, .open_flags = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
@@ -187,7 +190,7 @@ TEST(vfs, read_null_ops) {
   VfsNode* node = Vfs::register_node("/dev/wo", VfsNodeType::CharDev, &write_only_ops);
   ASSERT_NOT_NULL(node);
 
-  VfsFileDescription vfs_fd = {.node = node, .offset = 0};
+  VfsFileDescription vfs_fd = {.node = node, .offset = 0, .open_flags = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
@@ -201,7 +204,7 @@ TEST(vfs, write_null_ops) {
   VfsNode* node = Vfs::register_node("/dev/ro", VfsNodeType::CharDev, &read_only_ops);
   ASSERT_NOT_NULL(node);
 
-  VfsFileDescription vfs_fd = {.node = node, .offset = 0};
+  VfsFileDescription vfs_fd = {.node = node, .offset = 0, .open_flags = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
@@ -233,7 +236,7 @@ TEST(vfs, ramfs_read_advances_offset) {
   // To test read-with-offset, use Vfs::open which creates the right ops.
   // But since Vfs::open requires a scheduler, let's test at a lower level.
   // Build VfsFileDescription manually with the node.
-  VfsFileDescription vfs_fd = {.node = node, .offset = 0};
+  VfsFileDescription vfs_fd = {.node = node, .offset = 0, .open_flags = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
@@ -310,7 +313,7 @@ TEST(vfs, devfs_null_read_eof) {
   VfsNode* null_node = Vfs::lookup("/dev/null");
   ASSERT_NOT_NULL(null_node);
 
-  VfsFileDescription vfs_fd = {.node = null_node, .offset = 0};
+  VfsFileDescription vfs_fd = {.node = null_node, .offset = 0, .open_flags = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
@@ -326,7 +329,7 @@ TEST(vfs, devfs_null_write_discards) {
   VfsNode* null_node = Vfs::lookup("/dev/null");
   ASSERT_NOT_NULL(null_node);
 
-  VfsFileDescription vfs_fd = {.node = null_node, .offset = 0};
+  VfsFileDescription vfs_fd = {.node = null_node, .offset = 0, .open_flags = 0};
   FileDescription desc = {
       .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 

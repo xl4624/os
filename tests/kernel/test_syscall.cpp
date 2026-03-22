@@ -19,7 +19,7 @@ int32_t stub_read([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<uin
                   [[maybe_unused]] uint32_t offset) {
   return 0;
 }
-const VfsOps kStubOps = {.read = stub_read, .write = nullptr, .ioctl = nullptr};
+const VfsOps kStubOps = {.read = stub_read, .write = nullptr, .ioctl = nullptr, .truncate = nullptr};
 
 // Maps a fresh physical page at kUserAddr in the CURRENT process's page
 // directory (so the existing CR3 sees it), writes `str` into it via the

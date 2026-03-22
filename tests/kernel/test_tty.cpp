@@ -12,17 +12,25 @@ static constexpr uint8_t make_color(uint8_t fg, uint8_t bg) {
   return static_cast<uint8_t>(fg | (bg << 4));
 }
 
+// Suppress debugcon output during tty tests to avoid cluttering the ktest log.
+struct SuppressDebugcon {
+  SuppressDebugcon() { tty_debugcon_enabled = false; }
+  ~SuppressDebugcon() { tty_debugcon_enabled = true; }
+};
+
 // ===========================================================================
 // terminal_putchar
 // ===========================================================================
 
 TEST(tty, putchar_appears_in_buffer) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('A');
   ASSERT_EQ(fb_char_at(0, 0), 'A');
 }
 
 TEST(tty, multiple_chars_fill_columns) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('H');
   terminal_putchar('i');
@@ -31,6 +39,7 @@ TEST(tty, multiple_chars_fill_columns) {
 }
 
 TEST(tty, newline_advances_row) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('\n');
   terminal_putchar('X');
@@ -38,6 +47,7 @@ TEST(tty, newline_advances_row) {
 }
 
 TEST(tty, backspace_erases_last_char) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('A');
   terminal_putchar('\b');
@@ -45,6 +55,7 @@ TEST(tty, backspace_erases_last_char) {
 }
 
 TEST(tty, tab_advances_to_next_tab_stop) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('\t');
   terminal_putchar('A');
@@ -68,6 +79,7 @@ TEST(tty, tab_advances_to_next_tab_stop) {
 // ===========================================================================
 
 TEST(tty, set_color_changes_attribute) {
+  SuppressDebugcon guard;
   terminal_clear();
   const uint8_t color = make_color(4, 1);  // Red on Blue
   terminal_set_color(color);
@@ -81,6 +93,7 @@ TEST(tty, set_color_changes_attribute) {
 // ===========================================================================
 
 TEST(tty, clear_resets_to_origin) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('A');
   terminal_putchar('B');
@@ -93,8 +106,8 @@ TEST(tty, clear_resets_to_origin) {
 // terminal_set_position
 // ===========================================================================
 
-// TODO: Fix terminal putchar output during ktest. It's cluttering the test log.
 TEST(tty, set_position_moves_cursor) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_set_position(3, 5);
   terminal_putchar('P');
@@ -102,6 +115,7 @@ TEST(tty, set_position_moves_cursor) {
 }
 
 TEST(tty, set_position_clamps_out_of_range) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_set_position(999, 0);
   terminal_putchar('C');
@@ -109,6 +123,7 @@ TEST(tty, set_position_clamps_out_of_range) {
 }
 
 TEST(tty, set_position_col_clamps_out_of_range) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_set_position(0, 999);
   terminal_putchar('D');
@@ -116,6 +131,7 @@ TEST(tty, set_position_col_clamps_out_of_range) {
 }
 
 TEST(tty, line_wrap_at_right_edge) {
+  SuppressDebugcon guard;
   terminal_clear();
   for (size_t i = 0; i < kTerminal.cols(); ++i) {
     terminal_putchar('A');
@@ -125,6 +141,7 @@ TEST(tty, line_wrap_at_right_edge) {
 }
 
 TEST(tty, scroll_on_overflow) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('S');
   for (size_t i = 0; i < kTerminal.rows(); ++i) {
@@ -134,6 +151,7 @@ TEST(tty, scroll_on_overflow) {
 }
 
 TEST(tty, color_persists_across_newline) {
+  SuppressDebugcon guard;
   terminal_clear();
   const uint8_t color = make_color(2, 0);  // Green on Black
   terminal_set_color(color);
@@ -145,6 +163,7 @@ TEST(tty, color_persists_across_newline) {
 }
 
 TEST(tty, backspace_at_col_zero_goes_to_previous_row) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('\n');
   terminal_putchar('\b');
@@ -153,6 +172,7 @@ TEST(tty, backspace_at_col_zero_goes_to_previous_row) {
 }
 
 TEST(tty, clear_zeroes_all_cells) {
+  SuppressDebugcon guard;
   for (size_t c = 0; c < kTerminal.cols(); ++c) {
     terminal_putchar('X');
   }
@@ -169,6 +189,7 @@ TEST(tty, clear_zeroes_all_cells) {
 // ===========================================================================
 
 TEST(tty, csi_cursor_position) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_write("\033[6;11H");
   terminal_putchar('P');
@@ -176,6 +197,7 @@ TEST(tty, csi_cursor_position) {
 }
 
 TEST(tty, csi_cursor_position_default) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_set_position(3, 3);
   terminal_write("\033[H");
@@ -184,6 +206,7 @@ TEST(tty, csi_cursor_position_default) {
 }
 
 TEST(tty, csi_cursor_position_partial) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_write("\033[3H");
   terminal_putchar('R');
@@ -191,6 +214,7 @@ TEST(tty, csi_cursor_position_partial) {
 }
 
 TEST(tty, csi_clear_screen) {
+  SuppressDebugcon guard;
   for (size_t c = 0; c < kTerminal.cols(); ++c) {
     terminal_putchar('X');
   }
@@ -203,6 +227,7 @@ TEST(tty, csi_clear_screen) {
 }
 
 TEST(tty, csi_sgr_foreground) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_write("\033[32m");  // ANSI green -> VGA green (2)
   terminal_putchar('G');
@@ -211,6 +236,7 @@ TEST(tty, csi_sgr_foreground) {
 }
 
 TEST(tty, csi_sgr_background) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_write("\033[41m");  // ANSI red background -> VGA red bg (4)
   terminal_putchar('B');
@@ -219,6 +245,7 @@ TEST(tty, csi_sgr_background) {
 }
 
 TEST(tty, csi_sgr_bright) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_write("\033[92m");  // ANSI bright green -> VGA light green (10)
   terminal_putchar('L');
@@ -227,6 +254,7 @@ TEST(tty, csi_sgr_bright) {
 }
 
 TEST(tty, csi_sgr_reset) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_write("\033[32m");
   terminal_write("\033[0m");
@@ -236,6 +264,7 @@ TEST(tty, csi_sgr_reset) {
 }
 
 TEST(tty, csi_cursor_up_down_left_right) {
+  SuppressDebugcon guard;
   terminal_clear();
 
   terminal_set_position(12, 40);
@@ -260,6 +289,7 @@ TEST(tty, csi_cursor_up_down_left_right) {
 }
 
 TEST(tty, csi_unknown_sequence_ignored) {
+  SuppressDebugcon guard;
   terminal_clear();
   terminal_putchar('X');
   terminal_write("\033[99z");

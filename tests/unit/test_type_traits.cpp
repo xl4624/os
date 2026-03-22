@@ -17,8 +17,8 @@ TEST(type_traits, is_same) {
   static_assert(std::is_same_v<int, int>);
   static_assert(!std::is_same_v<int, float>);
   static_assert(!std::is_same_v<int, const int>);
-  ASSERT_TRUE((std::is_same<int, int>::value));
-  ASSERT_FALSE((std::is_same<int, float>::value));
+  ASSERT_TRUE((std::is_same<int, int>::value));     // NOLINT(modernize-type-traits)
+  ASSERT_FALSE((std::is_same<int, float>::value));  // NOLINT(modernize-type-traits)
   ASSERT_FALSE((std::is_same_v<int, const int>));
 }
 
@@ -153,8 +153,8 @@ TEST(type_traits, decay) {
 }
 
 TEST(type_traits, is_enum) {
-  enum class Color { Red, Green, Blue };
-  enum class Status : int { Ok, Fail };
+  enum class Color { Red, Green, Blue };  // NOLINT(performance-enum-size)
+  enum class Status : int { Ok, Fail };   // NOLINT(performance-enum-size)
   static_assert(std::is_enum_v<Color>);
   static_assert(std::is_enum_v<Status>);
   static_assert(!std::is_enum_v<int>);

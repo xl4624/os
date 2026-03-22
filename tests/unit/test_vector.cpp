@@ -74,8 +74,8 @@ TEST(vector, move_construct) {
   std::vector<int> b(std::move(a));
   ASSERT_EQ(b.size(), 3U);
   ASSERT_EQ(b.data(), orig_data);
-  ASSERT_EQ(a.size(), 0U);
-  ASSERT_NULL(a.data());
+  ASSERT_EQ(a.size(), 0U);  // NOLINT(bugprone-use-after-move)
+  ASSERT_NULL(a.data());    // NOLINT(bugprone-use-after-move)
 }
 
 TEST(vector, size_zero_construct) {
@@ -105,7 +105,7 @@ TEST(vector, move_assign) {
   b = std::move(a);
   ASSERT_EQ(b.size(), 3U);
   ASSERT_EQ(b.data(), orig);
-  ASSERT_TRUE(a.empty());
+  ASSERT_TRUE(a.empty());  // NOLINT(bugprone-use-after-move)
 }
 
 TEST(vector, self_copy_assign) {
@@ -268,7 +268,7 @@ TEST(vector, push_back_move) {
   v.push_back(std::move(inner));
   ASSERT_EQ(v.size(), 1U);
   ASSERT_EQ(v[0].size(), 3U);
-  ASSERT_TRUE(inner.empty());
+  ASSERT_TRUE(inner.empty());  // NOLINT(bugprone-use-after-move)
 }
 
 TEST(vector, pop_back) {
@@ -413,7 +413,7 @@ TEST(vector, insert_move) {
   v.insert(v.end(), std::move(inner));
   ASSERT_EQ(v.size(), 2U);
   ASSERT_EQ(v[1].size(), 2U);
-  ASSERT_TRUE(inner.empty());
+  ASSERT_TRUE(inner.empty());  // NOLINT(bugprone-use-after-move)
 }
 
 // ===========================================================================

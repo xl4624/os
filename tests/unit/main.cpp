@@ -30,7 +30,8 @@ int main() {
       if (current_category[0] != 0) {
         printf("\n");
       }
-      strcpy(current_category, category);
+      strncpy(current_category, category, sizeof(current_category) - 1);
+      current_category[sizeof(current_category) - 1] = '\0';
       printf("[%s]\n", category);
     }
 

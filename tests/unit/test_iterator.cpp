@@ -36,7 +36,7 @@ TEST(reverse_iterator, basic_traversal) {
   const int expected[] = {4, 3, 2, 1};
   int i = 0;
   for (auto it = a.rbegin(); it != a.rend(); ++it) {
-    ASSERT_EQ(*it, expected[i++]);
+    ASSERT_EQ(*it, expected[i++]);  // NOLINT(clang-analyzer-security.ArrayBound)
   }
 }
 
@@ -103,7 +103,7 @@ TEST(reverse_iterator, const_reverse_iterator) {
   const int expected[] = {7, 6, 5};
   int i = 0;
   for (auto it = a.rbegin(); it != a.rend(); ++it) {
-    ASSERT_EQ(*it, expected[i++]);
+    ASSERT_EQ(*it, expected[i++]);  // NOLINT(clang-analyzer-security.ArrayBound)
   }
 }
 
@@ -134,7 +134,7 @@ TEST(iterator_free, c_array_rbegin_rend) {
   const int expected[] = {30, 20, 10};
   int i = 0;
   for (auto it = std::rbegin(arr); it != std::rend(arr); ++it) {
-    ASSERT_EQ(*it, expected[i++]);
+    ASSERT_EQ(*it, expected[i++]);  // NOLINT(clang-analyzer-security.ArrayBound)
   }
 }
 
@@ -161,9 +161,9 @@ TEST(iterator_free, crbegin_crend) {
   int vals[3];
   int i = 0;
   for (auto it = std::crbegin(a); it != std::crend(a); ++it) {
-    vals[i++] = *it;
+    vals[i++] = *it;  // NOLINT(clang-analyzer-security.ArrayBound)
   }
-  ASSERT_EQ(vals[0], 3);
-  ASSERT_EQ(vals[1], 2);
-  ASSERT_EQ(vals[2], 1);
+  ASSERT_EQ(vals[0], 3);  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
+  ASSERT_EQ(vals[1], 2);  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
+  ASSERT_EQ(vals[2], 1);  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
 }

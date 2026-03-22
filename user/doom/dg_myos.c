@@ -57,15 +57,12 @@ static unsigned char translate_key(uint8_t k) {
     case 51:
       return '.';
     case 53: /* LeftShift  */
-      return KEY_RSHIFT;
     case 54: /* RightShift */
       return KEY_RSHIFT;
     case 55: /* LeftCtrl   */
-      return KEY_FIRE;
     case 56: /* RightCtrl  */
       return KEY_FIRE;
     case 57: /* LeftAlt    */
-      return KEY_LALT;
     case 58: /* RightAlt   */
       return KEY_LALT;
     case 70:

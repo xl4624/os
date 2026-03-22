@@ -91,7 +91,7 @@ void Terminal::draw_cursor() {
   }
   // Draw an inverted block at the cursor position.
   auto inv_color = static_cast<uint8_t>(((color_ & 0x0F) << 4) | ((color_ >> 4) & 0x0F));
-  char ch = cells_[cursor_.row][cursor_.col].ch;
+  char ch = cells_[cursor_.row][cursor_.col].ch;  // NOLINT(clang-analyzer-security.ArrayBound)
   if (ch == 0) {
     ch = ' ';
   }
@@ -129,7 +129,7 @@ void Terminal::write_char(char c) {
   draw_cursor();
 }
 
-void Terminal::put_char(char c) {
+void Terminal::put_char(char c) {  // NOLINT(misc-no-recursion)
   if (esc_state_ == EscState::Escape) {
     if (c == '[') {
       esc_state_ = EscState::Csi;

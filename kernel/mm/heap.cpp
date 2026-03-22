@@ -160,7 +160,7 @@ void Heap::dump() const {
          static_cast<unsigned>(total_used), static_cast<unsigned>(total_free));
 }
 
-void* Heap::alloc(size_t size) {
+void* Heap::alloc(size_t size) {  // NOLINT(misc-no-recursion)
   assert(base_ && "kmalloc: heap not initialised\n");
   if (size == 0) {
     return nullptr;

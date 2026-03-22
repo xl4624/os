@@ -124,8 +124,8 @@ TEST(string, strcmp_different_lengths) {
 TEST(string, memset_entire_buffer) {
   char buf[10];
   memset(buf, 'A', 10);
-  for (int i = 0; i < 10; ++i) {
-    ASSERT_EQ(buf[i], 'A');
+  for (const char c : buf) {
+    ASSERT_EQ(c, 'A');
   }
 }
 
@@ -206,25 +206,26 @@ TEST(string, memchr_null_byte) {
 
 TEST(string, strcat_basic) {
   char dest[20] = "Hello";
-  strcat(dest, " World");
+  strcat(dest, " World");  // NOLINT(clang-analyzer-security.insecureAPI.strcpy)
   ASSERT_STR_EQ(dest, "Hello World");
 }
 
 TEST(string, strcat_empty_src) {
   char dest[20] = "Hello";
-  strcat(dest, "");
+  strcat(dest, "");  // NOLINT(clang-analyzer-security.insecureAPI.strcpy)
   ASSERT_STR_EQ(dest, "Hello");
 }
 
 TEST(string, strcat_empty_dest) {
   char dest[20] = "";
-  strcat(dest, "Hello");
+  strcat(dest, "Hello");  // NOLINT(clang-analyzer-security.insecureAPI.strcpy)
   ASSERT_STR_EQ(dest, "Hello");
 }
 
 TEST(string, strcat_returns_dest) {
   char dest[20] = "Hello";
-  const char* result = strcat(dest, " World");
+  const char* result =
+      strcat(dest, " World");  // NOLINT(clang-analyzer-security.insecureAPI.strcpy)
   ASSERT(result == dest);
 }
 
@@ -537,14 +538,14 @@ TEST(string, strncasecmp_limit) { ASSERT(strncasecmp("abc", "ABCDE", 3) == 0); }
 TEST(string, strdup_basic) {
   char* s = strdup("hello");
   ASSERT(s != nullptr);
-  ASSERT(strcmp(s, "hello") == 0);
+  ASSERT(strcmp(s, "hello") == 0);  // NOLINT(clang-analyzer-unix.Malloc)
   free(s);
 }
 
 TEST(string, strdup_empty) {
   char* s = strdup("");
   ASSERT(s != nullptr);
-  ASSERT(strcmp(s, "") == 0);
+  ASSERT(strcmp(s, "") == 0);  // NOLINT(clang-analyzer-unix.Malloc)
   free(s);
 }
 

@@ -66,7 +66,7 @@ TEST(optional, move_construction_engaged) {
   std::optional<int> b = std::move(a);
   ASSERT_TRUE(b.has_value());
   ASSERT_EQ(*b, 99);
-  ASSERT_FALSE(a.has_value());
+  ASSERT_FALSE(a.has_value());  // NOLINT(bugprone-use-after-move)
 }
 
 TEST(optional, move_construction_empty) {
@@ -129,7 +129,7 @@ TEST(optional, move_assignment_engaged) {
   b = std::move(a);
   ASSERT_TRUE(b.has_value());
   ASSERT_EQ(*b, 42);
-  ASSERT_FALSE(a.has_value());
+  ASSERT_FALSE(a.has_value());  // NOLINT(bugprone-use-after-move)
 }
 
 TEST(optional, value_assignment) {

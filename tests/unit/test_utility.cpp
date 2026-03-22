@@ -17,7 +17,7 @@ TEST(utility, move_class) {
   };
   Tracker a;
   const Tracker b(std::move(a));
-  ASSERT_TRUE(a.moved);
+  ASSERT_TRUE(a.moved);  // NOLINT(bugprone-use-after-move)
 }
 
 TEST(utility, forward_lvalue) {

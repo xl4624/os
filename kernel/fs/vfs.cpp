@@ -289,7 +289,8 @@ VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops) {
   }
 
   VfsNode* node = &node_table[node_count];
-  strcpy(node->name, path);
+  strncpy(node->name, path, kMaxPathLen - 1);
+  node->name[kMaxPathLen - 1] = '\0';
   node->type = type;
   node->ops = ops;
   node->data = nullptr;
@@ -551,7 +552,8 @@ void init_ramfs() {
 
     // Strip ".elf" suffix if present; detect whether this is an ELF module.
     char name[kMaxPathLen];
-    strcpy(name, mod->name);
+    strncpy(name, mod->name, kMaxPathLen - 1);
+    name[kMaxPathLen - 1] = '\0';
     const bool is_elf = (name_len > 4 && strcmp(name + name_len - 4, ".elf") == 0);
     if (is_elf) {
       name[name_len - 4] = '\0';
@@ -560,7 +562,8 @@ void init_ramfs() {
     // All modules go into /bin/<name>.
     char path[kMaxPathLen];
     strcpy(path, "/bin/");
-    strcpy(path + 5, name);
+    strncpy(path + 5, name, kMaxPathLen - 6);
+    path[kMaxPathLen - 1] = '\0';
 
     auto* node = register_node(path, VfsNodeType::File, &ramfs_ops);
     if (node != nullptr) {
@@ -573,7 +576,8 @@ void init_ramfs() {
     if (!is_elf) {
       char root_path[kMaxPathLen];
       root_path[0] = '/';
-      strcpy(root_path + 1, name);
+      strncpy(root_path + 1, name, kMaxPathLen - 2);
+      root_path[kMaxPathLen - 1] = '\0';
 
       auto* root_node = register_node(root_path, VfsNodeType::File, &ramfs_ops);
       if (root_node != nullptr) {

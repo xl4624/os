@@ -1,3 +1,4 @@
+// NOLINTBEGIN(bugprone-random-generator-seed,misc-predictable-rand)
 #include <stdlib.h>
 
 #include "../framework/test.h"
@@ -89,3 +90,4 @@ TEST(rand, reseed_reproduces_sequence) {
     ASSERT_EQ(rand(), val);
   }
 }
+// NOLINTEND(bugprone-random-generator-seed,misc-predictable-rand)

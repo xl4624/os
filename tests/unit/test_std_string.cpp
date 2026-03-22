@@ -386,7 +386,7 @@ TEST(std_string, growth_many_appends) {
     s.push_back('a');
   }
   ASSERT_EQ(s.size(), 100U);
-  for (size_t i = 0; i < s.size(); ++i) {
-    ASSERT_EQ(s[i], 'a');
+  for (const char c : s) {
+    ASSERT_EQ(c, 'a');
   }
 }

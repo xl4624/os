@@ -6,6 +6,8 @@ Checks: >
   performance-*,
   readability-*,
   -bugprone-dynamic-static-initializers,
+  -bugprone-throwing-static-initialization,
+  -clang-analyzer-cplusplus.Move,
   -bugprone-easily-swappable-parameters,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
   -misc-include-cleaner,

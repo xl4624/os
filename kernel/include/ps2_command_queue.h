@@ -15,6 +15,7 @@ static constexpr uint8_t kPS2StatusInputFull = 0x02;
 
 // PS/2 Keyboard commands (sent to data port)
 enum class PS2Command : uint8_t {
+  kNone = 0x00,
   SetLEDs = 0xED,
   Echo = 0xEE,
   GetScanCodeSet = 0xF0,

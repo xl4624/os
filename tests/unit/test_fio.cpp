@@ -1,3 +1,4 @@
+// NOLINTBEGIN(clang-analyzer-unix.Stream)
 #include <stdio.h>
 #include <string.h>
 
@@ -150,7 +151,7 @@ TEST(fio, rewind_resets_to_start) {
   fread(buf, 1, 5, f);
   ASSERT_EQ(ftell(f), 5L);
 
-  rewind(f);
+  rewind(f);  // NOLINT(bugprone-unsafe-functions)
   ASSERT_EQ(ftell(f), 0L);
   ASSERT_FALSE(feof(f));
 
@@ -278,3 +279,4 @@ TEST(fio, fflush_returns_zero) {
   fclose(f);
   remove(kTmpPath);
 }
+// NOLINTEND(clang-analyzer-unix.Stream)

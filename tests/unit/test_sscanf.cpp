@@ -1,3 +1,4 @@
+// NOLINTBEGIN(bugprone-unchecked-string-to-number-conversion)
 #include <stdio.h>
 #include <string.h>
 
@@ -46,3 +47,4 @@ TEST(sscanf, mixed) {
   ASSERT(num == 42);
   ASSERT(strcmp(str, "hello") == 0);
 }
+// NOLINTEND(bugprone-unchecked-string-to-number-conversion)

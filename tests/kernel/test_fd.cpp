@@ -58,7 +58,8 @@ TEST(fd, alloc_after_close_reuses_slot) {
 
 TEST(fd, alloc_full_returns_nullopt) {
   FileDescription* fds[kMaxFds];
-  FileDescription dummy = {.type = FileType::TerminalRead, .ref_count = 1, .pipe = nullptr, .vfs = nullptr};
+  FileDescription dummy = {
+      .type = FileType::TerminalRead, .ref_count = 1, .pipe = nullptr, .vfs = nullptr};
 
   for (auto& fd : fds) {
     fd = &dummy;

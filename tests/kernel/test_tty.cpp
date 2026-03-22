@@ -104,19 +104,19 @@ TEST(tty, set_position_clamps_out_of_range) {
   terminal_clear();
   terminal_set_position(999, 0);
   terminal_putchar('C');
-  ASSERT_EQ(fb_char_at(Terminal::kRows - 1, 0), 'C');
+  ASSERT_EQ(fb_char_at(kTerminal.rows() - 1, 0), 'C');
 }
 
 TEST(tty, set_position_col_clamps_out_of_range) {
   terminal_clear();
   terminal_set_position(0, 999);
   terminal_putchar('D');
-  ASSERT_EQ(fb_char_at(0, Terminal::kColumns - 1), 'D');
+  ASSERT_EQ(fb_char_at(0, kTerminal.cols() - 1), 'D');
 }
 
 TEST(tty, line_wrap_at_right_edge) {
   terminal_clear();
-  for (size_t i = 0; i < Terminal::kColumns; ++i) {
+  for (size_t i = 0; i < kTerminal.cols(); ++i) {
     terminal_putchar('A');
   }
   terminal_putchar('B');
@@ -126,7 +126,7 @@ TEST(tty, line_wrap_at_right_edge) {
 TEST(tty, scroll_on_overflow) {
   terminal_clear();
   terminal_putchar('S');
-  for (size_t i = 0; i < Terminal::kRows; ++i) {
+  for (size_t i = 0; i < kTerminal.rows(); ++i) {
     terminal_putchar('\n');
   }
   ASSERT_EQ(fb_char_at(0, 0), 0);
@@ -152,12 +152,12 @@ TEST(tty, backspace_at_col_zero_goes_to_previous_row) {
 }
 
 TEST(tty, clear_zeroes_all_cells) {
-  for (size_t c = 0; c < Terminal::kColumns; ++c) {
+  for (size_t c = 0; c < kTerminal.cols(); ++c) {
     terminal_putchar('X');
   }
   terminal_clear();
-  for (size_t r = 0; r < Terminal::kRows; ++r) {
-    for (size_t c = 0; c < Terminal::kColumns; ++c) {
+  for (size_t r = 0; r < kTerminal.rows(); ++r) {
+    for (size_t c = 0; c < kTerminal.cols(); ++c) {
       ASSERT_EQ(fb_char_at(r, c), 0);
     }
   }
@@ -190,12 +190,12 @@ TEST(tty, csi_cursor_position_partial) {
 }
 
 TEST(tty, csi_clear_screen) {
-  for (size_t c = 0; c < Terminal::kColumns; ++c) {
+  for (size_t c = 0; c < kTerminal.cols(); ++c) {
     terminal_putchar('X');
   }
   terminal_write("\033[2J");
-  for (size_t r = 0; r < Terminal::kRows; ++r) {
-    for (size_t c = 0; c < Terminal::kColumns; ++c) {
+  for (size_t r = 0; r < kTerminal.rows(); ++r) {
+    for (size_t c = 0; c < kTerminal.cols(); ++c) {
       ASSERT_EQ(fb_char_at(r, c), 0);
     }
   }

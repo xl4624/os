@@ -75,7 +75,6 @@ inline constexpr bool is_move_assignable_v = is_move_assignable_v<T>;
 template <class T>
 struct is_trivially_destructible : integral_constant<bool, __has_trivial_destructor(T)> {};
 
-
 template <class T>
 inline constexpr bool is_trivially_destructible_v = is_trivially_destructible<T>::value;
 

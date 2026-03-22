@@ -30,7 +30,11 @@ struct TtyState {
 };
 
 TtyState tty_state = {
-    .termios = {.c_iflag = 0, .c_oflag = 0, .c_cflag = 0, .c_lflag = ICANON | ECHO | ECHOE | ISIG, .c_cc = {}},
+    .termios = {.c_iflag = 0,
+                .c_oflag = 0,
+                .c_cflag = 0,
+                .c_lflag = ICANON | ECHO | ECHOE | ISIG,
+                .c_cc = {}},
     .line_buf = {},
     .line_len = 0,
     .line_pos = 0,

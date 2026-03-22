@@ -15,8 +15,11 @@ class Terminal {
  public:
   static constexpr size_t kFontWidth = 8;
   static constexpr size_t kFontHeight = 16;
-  static constexpr size_t kColumns = 80;
-  static constexpr size_t kRows = 25;
+  // Maximum grid dimensions (for static array sizing). Actual usable
+  // dimensions are computed from the framebuffer at init() time and
+  // accessible via rows() / cols().
+  static constexpr size_t kMaxColumns = 240;  // 240*8 = 1920px
+  static constexpr size_t kMaxRows = 100;     // 100*16 = 1600px
   static constexpr size_t kScrollbackLines = 200;
 
   Terminal() = default;
@@ -29,6 +32,9 @@ class Terminal {
   bool init();
 
   [[nodiscard]] bool is_active() const { return active_; }
+  [[nodiscard]] size_t rows() const { return rows_; }
+  [[nodiscard]] size_t cols() const { return cols_; }
+  [[nodiscard]] bool is_scrolled_back() const { return scroll_offset_ > 0; }
 
   void write(const char* data);
   void write(std::span<const char> data);
@@ -69,11 +75,15 @@ class Terminal {
   enum class EscState : uint8_t { Normal, Escape, Csi };
   static constexpr size_t kMaxCsiParams = 8;
 
+  struct Cursor {
+    size_t row = 0;
+    size_t col = 0;
+  };
+
   bool active_ = false;
   bool cursor_visible_ = true;
 
-  size_t row_ = 0;
-  size_t col_ = 0;
+  Cursor cursor_{};
   uint8_t color_ = 0x07;  // light grey on black
 
   // Character buffer for scrollback (stores char + color for redraw).
@@ -81,12 +91,18 @@ class Terminal {
     char ch = 0;
     uint8_t color = 0x07;
   };
-  // Live visible content (rows 0..kRows-1 = top..bottom of current screen).
-  Cell cells_[kRows][kColumns]{};
+
+  // Actual usable dimensions, computed from the framebuffer in init().
+  size_t rows_ = 0;
+  size_t cols_ = 0;
+
+  // Live visible content (rows 0..rows_-1 = top..bottom of current screen).
+  Cell cells_[kMaxRows][kMaxColumns]{};
+
   // Ring buffer of lines scrolled off the top. scrollback_head_ points to the
   // next write slot; lines_scrolled_ tracks how many valid entries there are
   // (capped at kScrollbackLines).
-  Cell scrollback_[kScrollbackLines][kColumns]{};
+  Cell scrollback_[kScrollbackLines][kMaxColumns]{};
   size_t scrollback_head_ = 0;
   size_t lines_scrolled_ = 0;
   // How many rows we are currently scrolled back from the live view (0=live).

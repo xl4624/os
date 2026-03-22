@@ -179,22 +179,19 @@ void KeyboardDriver::process_scancode(uint8_t scancode) {
   // Shift+PageUp/PageDown: scroll the terminal without buffering the key.
   if (event.pressed && event.shift) {
     if (event.key == Key::PageUp) {
-      kTerminal.scroll_view(static_cast<int>(Terminal::kRows));
+      kTerminal.scroll_view(static_cast<int>(kTerminal.rows()));
       return;
     }
     if (event.key == Key::PageDown) {
-      kTerminal.scroll_view(-static_cast<int>(Terminal::kRows));
+      kTerminal.scroll_view(-static_cast<int>(kTerminal.rows()));
       return;
     }
   }
 
   // Any non-scroll keypress resets the scrollback view to live.
-  if (event.pressed && event.key != Key::Unknown) {
-    if (event.key != Key::LeftShift && event.key != Key::RightShift && event.key != Key::LeftCtrl &&
-        event.key != Key::RightCtrl && event.key != Key::LeftAlt && event.key != Key::RightAlt &&
-        event.key != Key::CapsLock) {
-      kTerminal.scroll_view(-(static_cast<int>(Terminal::kScrollbackLines)));
-    }
+  if (event.pressed && kTerminal.is_scrolled_back() && event.key != Key::Unknown &&
+      !event.key.is_modifier()) {
+    kTerminal.scroll_view(-(static_cast<int>(Terminal::kScrollbackLines)));
   }
 
   // Ctrl+C: send SIGINT to all running processes, or exit QEMU if none exist.

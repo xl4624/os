@@ -94,7 +94,8 @@ TEST(vfs, read_chardev) {
   node->size = 5;
 
   VfsFileDescription vfs_fd = {.node = node, .offset = 0};
-  FileDescription desc = {.type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
+  FileDescription desc = {
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
   uint8_t buf[8] = {};
   const int32_t n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
@@ -112,7 +113,8 @@ TEST(vfs, write_chardev) {
   ASSERT_NOT_NULL(node);
 
   VfsFileDescription vfs_fd = {.node = node, .offset = 0};
-  FileDescription desc = {.type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
+  FileDescription desc = {
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
   const uint8_t data[] = "test";
   const int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 4));
@@ -127,7 +129,8 @@ TEST(vfs, read_null_ops) {
   ASSERT_NOT_NULL(node);
 
   VfsFileDescription vfs_fd = {.node = node, .offset = 0};
-  FileDescription desc = {.type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
+  FileDescription desc = {
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
   uint8_t buf[4] = {};
   const int32_t n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
@@ -140,7 +143,8 @@ TEST(vfs, write_null_ops) {
   ASSERT_NOT_NULL(node);
 
   VfsFileDescription vfs_fd = {.node = node, .offset = 0};
-  FileDescription desc = {.type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
+  FileDescription desc = {
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
   const uint8_t data[] = "x";
   const int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 1));
@@ -171,7 +175,8 @@ TEST(vfs, ramfs_read_advances_offset) {
   // But since Vfs::open requires a scheduler, let's test at a lower level.
   // Build VfsFileDescription manually with the node.
   VfsFileDescription vfs_fd = {.node = node, .offset = 0};
-  FileDescription desc = {.type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
+  FileDescription desc = {
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
   // File nodes without ops should fail (we set ops to nullptr above).
   uint8_t buf[4] = {};
@@ -247,7 +252,8 @@ TEST(vfs, devfs_null_read_eof) {
   ASSERT_NOT_NULL(null_node);
 
   VfsFileDescription vfs_fd = {null_node, 0};
-  FileDescription desc = {.type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
+  FileDescription desc = {
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
   uint8_t buf[4] = {};
   const int32_t n = Vfs::read(&desc, std::span<uint8_t>(buf, sizeof(buf)));
@@ -262,7 +268,8 @@ TEST(vfs, devfs_null_write_discards) {
   ASSERT_NOT_NULL(null_node);
 
   VfsFileDescription vfs_fd = {null_node, 0};
-  FileDescription desc = {.type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
+  FileDescription desc = {
+      .type = FileType::VfsNode, .ref_count = 1, .pipe = nullptr, .vfs = &vfs_fd};
 
   const uint8_t data[] = "discard me";
   const int32_t n = Vfs::write(&desc, std::span<const uint8_t>(data, 10));

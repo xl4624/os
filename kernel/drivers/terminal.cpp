@@ -46,6 +46,9 @@ bool Terminal::init() {
   pitch_ = fi.pitch;
   bpp_ = fi.bpp;
 
+  rows_ = std::min(fi.height / kFontHeight, kMaxRows);
+  cols_ = std::min(fi.width / kFontWidth, kMaxColumns);
+
   active_ = true;
   clear();
   return true;
@@ -88,20 +91,20 @@ void Terminal::draw_cursor() {
   }
   // Draw an inverted block at the cursor position.
   auto inv_color = static_cast<uint8_t>(((color_ & 0x0F) << 4) | ((color_ >> 4) & 0x0F));
-  char ch = cells_[row_][col_].ch;
+  char ch = cells_[cursor_.row][cursor_.col].ch;
   if (ch == 0) {
     ch = ' ';
   }
-  draw_glyph(ch, inv_color, row_, col_);
+  draw_glyph(ch, inv_color, cursor_.row, cursor_.col);
 }
 
 void Terminal::erase_cursor() {
-  const Cell& cell = cells_[row_][col_];
+  const Cell& cell = cells_[cursor_.row][cursor_.col];
   char ch = cell.ch;
   if (ch == 0) {
     ch = ' ';
   }
-  draw_glyph(ch, cell.color, row_, col_);
+  draw_glyph(ch, cell.color, cursor_.row, cursor_.col);
 }
 
 void Terminal::write(const char* data) {
@@ -165,38 +168,38 @@ void Terminal::put_char(char c) {
   }
 
   if (c == '\r') {
-    col_ = 0;
+    cursor_.col = 0;
   } else if (c == '\n') {
-    col_ = 0;
-    if (++row_ == kRows) {
+    cursor_.col = 0;
+    if (++cursor_.row == rows_) {
       scroll();
     }
   } else if (c == '\b') {
-    if (col_ > 0) {
-      --col_;
-    } else if (row_ > 0) {
-      --row_;
-      size_t tmp = kColumns - 1;
-      while (tmp > 0 && cells_[row_][tmp - 1].ch == 0) {
+    if (cursor_.col > 0) {
+      --cursor_.col;
+    } else if (cursor_.row > 0) {
+      --cursor_.row;
+      size_t tmp = cols_ - 1;
+      while (tmp > 0 && cells_[cursor_.row][tmp - 1].ch == 0) {
         --tmp;
       }
-      col_ = tmp;
+      cursor_.col = tmp;
     }
-    cells_[row_][col_].ch = 0;
-    cells_[row_][col_].color = color_;
-    draw_glyph(' ', color_, row_, col_);
+    cells_[cursor_.row][cursor_.col].ch = 0;
+    cells_[cursor_.row][cursor_.col].color = color_;
+    draw_glyph(' ', color_, cursor_.row, cursor_.col);
   } else if (c == '\t') {
-    const size_t spaces = TAB_WIDTH - (col_ % TAB_WIDTH);
+    const size_t spaces = TAB_WIDTH - (cursor_.col % TAB_WIDTH);
     for (size_t i = 0; i < spaces; ++i) {
       put_char(' ');
     }
   } else {
-    cells_[row_][col_].ch = c;
-    cells_[row_][col_].color = color_;
-    draw_glyph(c, color_, row_, col_);
-    if (++col_ == kColumns) {
-      col_ = 0;
-      if (++row_ == kRows) {
+    cells_[cursor_.row][cursor_.col].ch = c;
+    cells_[cursor_.row][cursor_.col].color = color_;
+    draw_glyph(c, color_, cursor_.row, cursor_.col);
+    if (++cursor_.col == cols_) {
+      cursor_.col = 0;
+      if (++cursor_.row == rows_) {
         scroll();
       }
     }
@@ -218,29 +221,29 @@ void Terminal::handle_key(KeyEvent event) {
   erase_cursor();
   switch (event.key.value()) {
     case Key::Up:
-      if (row_ > 0) {
-        --row_;
+      if (cursor_.row > 0) {
+        --cursor_.row;
       }
       break;
     case Key::Down:
-      if (row_ < kRows - 1) {
-        ++row_;
+      if (cursor_.row < rows_ - 1) {
+        ++cursor_.row;
       }
       break;
     case Key::Left:
-      if (col_ > 0) {
-        --col_;
-      } else if (row_ > 0) {
-        --row_;
-        col_ = kColumns - 1;
+      if (cursor_.col > 0) {
+        --cursor_.col;
+      } else if (cursor_.row > 0) {
+        --cursor_.row;
+        cursor_.col = cols_ - 1;
       }
       break;
     case Key::Right:
-      if (col_ < kColumns - 1) {
-        ++col_;
-      } else if (row_ < kRows - 1) {
-        ++row_;
-        col_ = 0;
+      if (cursor_.col < cols_ - 1) {
+        ++cursor_.col;
+      } else if (cursor_.row < rows_ - 1) {
+        ++cursor_.row;
+        cursor_.col = 0;
       }
       break;
     default:
@@ -252,7 +255,7 @@ void Terminal::handle_key(KeyEvent event) {
 void Terminal::scroll() {
   // Save the top row into the scrollback ring buffer before shifting it out.
   const size_t slot = scrollback_head_;
-  for (size_t c = 0; c < kColumns; ++c) {
+  for (size_t c = 0; c < cols_; ++c) {
     scrollback_[slot][c] = cells_[0][c];
   }
   scrollback_head_ = (scrollback_head_ + 1) % kScrollbackLines;
@@ -261,56 +264,56 @@ void Terminal::scroll() {
   }
 
   // Shift all rows up by one in the live cell buffer.
-  memmove(&cells_[0], &cells_[1], sizeof(Cell) * kColumns * (kRows - 1));
+  memmove(&cells_[0], &cells_[1], sizeof(Cell) * cols_ * (rows_ - 1));
 
   // Clear the bottom row in the cell buffer.
-  for (size_t c = 0; c < kColumns; ++c) {
-    cells_[kRows - 1][c] = {.ch = 0, .color = color_};
+  for (size_t c = 0; c < cols_; ++c) {
+    cells_[rows_ - 1][c] = {.ch = 0, .color = color_};
   }
 
   // Only update the framebuffer if the user is viewing the live screen.
   if (active_ && scroll_offset_ == 0) {
     // Scroll framebuffer pixels: shift rows up by kFontHeight pixels.
     const uint32_t row_bytes = static_cast<uint32_t>(kFontHeight) * pitch_;
-    auto total_rows = static_cast<uint32_t>(kRows - 1);
+    auto total_rows = static_cast<uint32_t>(rows_ - 1);
     memmove(fb_, fb_ + row_bytes, total_rows * row_bytes);
 
     // Clear the bottom row of pixels with background color.
     const uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
-    auto start_y = static_cast<uint32_t>((kRows - 1) * kFontHeight);
+    auto start_y = static_cast<uint32_t>((rows_ - 1) * kFontHeight);
     for (uint32_t y = start_y; y < start_y + kFontHeight; ++y) {
       auto* row_ptr = reinterpret_cast<uint32_t*>(fb_ + (y * pitch_));
-      for (uint32_t x = 0; x < kColumns * kFontWidth; ++x) {
+      for (uint32_t x = 0; x < cols_ * kFontWidth; ++x) {
         row_ptr[x] = bg;
       }
       // Clear any remaining pixels to the right of the text area.
       const uint32_t fb_width = Framebuffer::info().width;
-      for (auto x = static_cast<uint32_t>(kColumns * kFontWidth); x < fb_width; ++x) {
+      for (auto x = static_cast<uint32_t>(cols_ * kFontWidth); x < fb_width; ++x) {
         row_ptr[x] = bg;
       }
     }
   }
 
-  --row_;
+  --cursor_.row;
 }
 
 void Terminal::redraw_all() {
   if (!active_) {
     return;
   }
-  // Draw kRows rows onto the framebuffer from history + live buffers.
+  // Draw rows_ rows onto the framebuffer from history + live buffers.
   // For screen row r (0=top), content is taken from N lines before the live
-  // bottom, where N = (kRows - 1 - r) + scroll_offset_.
-  //   N < kRows         => live cells_[kRows - 1 - N] = cells_[r - scroll_offset_]
-  //   N >= kRows        => scrollback, hist_back = N - kRows entries back from newest
-  for (size_t r = 0; r < kRows; ++r) {
-    const size_t offset_from_bottom = (kRows - 1U - r) + scroll_offset_;
+  // bottom, where N = (rows_ - 1 - r) + scroll_offset_.
+  //   N < rows_         => live cells_[rows_ - 1 - N] = cells_[r - scroll_offset_]
+  //   N >= rows_        => scrollback, hist_back = N - rows_ entries back from newest
+  for (size_t r = 0; r < rows_; ++r) {
+    const size_t offset_from_bottom = (rows_ - 1U - r) + scroll_offset_;
     const Cell* src_row = nullptr;
-    Cell blank_row[kColumns];
-    if (offset_from_bottom < kRows) {
-      src_row = cells_[kRows - 1U - offset_from_bottom];
+    Cell blank_row[kMaxColumns];
+    if (offset_from_bottom < rows_) {
+      src_row = cells_[rows_ - 1U - offset_from_bottom];
     } else {
-      const size_t hist_back = offset_from_bottom - kRows;  // 0 = most recently scrolled
+      const size_t hist_back = offset_from_bottom - rows_;  // 0 = most recently scrolled
       if (hist_back < lines_scrolled_) {
         const size_t idx =
             (scrollback_head_ + kScrollbackLines - 1U - hist_back) % kScrollbackLines;
@@ -323,7 +326,7 @@ void Terminal::redraw_all() {
         src_row = blank_row;
       }
     }
-    for (size_t c = 0; c < kColumns; ++c) {
+    for (size_t c = 0; c < cols_; ++c) {
       const char ch = src_row[c].ch != 0 ? src_row[c].ch : ' ';
       // Temporarily clear scroll_offset_ so draw_glyph actually draws.
       const size_t saved = scroll_offset_;
@@ -347,7 +350,7 @@ void Terminal::scroll_view(int delta) {
 }
 
 void Terminal::clear_line(size_t row) {
-  for (size_t c = 0; c < kColumns; ++c) {
+  for (size_t c = 0; c < cols_; ++c) {
     cells_[row][c] = {.ch = 0, .color = color_};
     draw_glyph(' ', color_, row, c);
   }
@@ -379,20 +382,20 @@ void Terminal::clear() {
     }
   }
 
-  row_ = 0;
-  col_ = 0;
+  cursor_.row = 0;
+  cursor_.col = 0;
 }
 
 void Terminal::set_position(size_t row, size_t col) {
   erase_cursor();
-  if (row >= kRows) {
-    row = kRows - 1;
+  if (row >= rows_) {
+    row = rows_ - 1;
   }
-  if (col >= kColumns) {
-    col = kColumns - 1;
+  if (col >= cols_) {
+    col = cols_ - 1;
   }
-  row_ = row;
-  col_ = col;
+  cursor_.row = row;
+  cursor_.col = col;
   draw_cursor();
 }
 
@@ -406,27 +409,27 @@ void Terminal::dispatch_csi(char final_byte) {
     case 'f': {
       auto row = static_cast<size_t>((p0 == 0 ? 1 : p0) - 1);
       auto col = static_cast<size_t>((p1 == 0 ? 1 : p1) - 1);
-      if (row >= kRows) {
-        row = kRows - 1;
+      if (row >= rows_) {
+        row = rows_ - 1;
       }
-      if (col >= kColumns) {
-        col = kColumns - 1;
+      if (col >= cols_) {
+        col = cols_ - 1;
       }
-      row_ = row;
-      col_ = col;
+      cursor_.row = row;
+      cursor_.col = col;
       break;
     }
     case 'A':
-      row_ -= MIN(n, row_);
+      cursor_.row -= MIN(n, cursor_.row);
       break;
     case 'B':
-      row_ = MIN(row_ + n, kRows - 1U);
+      cursor_.row = MIN(cursor_.row + n, rows_ - 1U);
       break;
     case 'C':
-      col_ = MIN(col_ + n, kColumns - 1U);
+      cursor_.col = MIN(cursor_.col + n, cols_ - 1U);
       break;
     case 'D':
-      col_ -= MIN(n, col_);
+      cursor_.col -= MIN(n, cursor_.col);
       break;
     case 'J':
       if (p0 == 2) {
@@ -446,19 +449,19 @@ void Terminal::dispatch_csi(char final_byte) {
     case 'K':
       // Erase from cursor to end of line (only EL 0 / default supported).
       if (p0 == 0) {
-        for (size_t c = col_; c < kColumns; ++c) {
-          cells_[row_][c] = {.ch = 0, .color = color_};
-          draw_glyph(' ', color_, row_, c);
+        for (size_t c = cursor_.col; c < cols_; ++c) {
+          cells_[cursor_.row][c] = {.ch = 0, .color = color_};
+          draw_glyph(' ', color_, cursor_.row, c);
         }
       }
       break;
     case 'G': {
       // Cursor horizontal absolute: move to column n (1-based).
       auto new_col = static_cast<size_t>((p0 == 0 ? 1U : static_cast<size_t>(p0)) - 1U);
-      if (new_col >= kColumns) {
-        new_col = kColumns - 1U;
+      if (new_col >= cols_) {
+        new_col = cols_ - 1U;
       }
-      col_ = new_col;
+      cursor_.col = new_col;
       break;
     }
     case 'm':

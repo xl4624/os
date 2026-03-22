@@ -35,6 +35,79 @@ constexpr void swap(T (&a)[N], T (&b)[N]) noexcept {
   }
 }
 
+template <typename T1, typename T2>
+struct pair {
+  using first_type = T1;
+  using second_type = T2;
+
+  T1 first;
+  T2 second;
+
+  constexpr pair() : first(), second() {}
+  constexpr pair(const T1& a, const T2& b) : first(a), second(b) {}
+
+  template <typename U1, typename U2>
+  constexpr pair(U1&& a, U2&& b) : first(std::forward<U1>(a)), second(std::forward<U2>(b)) {}
+
+  template <typename U1, typename U2>
+  constexpr pair(const pair<U1, U2>& other) : first(other.first), second(other.second) {}
+
+  template <typename U1, typename U2>
+  constexpr pair(pair<U1, U2>&& other)
+      : first(std::forward<U1>(other.first)), second(std::forward<U2>(other.second)) {}
+
+  pair(const pair&) = default;
+  pair(pair&&) = default;
+  pair& operator=(const pair&) = default;
+  pair& operator=(pair&&) = default;
+
+  constexpr void swap(pair& other) noexcept {
+    std::swap(first, other.first);
+    std::swap(second, other.second);
+  }
+};
+
+template <typename T1, typename T2>
+constexpr bool operator==(const pair<T1, T2>& a, const pair<T1, T2>& b) {
+  return a.first == b.first && a.second == b.second;
+}
+
+template <typename T1, typename T2>
+constexpr bool operator!=(const pair<T1, T2>& a, const pair<T1, T2>& b) {
+  return !(a == b);
+}
+
+template <typename T1, typename T2>
+constexpr bool operator<(const pair<T1, T2>& a, const pair<T1, T2>& b) {
+  if (a.first < b.first) return true;
+  if (b.first < a.first) return false;
+  return a.second < b.second;
+}
+
+template <typename T1, typename T2>
+constexpr bool operator>(const pair<T1, T2>& a, const pair<T1, T2>& b) {
+  return b < a;
+}
+
+template <typename T1, typename T2>
+constexpr bool operator<=(const pair<T1, T2>& a, const pair<T1, T2>& b) {
+  return !(b < a);
+}
+
+template <typename T1, typename T2>
+constexpr bool operator>=(const pair<T1, T2>& a, const pair<T1, T2>& b) {
+  return !(a < b);
+}
+
+template <typename T1, typename T2>
+constexpr pair<decay_t<T1>, decay_t<T2>> make_pair(T1&& a, T2&& b) {
+  return pair<decay_t<T1>, decay_t<T2>>(std::forward<T1>(a), std::forward<T2>(b));
+}
+
+// Deduction guide: pair{1, 2.0} -> pair<int, double>
+template <typename T1, typename T2>
+pair(T1, T2) -> pair<T1, T2>;
+
 template <typename...>
 using void_t = void;
 

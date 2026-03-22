@@ -519,4 +519,32 @@ struct aligned_storage {
 template <typename T>
 using aligned_storage_t = typename aligned_storage<T>::type;
 
+// Integer sequence utilities for variadic template programming.
+template <typename T, T... Is>
+struct integer_sequence {
+  using value_type = T;
+  static constexpr size_t size() noexcept { return sizeof...(Is); }
+};
+
+template <size_t... Is>
+using index_sequence = integer_sequence<size_t, Is...>;
+
+namespace detail {
+
+template <size_t N, size_t... Is>
+struct MakeIndexSequenceImpl : MakeIndexSequenceImpl<N - 1, N - 1, Is...> {};
+
+template <size_t... Is>
+struct MakeIndexSequenceImpl<0, Is...> {
+  using type = index_sequence<Is...>;
+};
+
+}  // namespace detail
+
+template <size_t N>
+using make_index_sequence = typename detail::MakeIndexSequenceImpl<N>::type;
+
+template <typename... Ts>
+using index_sequence_for = make_index_sequence<sizeof...(Ts)>;
+
 }  // namespace std

@@ -358,7 +358,7 @@ static void emit_fd(char c, void* ctx_) {
 
 // NOLINTNEXTLINE(misc-const-correctness)
 int vfprintf(FILE* file, const char* __restrict__ format, va_list ap) {
-  struct fd_ctx ctx = {file->fd, {0}, 0};
+  struct fd_ctx ctx = {.fd = file->fd, .buf = {0}, .len = 0};
   int ret = vformat(emit_fd, (void*)&ctx, format, ap);
   fd_ctx_flush(&ctx);
   return ret;

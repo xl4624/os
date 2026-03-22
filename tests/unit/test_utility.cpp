@@ -61,8 +61,8 @@ TEST(utility, swap_class) {
   struct Point {
     int x, y;
   };
-  Point p = {1, 2};
-  Point q = {3, 4};
+  Point p = {.x = 1, .y = 2};
+  Point q = {.x = 3, .y = 4};
   std::swap(p, q);
   ASSERT_EQ(p.x, 3);
   ASSERT_EQ(p.y, 4);

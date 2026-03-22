@@ -29,7 +29,12 @@ struct TtyState {
   size_t line_pos;  // bytes already handed to the caller
 };
 
-TtyState tty_state = {{0, 0, 0, ICANON | ECHO | ECHOE | ISIG, {}}, {}, 0, 0};
+TtyState tty_state = {
+    .termios = {.c_iflag = 0, .c_oflag = 0, .c_cflag = 0, .c_lflag = ICANON | ECHO | ECHOE | ISIG, .c_cc = {}},
+    .line_buf = {},
+    .line_len = 0,
+    .line_pos = 0,
+};
 
 // ===========================================================================
 // devfs operations

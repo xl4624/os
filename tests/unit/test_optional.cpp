@@ -154,7 +154,7 @@ TEST(optional, arrow_operator) {
   struct Point {
     int x, y;
   };
-  std::optional<Point> o = Point{3, 4};
+  std::optional<Point> o = Point{.x = 3, .y = 4};
   ASSERT_EQ(o->x, 3);
   ASSERT_EQ(o->y, 4);
 }

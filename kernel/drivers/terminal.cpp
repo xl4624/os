@@ -265,7 +265,7 @@ void Terminal::scroll() {
 
   // Clear the bottom row in the cell buffer.
   for (size_t c = 0; c < kColumns; ++c) {
-    cells_[kRows - 1][c] = {0, color_};
+    cells_[kRows - 1][c] = {.ch = 0, .color = color_};
   }
 
   // Only update the framebuffer if the user is viewing the live screen.
@@ -318,7 +318,7 @@ void Terminal::redraw_all() {
       } else {
         // Beyond available history; draw a blank row.
         for (auto& c : blank_row) {
-          c = {0, 0x07};
+          c = {.ch = 0, .color = 0x07};
         }
         src_row = blank_row;
       }
@@ -348,7 +348,7 @@ void Terminal::scroll_view(int delta) {
 
 void Terminal::clear_line(size_t row) {
   for (size_t c = 0; c < kColumns; ++c) {
-    cells_[row][c] = {0, color_};
+    cells_[row][c] = {.ch = 0, .color = color_};
     draw_glyph(' ', color_, row, c);
   }
 }
@@ -363,7 +363,7 @@ void Terminal::clear() {
   const uint32_t bg = color_to_rgb((color_ >> 4) & 0x0F);
   for (auto& row : cells_) {
     for (Cell& cell : row) {
-      cell = {0, color_};
+      cell = {.ch = 0, .color = color_};
     }
   }
 
@@ -447,7 +447,7 @@ void Terminal::dispatch_csi(char final_byte) {
       // Erase from cursor to end of line (only EL 0 / default supported).
       if (p0 == 0) {
         for (size_t c = col_; c < kColumns; ++c) {
-          cells_[row_][c] = {0, color_};
+          cells_[row_][c] = {.ch = 0, .color = color_};
           draw_glyph(' ', color_, row_, c);
         }
       }

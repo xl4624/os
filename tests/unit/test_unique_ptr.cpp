@@ -145,7 +145,7 @@ TEST(unique_ptr, arrow_operator) {
   struct Point {
     int x, y;
   };
-  std::unique_ptr<Point> p = std::make_unique<Point>(Point{3, 4});
+  std::unique_ptr<Point> p = std::make_unique<Point>(Point{.x = 3, .y = 4});
   ASSERT_EQ(p->x, 3);
   ASSERT_EQ(p->y, 4);
   p->x = 10;

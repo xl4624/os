@@ -151,7 +151,7 @@ TEST(array, struct_element) {
   struct Point {
     int x, y;
   };
-  std::array<Point, 2> pts = {Point{1, 2}, Point{3, 4}};
+  std::array<Point, 2> pts = {Point{.x = 1, .y = 2}, Point{.x = 3, .y = 4}};
   ASSERT_EQ(pts[0].x, 1);
   ASSERT_EQ(pts[1].y, 4);
   pts[0].x = 10;

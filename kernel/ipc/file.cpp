@@ -14,8 +14,8 @@ static constexpr uint16_t kDebugconPort = 0xE9;
 // Terminal singletons
 // ===========================================================================
 
-static FileDescription g_terminal_read = {FileType::TerminalRead, 1, nullptr, nullptr};
-static FileDescription g_terminal_write = {FileType::TerminalWrite, 1, nullptr, nullptr};
+static FileDescription g_terminal_read = {.type = FileType::TerminalRead, .ref_count = 1, .pipe = nullptr, .vfs = nullptr};
+static FileDescription g_terminal_write = {.type = FileType::TerminalWrite, .ref_count = 1, .pipe = nullptr, .vfs = nullptr};
 
 // ===========================================================================
 // File operations dispatch

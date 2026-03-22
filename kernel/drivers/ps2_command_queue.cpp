@@ -5,8 +5,8 @@
 PS2CommandQueue::PS2CommandQueue() = default;
 
 bool PS2CommandQueue::send_command(PS2Command command) {
-  const PS2CommandEntry entry{/*command=*/command, /*parameter=*/0,
-                              /*has_parameter=*/false, /*retry_count=*/0};
+  const PS2CommandEntry entry{.command = command, .parameter = 0,
+                              .has_parameter = false, .retry_count = 0};
   if (!queue_.push(entry)) {
     return false;
   }
@@ -17,8 +17,8 @@ bool PS2CommandQueue::send_command(PS2Command command) {
 }
 
 bool PS2CommandQueue::send_command_with_param(PS2Command command, uint8_t parameter) {
-  const PS2CommandEntry entry{/*command=*/command, /*parameter=*/parameter,
-                              /*has_parameter=*/true, /*retry_count=*/0};
+  const PS2CommandEntry entry{.command = command, .parameter = parameter,
+                              .has_parameter = true, .retry_count = 0};
   if (!queue_.push(entry)) {
     return false;
   }

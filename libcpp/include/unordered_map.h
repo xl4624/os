@@ -185,6 +185,8 @@ class unordered_map {
     bool operator!=(const const_iterator& other) const { return node_ != other.node_; }
 
    private:
+    friend class unordered_map;
+
     void advance_to_valid() {
       while (bucket_ < map_->bucket_count() && map_->buckets_[bucket_] == nullptr) {
         ++bucket_;

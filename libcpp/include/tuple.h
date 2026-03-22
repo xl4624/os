@@ -22,13 +22,19 @@ struct TupleLeaf {
 template <typename IndexSeq, typename... Ts>
 struct TupleImpl;
 
+// Empty specialization to avoid ambiguous constructors.
+template <>
+struct TupleImpl<index_sequence<>> {
+  constexpr TupleImpl() = default;
+};
+
 template <size_t... Is, typename... Ts>
 struct TupleImpl<index_sequence<Is...>, Ts...> : TupleLeaf<Is, Ts>... {
   constexpr TupleImpl() = default;
 
   explicit constexpr TupleImpl(const Ts&... args) : TupleLeaf<Is, Ts>(args)... {}
 
-  template <typename... Us>
+  template <typename... Us, enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
   explicit constexpr TupleImpl(Us&&... args) : TupleLeaf<Is, Ts>(std::forward<Us>(args))... {}
 };
 
@@ -41,13 +47,20 @@ class tuple : public TupleImpl<make_index_sequence<sizeof...(Ts)>, Ts...> {
 
   explicit constexpr tuple(const Ts&... args) : Base(args...) {}
 
-  template <typename... Us>
+  template <typename... Us, enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
   explicit constexpr tuple(Us&&... args) : Base(std::forward<Us>(args)...) {}
 
   tuple(const tuple&) = default;
   tuple(tuple&&) = default;
   tuple& operator=(const tuple&) = default;
   tuple& operator=(tuple&&) = default;
+};
+
+// Specialization for empty tuple.
+template <>
+class tuple<> {
+ public:
+  constexpr tuple() = default;
 };
 
 // Deduction guide.

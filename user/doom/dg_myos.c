@@ -92,7 +92,7 @@ void DG_SleepMs(uint32_t ms) { msleep(ms); }
 uint32_t DG_GetTicksMs(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint32_t)ts.tv_sec * 1000 + (uint32_t)(ts.tv_nsec / 1000000);
+  return ((uint32_t)ts.tv_sec * 1000) + (uint32_t)(ts.tv_nsec / 1000000);
 }
 
 int DG_GetKey(int* pressed, unsigned char* doomKey) {

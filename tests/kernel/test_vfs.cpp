@@ -34,6 +34,63 @@ const VfsOps write_only_ops = {.read = nullptr, .write = counting_write, .ioctl 
 }  // namespace
 
 // ===========================================================================
+// Vfs::is_directory
+// ===========================================================================
+
+TEST(vfs, is_directory_root) {
+  Vfs::init();
+  ASSERT_TRUE(Vfs::is_directory("/"));
+}
+
+TEST(vfs, is_directory_root_trailing_slash) {
+  Vfs::init();
+  // "/" with a trailing slash is still root.
+  ASSERT_TRUE(Vfs::is_directory("/"));
+}
+
+TEST(vfs, is_directory_with_child) {
+  Vfs::init();
+  ASSERT_NOT_NULL(Vfs::register_node("/bin/sh", VfsNodeType::File, &counting_ops));
+  ASSERT_TRUE(Vfs::is_directory("/bin"));
+}
+
+TEST(vfs, is_directory_trailing_slash) {
+  Vfs::init();
+  ASSERT_NOT_NULL(Vfs::register_node("/bin/sh", VfsNodeType::File, &counting_ops));
+  // Trailing slash should be stripped before the lookup.
+  ASSERT_TRUE(Vfs::is_directory("/bin/"));
+}
+
+TEST(vfs, is_directory_nonexistent) {
+  Vfs::init();
+  ASSERT_NOT_NULL(Vfs::register_node("/bin/sh", VfsNodeType::File, &counting_ops));
+  ASSERT_FALSE(Vfs::is_directory("/nonexistent"));
+}
+
+TEST(vfs, is_directory_leaf_is_not_dir) {
+  Vfs::init();
+  ASSERT_NOT_NULL(Vfs::register_node("/bin/sh", VfsNodeType::File, &counting_ops));
+  // A leaf node with no children is not a directory.
+  ASSERT_FALSE(Vfs::is_directory("/bin/sh"));
+}
+
+TEST(vfs, is_directory_no_prefix_confusion) {
+  Vfs::init();
+  ASSERT_NOT_NULL(Vfs::register_node("/binary/foo", VfsNodeType::File, &counting_ops));
+  // "/bin" must NOT match just because "/binary/foo" exists.
+  ASSERT_FALSE(Vfs::is_directory("/bin"));
+  ASSERT_TRUE(Vfs::is_directory("/binary"));
+}
+
+TEST(vfs, is_directory_nested) {
+  Vfs::init();
+  ASSERT_NOT_NULL(Vfs::register_node("/a/b/c", VfsNodeType::File, &counting_ops));
+  ASSERT_TRUE(Vfs::is_directory("/a"));
+  ASSERT_TRUE(Vfs::is_directory("/a/b"));
+  ASSERT_FALSE(Vfs::is_directory("/a/b/c"));
+}
+
+// ===========================================================================
 // Vfs::init / register_node / lookup
 // ===========================================================================
 
@@ -74,9 +131,10 @@ TEST(vfs, register_multiple_nodes) {
 
 TEST(vfs, register_name_too_long) {
   Vfs::init();
-  // Build a name exactly kMaxPathLen characters long (no room for null).
+  // Build an absolute path exactly kMaxPathLen characters long (no room for null).
   char long_name[kMaxPathLen + 1];
-  memset(long_name, 'x', kMaxPathLen);
+  long_name[0] = '/';
+  memset(long_name + 1, 'x', kMaxPathLen - 1);
   long_name[kMaxPathLen] = '\0';
 
   const VfsNode* node = Vfs::register_node(long_name, VfsNodeType::File, &counting_ops);

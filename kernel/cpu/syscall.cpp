@@ -156,6 +156,68 @@ static int32_t sys_getpid([[maybe_unused]] TrapFrame* regs) {
   return static_cast<int32_t>(Scheduler::current()->pid);
 }
 
+// Resolves '.' and '..' components in an absolute path in-place.
+// path must start with '/'. size is the buffer capacity.
+static void canonicalize_path(char* path, size_t size) {
+  assert(path != nullptr);
+  assert(path[0] == '/');
+  assert(size >= 2);
+  char out[128];
+  size_t out_len = 1;
+  out[0] = '/';
+
+  const char* p = path;
+  if (*p == '/') {
+    ++p;
+  }
+
+  while (*p != '\0') {
+    while (*p == '/') {
+      ++p;
+    }
+    if (*p == '\0') {
+      break;
+    }
+
+    const char* start = p;
+    while (*p != '\0' && *p != '/') {
+      ++p;
+    }
+    const auto comp_len = static_cast<size_t>(p - start);
+
+    if (comp_len == 1 && start[0] == '.') {
+      // '.' -- skip
+    } else if (comp_len == 2 && start[0] == '.' && start[1] == '.') {
+      // '..' -- go up one level
+      if (out_len > 1) {
+        --out_len;
+        while (out_len > 1 && out[out_len - 1] != '/') {
+          --out_len;
+        }
+        if (out_len > 1) {
+          --out_len;
+        }
+      }
+    } else {
+      // At root (out_len==1) the leading '/' is already present; otherwise
+      // insert a '/' separator between components.
+      const bool at_root = (out_len == 1);
+      const size_t needed = out_len + (at_root ? 0U : 1U) + comp_len + 1U;
+      if (needed > size) {
+        break;
+      }
+      if (!at_root) {
+        out[out_len++] = '/';
+      }
+      memcpy(out + out_len, start, comp_len);
+      out_len += comp_len;
+    }
+  }
+
+  out[out_len] = '\0';
+  memcpy(path, out, out_len + 1);
+}
+
 // SYS_OPEN(path=ebx)
 // Opens a file by path. Returns fd on success, or negative errno on failure.
 // Supports relative paths by prepending the process CWD.
@@ -184,10 +246,14 @@ static int32_t sys_open(TrapFrame* regs) {
     } else {
       memcpy(abs_path + cwd_len, upath, path_len + 1);
     }
-    upath = abs_path;
+  } else {
+    strncpy(abs_path, upath, sizeof(abs_path) - 1);
+    abs_path[sizeof(abs_path) - 1] = '\0';
   }
 
-  const int32_t fd = Vfs::open(upath);
+  canonicalize_path(abs_path, sizeof(abs_path));
+
+  const int32_t fd = Vfs::open(abs_path);
   return fd >= 0 ? fd : -ENOENT;
 }
 
@@ -221,10 +287,10 @@ static int32_t sys_chdir(TrapFrame* regs) {
     path = abs_path;
   }
 
-  // Strip trailing slash (unless root).
   char norm[128];
   strncpy(norm, path, sizeof(norm) - 1);
   norm[sizeof(norm) - 1] = '\0';
+  canonicalize_path(norm, sizeof(norm));
   const size_t nlen = strlen(norm);
   if (nlen > 1 && norm[nlen - 1] == '/') {
     norm[nlen - 1] = '\0';

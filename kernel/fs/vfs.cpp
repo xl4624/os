@@ -1,6 +1,7 @@
 #include "vfs.h"
 
 #include <algorithm.h>
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/fb.h>
@@ -281,6 +282,8 @@ void init() {
 }
 
 VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops) {
+  assert(path != nullptr);
+  assert(path[0] == '/');
   if (node_count >= kMaxVfsNodes) {
     return nullptr;
   }
@@ -300,6 +303,8 @@ VfsNode* register_node(const char* path, VfsNodeType type, const VfsOps* ops) {
 }
 
 VfsNode* lookup(const char* path) {
+  assert(path != nullptr);
+  assert(path[0] == '/');
   for (uint32_t i = 0; i < node_count; ++i) {
     if (strcmp(node_table[i].name, path) == 0) {
       return &node_table[i];
@@ -309,6 +314,8 @@ VfsNode* lookup(const char* path) {
 }
 
 int32_t open(const char* path) {
+  assert(path != nullptr);
+  assert(path[0] == '/');
   VfsNode* node = lookup(path);
   if (node == nullptr) {
     return -1;
@@ -340,6 +347,7 @@ int32_t open(const char* path) {
 }
 
 int32_t read(FileDescription* fd, std::span<uint8_t> buf) {
+  assert(fd != nullptr);
   auto* vfs_fd = fd->vfs;
   if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
       (vfs_fd->node->ops->read == nullptr)) {
@@ -354,6 +362,7 @@ int32_t read(FileDescription* fd, std::span<uint8_t> buf) {
 }
 
 int32_t write(FileDescription* fd, std::span<const uint8_t> buf) {
+  assert(fd != nullptr);
   auto* vfs_fd = fd->vfs;
   if ((vfs_fd == nullptr) || (vfs_fd->node == nullptr) || (vfs_fd->node->ops == nullptr) ||
       (vfs_fd->node->ops->write == nullptr)) {
@@ -368,6 +377,7 @@ int32_t write(FileDescription* fd, std::span<const uint8_t> buf) {
 }
 
 void close(FileDescription* fd) {
+  assert(fd != nullptr);
   if (fd->vfs != nullptr) {
     delete fd->vfs;
     fd->vfs = nullptr;
@@ -376,7 +386,9 @@ void close(FileDescription* fd) {
 }
 
 bool is_directory(const char* path) {
-  if (path == nullptr || path[0] != '/') {
+  assert(path != nullptr);
+  assert(path[0] == '/');
+  if (path[0] != '/') {
     return false;
   }
   // Root is always a valid directory.
@@ -408,7 +420,10 @@ bool is_directory(const char* path) {
 }
 
 uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
-  if (path == nullptr || path[0] != '/' || entries == nullptr || max_entries == 0) {
+  assert(path != nullptr);
+  assert(path[0] == '/');
+  assert(entries != nullptr);
+  if (max_entries == 0) {
     return 0;
   }
 
@@ -514,18 +529,12 @@ uint32_t getdents(const char* path, dirent* entries, uint32_t max_entries) {
 }
 
 void init_devfs() {
-  auto* tty = register_node("/dev/tty", VfsNodeType::CharDev, &tty_ops);
-  (void)tty;
-
-  auto* null = register_node("/dev/null", VfsNodeType::CharDev, &null_ops);
-  (void)null;
-
-  auto* kbd = register_node("/dev/kbd", VfsNodeType::CharDev, &kbd_ops);
-  (void)kbd;
+  assert(register_node("/dev/tty", VfsNodeType::CharDev, &tty_ops) != nullptr);
+  assert(register_node("/dev/null", VfsNodeType::CharDev, &null_ops) != nullptr);
+  assert(register_node("/dev/kbd", VfsNodeType::CharDev, &kbd_ops) != nullptr);
 
   if (Framebuffer::is_available()) {
-    auto* fb = register_node("/dev/fb", VfsNodeType::CharDev, &fb_ops);
-    (void)fb;
+    assert(register_node("/dev/fb", VfsNodeType::CharDev, &fb_ops) != nullptr);
   }
 }
 

@@ -7,7 +7,7 @@ void _exit(int status) {
   __builtin_unreachable();
 }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 
 #include <sys/syscall.h>
 

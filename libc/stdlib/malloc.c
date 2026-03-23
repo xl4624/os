@@ -17,7 +17,7 @@ void* calloc(size_t nmemb, size_t size) { return kcalloc(nmemb, size); }
 
 void* realloc(void* ptr, size_t size) { return krealloc(ptr, size); }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 
 #include <unistd.h>
 

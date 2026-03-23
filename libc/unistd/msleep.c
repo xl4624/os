@@ -4,7 +4,7 @@
 
 void msleep(unsigned int ms) { (void)ms; }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 
 #include <stdint.h>
 #include <sys/syscall.h>

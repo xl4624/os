@@ -9,7 +9,7 @@ int fb_flip(const void* src, unsigned int w, unsigned int h) {
   (void)h;
   return -1;
 }
-#elif defined(__is_libc)
+#else /* __is_libc */
 int fb_flip(const void* src, unsigned int w, unsigned int h) {
   int32_t ret;
   __asm__ volatile("int $0x80" : "=a"(ret) : "a"(SYS_FB_FLIP), "b"(src), "c"(w), "d"(h));

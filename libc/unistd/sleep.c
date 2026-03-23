@@ -7,7 +7,7 @@ unsigned int sleep(unsigned int seconds) {
   return 0;
 }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 
 #include <stdint.h>
 #include <sys/syscall.h>

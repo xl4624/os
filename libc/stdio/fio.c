@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifndef __is_libc
+#ifdef __is_libk
 
 int remove(const char* path) {
   (void)path;
@@ -198,4 +198,4 @@ int fflush(FILE* file) {
 
 int remove(const char* path) { return unlink(path); }
 
-#endif /* __is_libc */
+#endif

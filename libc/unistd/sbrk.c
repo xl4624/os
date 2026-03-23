@@ -7,7 +7,7 @@ void* sbrk(int increment) {
   return (void*)-1;
 }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 
 #include <errno.h>
 #include <stdint.h>

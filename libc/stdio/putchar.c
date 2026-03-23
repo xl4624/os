@@ -9,7 +9,7 @@ int putchar(int c) {
   return c;
 }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 #include <unistd.h>
 
 int putchar(int c) {

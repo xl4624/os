@@ -8,7 +8,7 @@ int exec(const char* path, char* const argv[]) {
   return -1;
 }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 
 #include <stdint.h>
 #include <sys/syscall.h>

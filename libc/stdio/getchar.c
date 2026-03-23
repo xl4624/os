@@ -6,7 +6,7 @@
 
 int getchar(void) { return keyboard_getchar(); }
 
-#elif defined(__is_libc)
+#else /* __is_libc */
 
 #include <unistd.h>
 

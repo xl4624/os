@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness)
 #include <map.h>
 
 #include "../framework/test.h"
@@ -212,3 +213,4 @@ TEST(map, many_erases) {
     expected += 2;
   }
 }
+// NOLINTEND(misc-const-correctness)

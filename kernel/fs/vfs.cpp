@@ -12,9 +12,9 @@
 
 #include "framebuffer.h"
 #include "keyboard.h"
-#include "terminal.h"
 #include "modules.h"
 #include "scheduler.h"
+#include "terminal.h"
 #include "tty.h"
 
 namespace {
@@ -899,9 +899,7 @@ int32_t ioctl(FileDescription* fd, uint32_t request, void* arg) {
   return vfs_fd->node->ops->ioctl(vfs_fd->node, request, arg);
 }
 
-int32_t tty_ioctl(uint32_t request, void* arg) {
-  return ::tty_ioctl(nullptr, request, arg);
-}
+int32_t tty_ioctl(uint32_t request, void* arg) { return ::tty_ioctl(nullptr, request, arg); }
 
 void init_ramfs() {
   for (uint32_t i = 0; i < Modules::count(); ++i) {

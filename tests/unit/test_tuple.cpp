@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness,performance-move-const-arg)
 #include <tuple.h>
 
 #include "../framework/test.h"
@@ -143,3 +144,4 @@ TEST(tuple, empty_tuple) {
   static_assert(std::tuple_size_v<decltype(t)> == 0);
   ASSERT_EQ(std::tuple_size_v<decltype(t)>, 0U);
 }
+// NOLINTEND(misc-const-correctness,performance-move-const-arg)

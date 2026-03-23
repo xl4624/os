@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness,readability-isolate-declaration)
 #include <functional.h>
 
 #include "../framework/test.h"
@@ -125,3 +126,4 @@ TEST(function, reassign_different_callable) {
   f = [](int x) { return x * 2; };
   ASSERT_EQ(f(5), 10);
 }
+// NOLINTEND(misc-const-correctness,readability-isolate-declaration)

@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness,modernize-make-shared,performance-unnecessary-copy-initialization)
 #include <memory.h>
 
 #include "../framework/test.h"
@@ -210,3 +211,4 @@ TEST(shared_ptr, assign_nullptr) {
   ASSERT_NULL(p.get());
   ASSERT_EQ(p.use_count(), 0U);
 }
+// NOLINTEND(misc-const-correctness,modernize-make-shared,performance-unnecessary-copy-initialization)

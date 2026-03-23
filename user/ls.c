@@ -1,10 +1,6 @@
 #include <dirent.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
-
-/* getdents is declared in dirent.h but the libc wrapper lives in unistd/ */
-int getdents(const char* path, struct dirent* buf, unsigned int count);
 
 int main(int argc, char* argv[]) {
   const char* path = "/";
@@ -19,15 +15,14 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  static struct dirent entries[64];
-  int n = getdents(path, entries, 64);
-  if (n < 0) {
+  DIR* d = opendir(path);
+  if (d == NULL) {
     printf("ls: %s: no such directory\n", path);
     return 1;
   }
 
-  for (int i = 0; i < n; ++i) {
-    const struct dirent* e = &entries[i];
+  const struct dirent* e;
+  while ((e = readdir(d)) != NULL) {
     if (e->d_type == DT_DIR) {
       printf("%s/\n", e->d_name);
     } else if (e->d_type == DT_CHR) {
@@ -36,5 +31,6 @@ int main(int argc, char* argv[]) {
       printf("%-24s  %u bytes\n", e->d_name, e->d_size);
     }
   }
+  closedir(d);
   return 0;
 }

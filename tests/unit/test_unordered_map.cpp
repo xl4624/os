@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness)
 #include <unordered_map.h>
 
 #include "../framework/test.h"
@@ -180,3 +181,4 @@ TEST(unordered_map, emplace) {
   ASSERT_FALSE(inserted2);
   ASSERT_EQ(it2->second, 50);
 }
+// NOLINTEND(misc-const-correctness)

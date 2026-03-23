@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness)
 #include <list.h>
 
 #include "../framework/test.h"
@@ -236,3 +237,4 @@ TEST(list, destructor_frees_all) {
   }
   ASSERT_EQ(Tracker::alive, 0);
 }
+// NOLINTEND(misc-const-correctness)

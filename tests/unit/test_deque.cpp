@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness)
 #include <deque.h>
 
 #include "../framework/test.h"
@@ -196,3 +197,4 @@ TEST(deque, equality) {
   ASSERT_TRUE(a == b);
   ASSERT_TRUE(a != c);
 }
+// NOLINTEND(misc-const-correctness)

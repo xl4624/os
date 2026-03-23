@@ -1,3 +1,4 @@
+// NOLINTBEGIN(misc-const-correctness,performance-move-const-arg)
 #include <utility.h>
 
 #include "../framework/test.h"
@@ -123,3 +124,4 @@ TEST(pair, deduction_guide) {
   static_assert(std::is_same_v<decltype(p.second), double>);
   ASSERT_EQ(p.first, 42);
 }
+// NOLINTEND(misc-const-correctness,performance-move-const-arg)

@@ -1,4 +1,5 @@
 #include <math.h>
+#include <numbers.h>
 
 #include "../framework/test.h"
 
@@ -8,8 +9,8 @@
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
-constexpr double kE = 2.71828182845904523536;
+constexpr double kPi = std::numbers::pi;
+constexpr double kE = std::numbers::e;
 
 // Absolute-value epsilon comparison for doubles.
 bool near(double a, double b, double eps = 1e-9) {

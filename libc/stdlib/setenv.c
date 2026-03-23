@@ -37,7 +37,7 @@ int setenv(const char* name, const char* value, int overwrite) {
         errno = ENOMEM;
         return -1;
       }
-      memcpy(s, name, nlen);
+      strcpy(s, name);
       s[nlen] = '=';
       strcpy(s + nlen + 1, value);
       // Ensure we own the array before writing into it.
@@ -87,7 +87,7 @@ int setenv(const char* name, const char* value, int overwrite) {
     errno = ENOMEM;
     return -1;
   }
-  memcpy(s, name, nlen);
+  strcpy(s, name);
   s[nlen] = '=';
   strcpy(s + nlen + 1, value);
   new_env[n] = s;

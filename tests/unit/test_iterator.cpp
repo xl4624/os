@@ -1,5 +1,6 @@
 #include <array.h>
 #include <iterator.h>
+#include <ranges.h>
 
 #include "../framework/test.h"
 
@@ -110,8 +111,8 @@ TEST(reverse_iterator, const_reverse_iterator) {
 TEST(reverse_iterator, crbegin_crend) {
   const std::array<int, 4> a = {1, 2, 3, 4};
   int sum = 0;
-  for (auto it = a.crbegin(); it != a.crend(); ++it) {
-    sum += *it;
+  for (int it : std::views::reverse(a)) {
+    sum += it;
   }
   ASSERT_EQ(sum, 10);
 }
@@ -160,8 +161,8 @@ TEST(iterator_free, crbegin_crend) {
   const std::array<int, 3> a = {1, 2, 3};
   int vals[3];
   int i = 0;
-  for (auto it = std::crbegin(a); it != std::crend(a); ++it) {
-    vals[i++] = *it;  // NOLINT(clang-analyzer-security.ArrayBound)
+  for (int it : std::views::reverse(a)) {
+    vals[i++] = it;  // NOLINT(clang-analyzer-security.ArrayBound)
   }
   ASSERT_EQ(vals[0], 3);  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
   ASSERT_EQ(vals[1], 2);  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)

@@ -215,10 +215,18 @@ class string {
 
   reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
   reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
-  [[nodiscard]] const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
-  [[nodiscard]] const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
-  [[nodiscard]] const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
-  [[nodiscard]] const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
+  [[nodiscard]] const_reverse_iterator rbegin() const noexcept {
+    return const_reverse_iterator(end());
+  }
+  [[nodiscard]] const_reverse_iterator rend() const noexcept {
+    return const_reverse_iterator(begin());
+  }
+  [[nodiscard]] const_reverse_iterator crbegin() const noexcept {
+    return const_reverse_iterator(cend());
+  }
+  [[nodiscard]] const_reverse_iterator crend() const noexcept {
+    return const_reverse_iterator(cbegin());
+  }
 
   // =========================================================================
   // Modifiers

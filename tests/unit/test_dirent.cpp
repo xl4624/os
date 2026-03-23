@@ -48,14 +48,14 @@ extern "C" int getdents(const char* /*path*/, struct dirent* buf, unsigned int c
 
 TEST(dirent, opendir_null_path_returns_null) {
   mock_reset();
-  DIR* d = opendir(nullptr);
+  const DIR* d = opendir(nullptr);
   ASSERT_NULL(d);
 }
 
 TEST(dirent, opendir_getdents_failure_returns_null) {
   mock_reset();
   g_mock_fail = true;
-  DIR* d = opendir("/nonexistent");
+  const DIR* d = opendir("/nonexistent");
   ASSERT_NULL(d);
 }
 

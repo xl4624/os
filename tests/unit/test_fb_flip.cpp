@@ -24,7 +24,7 @@ ScaleResult calc_scale(uint32_t fb_w, uint32_t fb_h, uint32_t src_w, uint32_t sr
   const uint32_t off_x = (fb_w > dst_w) ? (fb_w - dst_w) / 2 : 0;
   const uint32_t off_y = (fb_h > dst_h) ? (fb_h - dst_h) / 2 : 0;
 
-  return {scale, dst_w, dst_h, off_x, off_y};
+  return {.scale = scale, .dst_w = dst_w, .dst_h = dst_h, .off_x = off_x, .off_y = off_y};
 }
 
 }  // namespace

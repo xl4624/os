@@ -24,4 +24,4 @@ LIBC_CXXFLAGS := $(KERNEL_CXXFLAGS) -D__is_libc
 
 # ==== Unit Test Flags (host compiler) ====
 TEST_CFLAGS := -std=c11 -Wall -Wextra -D__is_libc
-TEST_CXXFLAGS := -std=gnu++20 -fconcepts -Wall -Wextra -D__is_libc
+TEST_CXXFLAGS := -std=gnu++20 -Wall -Wextra -D__is_libc

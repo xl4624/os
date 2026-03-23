@@ -1,3 +1,4 @@
+#include <ranges.h>
 #include <string.h>
 
 #include "../framework/test.h"
@@ -358,8 +359,8 @@ TEST(std_string, begin_end) {
 TEST(std_string, reverse_iterator) {
   std::string s("abc");
   std::string rev;
-  for (auto it = s.rbegin(); it != s.rend(); ++it) {
-    rev.push_back(*it);
+  for (char& it : std::views::reverse(s)) {
+    rev.push_back(it);
   }
   ASSERT_STR_EQ(rev.c_str(), "cba");
 }

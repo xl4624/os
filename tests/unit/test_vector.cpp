@@ -1,3 +1,4 @@
+#include <ranges.h>
 #include <vector.h>
 
 #include "../framework/test.h"
@@ -203,8 +204,8 @@ TEST(vector, cbegin_cend) {
 TEST(vector, rbegin_rend) {
   std::vector<int> v = {1, 2, 3};
   std::vector<int> rev;
-  for (auto it = v.rbegin(); it != v.rend(); ++it) {
-    rev.push_back(*it);
+  for (int& it : std::views::reverse(v)) {
+    rev.push_back(it);
   }
   ASSERT_EQ(rev[0], 3);
   ASSERT_EQ(rev[1], 2);

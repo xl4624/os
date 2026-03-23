@@ -510,6 +510,7 @@ int32_t fat_truncate(VfsNode* node) {
 }
 
 const VfsOps fat_ops = {
+    .open = nullptr,
     .read = fat_read,
     .write = fat_write,
     .ioctl = nullptr,

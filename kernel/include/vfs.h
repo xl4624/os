@@ -22,6 +22,7 @@ enum class VfsNodeType : uint8_t {
 // Operations that a VFS node can support. Each backend (ramfs, devfs, fat)
 // provides its own implementations. Null pointers mean "not supported".
 struct VfsOps {
+  void (*open)(struct VfsNode* node);
   int32_t (*read)(struct VfsNode* node, std::span<uint8_t> buf, uint32_t offset);
   int32_t (*write)(struct VfsNode* node, std::span<const uint8_t> buf, uint32_t offset);
   int32_t (*ioctl)(struct VfsNode* node, uint32_t request, void* arg);

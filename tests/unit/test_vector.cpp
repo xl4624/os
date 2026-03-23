@@ -204,7 +204,7 @@ TEST(vector, cbegin_cend) {
 TEST(vector, rbegin_rend) {
   std::vector<int> v = {1, 2, 3};
   std::vector<int> rev;
-  for (int& it : std::views::reverse(v)) {
+  for (int const& it : std::views::reverse(v)) {
     rev.push_back(it);
   }
   ASSERT_EQ(rev[0], 3);

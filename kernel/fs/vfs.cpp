@@ -328,7 +328,7 @@ int32_t tty_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
 }
 
 const VfsOps tty_ops = {
-    .read = tty_read, .write = tty_write, .ioctl = tty_ioctl, .truncate = nullptr};
+    .open = nullptr, .read = tty_read, .write = tty_write, .ioctl = tty_ioctl, .truncate = nullptr};
 
 int32_t null_read([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<uint8_t> buf,
                   [[maybe_unused]] uint32_t offset) {
@@ -341,7 +341,13 @@ int32_t null_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf,
 }
 
 const VfsOps null_ops = {
-    .read = null_read, .write = null_write, .ioctl = nullptr, .truncate = nullptr};
+    .open = nullptr, .read = null_read, .write = null_write, .ioctl = nullptr, .truncate = nullptr};
+
+void kbd_open([[maybe_unused]] VfsNode* node) {
+  // Discard any events queued before this open (e.g. keystrokes used to
+  // type the command that launched the process).
+  kKeyboard.flush_events();
+}
 
 int32_t kbd_read([[maybe_unused]] VfsNode* node, std::span<uint8_t> buf,
                  [[maybe_unused]] uint32_t offset) {
@@ -360,7 +366,7 @@ int32_t kbd_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<con
 }
 
 const VfsOps kbd_ops = {
-    .read = kbd_read, .write = kbd_write, .ioctl = nullptr, .truncate = nullptr};
+    .open = kbd_open, .read = kbd_read, .write = kbd_write, .ioctl = nullptr, .truncate = nullptr};
 
 // ===========================================================================
 // framebuffer device operations
@@ -439,7 +445,8 @@ int32_t fb_write([[maybe_unused]] VfsNode* node, std::span<const uint8_t> buf, u
   return static_cast<int32_t>(to_write);
 }
 
-const VfsOps fb_ops = {.read = fb_read, .write = fb_write, .ioctl = nullptr, .truncate = nullptr};
+const VfsOps fb_ops = {
+    .open = nullptr, .read = fb_read, .write = fb_write, .ioctl = nullptr, .truncate = nullptr};
 
 // ===========================================================================
 // ramfs operations
@@ -462,7 +469,7 @@ int32_t ramfs_write([[maybe_unused]] VfsNode* node, [[maybe_unused]] std::span<c
 }
 
 const VfsOps ramfs_ops = {
-    .read = ramfs_read, .write = ramfs_write, .ioctl = nullptr, .truncate = nullptr};
+    .open = nullptr, .read = ramfs_read, .write = ramfs_write, .ioctl = nullptr, .truncate = nullptr};
 
 }  // namespace
 
@@ -643,6 +650,11 @@ int32_t open(const char* path, int32_t flags, mode_t mode) {
 
   proc->fds[*slot] = desc;
   proc->fd_flags[*slot] = ((flags & O_CLOEXEC) != 0) ? FD_CLOEXEC : 0;
+
+  if (node->ops != nullptr && node->ops->open != nullptr) {
+    node->ops->open(node);
+  }
+
   return static_cast<int32_t>(*slot);
 }
 

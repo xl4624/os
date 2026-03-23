@@ -1,7 +1,7 @@
 include ../config.mk
 
-CFLAGS  := $(KERNEL_CFLAGS) -nostdlib -mgeneral-regs-only
-CXXFLAGS := $(KERNEL_CXXFLAGS) -fno-rtti -fno-exceptions
+CFLAGS  := $(LIBC_CFLAGS) -nostdlib -mgeneral-regs-only
+CXXFLAGS := $(LIBC_CXXFLAGS) -fno-rtti -fno-exceptions
 LDFLAGS := -T link.ld -nostdlib --sysroot=$(SYSROOT)
 LIBS    := -L$(SYSROOT)/usr/lib -lc -lgcc
 

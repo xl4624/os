@@ -324,8 +324,10 @@ static int32_t sys_getdents(TrapFrame* regs) {
   const uint32_t buf_ptr = regs->ecx;
   const uint32_t count = regs->edx;
 
-  if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
-    return -EFAULT;
+  char abs_path[128];
+  const int32_t rc = resolve_abs_path(path_ptr, abs_path, sizeof(abs_path));
+  if (rc < 0) {
+    return rc;
   }
   if (count == 0) {
     return 0;
@@ -334,9 +336,8 @@ static int32_t sys_getdents(TrapFrame* regs) {
     return -EFAULT;
   }
 
-  const char* path = reinterpret_cast<const char*>(path_ptr);
   auto* entries = reinterpret_cast<dirent*>(buf_ptr);
-  return static_cast<int32_t>(Vfs::getdents(path, entries, count));
+  return static_cast<int32_t>(Vfs::getdents(abs_path, entries, count));
 }
 
 // SYS_EXEC(path=ebx, argv=ecx, envp=edx)

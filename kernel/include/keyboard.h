@@ -162,6 +162,13 @@ class KeyboardDriver {
    */
   void flush_command_queue() { cmd_queue_.flush(); }
 
+  /**
+   * Discards all pending raw key events from the /dev/kbd buffer.
+   * Called when a process opens /dev/kbd so it does not see keystrokes
+   * that were typed before it started (e.g. the command name itself).
+   */
+  void flush_events() { event_buffer_.clear(); }
+
  private:
   /**
    * Buffers printable character for sys_read.

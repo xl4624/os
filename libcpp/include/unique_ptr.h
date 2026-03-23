@@ -11,8 +11,10 @@ template <typename T>
 struct default_delete {
   constexpr default_delete() noexcept = default;
 
-  template <typename U, enable_if_t<is_convertible_v<U*, T*>, int> = 0>
-  constexpr default_delete(const default_delete<U>&) noexcept {}
+  template <typename U>
+  constexpr default_delete(const default_delete<U>& /*unused*/) noexcept
+    requires(is_convertible_v<U*, T*>)
+  {}
 
   void operator()(T* ptr) const noexcept {
     static_assert(!is_void_v<T>, "Cannot delete a void pointer");
@@ -45,13 +47,15 @@ class unique_ptr {
   unique_ptr(unique_ptr&& other) noexcept
       : ptr_(other.release()), deleter_(std::move(other.deleter_)) {}
 
-  template <typename U, typename E,
-            enable_if_t<is_convertible_v<typename unique_ptr<U, E>::pointer, pointer>, int> = 0>
+  template <typename U, typename E>
   unique_ptr(unique_ptr<U, E>&& other) noexcept
+    requires(is_convertible_v<typename unique_ptr<U, E>::pointer, pointer>)
       : ptr_(other.release()), deleter_(std::forward<E>(other.get_deleter())) {}
 
   ~unique_ptr() noexcept {
-    if (ptr_) deleter_(ptr_);
+    if (ptr_) {
+      deleter_(ptr_);
+    }
   }
 
   unique_ptr(const unique_ptr&) = delete;
@@ -88,7 +92,9 @@ class unique_ptr {
   void reset(pointer p = nullptr) noexcept {
     pointer old = ptr_;
     ptr_ = p;
-    if (old) deleter_(old);
+    if (old) {
+      deleter_(old);
+    }
   }
 
   void swap(unique_ptr& other) noexcept {
@@ -119,7 +125,9 @@ class unique_ptr<T[], Deleter> {
       : ptr_(other.release()), deleter_(std::move(other.deleter_)) {}
 
   ~unique_ptr() noexcept {
-    if (ptr_) deleter_(ptr_);
+    if (ptr_) {
+      deleter_(ptr_);
+    }
   }
 
   unique_ptr(const unique_ptr&) = delete;
@@ -155,7 +163,9 @@ class unique_ptr<T[], Deleter> {
   void reset(pointer p = nullptr) noexcept {
     pointer old = ptr_;
     ptr_ = p;
-    if (old) deleter_(old);
+    if (old) {
+      deleter_(old);
+    }
   }
 
   void swap(unique_ptr& other) noexcept {
@@ -169,14 +179,18 @@ class unique_ptr<T[], Deleter> {
 };
 
 // make_unique for single objects.
-template <typename T, typename... Args, enable_if_t<!is_array_v<T>, int> = 0>
-unique_ptr<T> make_unique(Args&&... args) {
+template <typename T, typename... Args>
+unique_ptr<T> make_unique(Args&&... args)
+  requires(!is_array_v<T>)
+{
   return unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 // make_unique for unbounded arrays: make_unique<T[]>(n).
-template <typename T, enable_if_t<is_unbounded_array_v<T>, int> = 0>
-unique_ptr<T> make_unique(size_t n) {
+template <typename T>
+unique_ptr<T> make_unique(size_t n)
+  requires(is_unbounded_array_v<T>)
+{
   using Element = remove_extent_t<T>;
   return unique_ptr<T>(new Element[n]());
 }

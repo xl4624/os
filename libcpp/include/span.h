@@ -26,7 +26,9 @@ class span {
 
   static constexpr size_t extent = Extent;
 
-  // Constructors
+  // =========================================================================
+  // Constructor
+  // =========================================================================
 
   constexpr span() noexcept : data_(nullptr), size_(0) {}
 
@@ -47,7 +49,9 @@ class span {
   constexpr span(const span&) noexcept = default;
   constexpr span& operator=(const span&) noexcept = default;
 
+  // =========================================================================
   // Element access
+  // =========================================================================
 
   [[nodiscard]] constexpr reference operator[](size_type idx) const noexcept { return data_[idx]; }
 
@@ -55,20 +59,26 @@ class span {
   [[nodiscard]] constexpr reference back() const noexcept { return data_[size_ - 1]; }
   [[nodiscard]] constexpr pointer data() const noexcept { return data_; }
 
+  // =========================================================================
   // Iterators
+  // =========================================================================
 
   [[nodiscard]] constexpr iterator begin() const noexcept { return data_; }
   [[nodiscard]] constexpr iterator end() const noexcept { return data_ + size_; }
   [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return data_; }
   [[nodiscard]] constexpr const_iterator cend() const noexcept { return data_ + size_; }
 
+  // =========================================================================
   // Observers
+  // =========================================================================
 
   [[nodiscard]] constexpr size_type size() const noexcept { return size_; }
   [[nodiscard]] constexpr size_type size_bytes() const noexcept { return size_ * sizeof(T); }
   [[nodiscard]] constexpr bool empty() const noexcept { return size_ == 0; }
 
+  // =========================================================================
   // Subspans
+  // =========================================================================
 
   [[nodiscard]] constexpr span<T> first(size_type count) const noexcept { return {data_, count}; }
 

@@ -34,8 +34,10 @@ struct TupleImpl<index_sequence<Is...>, Ts...> : TupleLeaf<Is, Ts>... {
 
   explicit constexpr TupleImpl(const Ts&... args) : TupleLeaf<Is, Ts>(args)... {}
 
-  template <typename... Us, enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
-  explicit constexpr TupleImpl(Us&&... args) : TupleLeaf<Is, Ts>(std::forward<Us>(args))... {}
+  template <typename... Us>
+  explicit constexpr TupleImpl(Us&&... args)
+    requires(sizeof...(Us) == sizeof...(Ts))
+      : TupleLeaf<Is, Ts>(std::forward<Us>(args))... {}
 };
 
 template <typename... Ts>
@@ -47,8 +49,10 @@ class tuple : public TupleImpl<make_index_sequence<sizeof...(Ts)>, Ts...> {
 
   explicit constexpr tuple(const Ts&... args) : Base(args...) {}
 
-  template <typename... Us, enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
-  explicit constexpr tuple(Us&&... args) : Base(std::forward<Us>(args)...) {}
+  template <typename... Us>
+  explicit constexpr tuple(Us&&... args)
+    requires(sizeof...(Us) == sizeof...(Ts))
+      : Base(std::forward<Us>(args)...) {}
 
   tuple(const tuple&) = default;
   tuple(tuple&&) = default;
@@ -147,8 +151,12 @@ struct TupleCompare {
 
   template <typename T, typename U>
   static constexpr bool less(const T& a, const U& b) {
-    if (get<I>(a) < get<I>(b)) return true;
-    if (get<I>(b) < get<I>(a)) return false;
+    if (get<I>(a) < get<I>(b)) {
+      return true;
+    }
+    if (get<I>(b) < get<I>(a)) {
+      return false;
+    }
     return TupleCompare<I + 1, N>::less(a, b);
   }
 };
@@ -156,12 +164,12 @@ struct TupleCompare {
 template <size_t N>
 struct TupleCompare<N, N> {
   template <typename T, typename U>
-  static constexpr bool equal(const T&, const U&) {
+  static constexpr bool equal(const T& /*unused*/, const U& /*unused*/) {
     return true;
   }
 
   template <typename T, typename U>
-  static constexpr bool less(const T&, const U&) {
+  static constexpr bool less(const T& /*unused*/, const U& /*unused*/) {
     return false;
   }
 };

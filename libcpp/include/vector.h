@@ -240,7 +240,7 @@ class vector {
     }
     for (size_type i = 0; i < size_; ++i) {
       new (new_data + i) value_type(std::move(data_[i]));
-      if constexpr (!is_trivially_destructible<value_type>::value) {
+      if constexpr (!is_trivially_destructible_v<value_type>) {
         data_[i].~value_type();
       }
     }
@@ -423,7 +423,7 @@ class vector {
   static void deallocate(pointer ptr) { ::operator delete(ptr); }
 
   void destroy_all() noexcept {
-    if constexpr (!is_trivially_destructible<value_type>::value) {
+    if constexpr (!is_trivially_destructible_v<value_type>) {
       for (size_type i = 0; i < size_; ++i) {
         data_[i].~value_type();
       }
@@ -438,7 +438,7 @@ class vector {
     }
     for (size_type i = 0; i < size_; ++i) {
       new (new_data + i) value_type(std::move(data_[i]));
-      if constexpr (!is_trivially_destructible<value_type>::value) {
+      if constexpr (!is_trivially_destructible_v<value_type>) {
         data_[i].~value_type();
       }
     }

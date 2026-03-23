@@ -24,7 +24,7 @@ class optional {
   // Constructors
 
   constexpr optional() noexcept : has_value_(false) {}
-  constexpr optional(nullopt_t) noexcept : has_value_(false) {}
+  constexpr optional(nullopt_t /*unused*/) noexcept : has_value_(false) {}
 
   optional(const optional& other) : has_value_(other.has_value_) {
     if (has_value_) {
@@ -41,9 +41,10 @@ class optional {
   }
 
   // Converting constructor from a compatible value.
-  template <typename U = T,
-            enable_if_t<!is_same_v<remove_cv_t<remove_reference_t<U>>, optional>, int> = 0>
-  optional(U&& value) : has_value_(true) {
+  template <typename U = T>
+  optional(U&& value)
+    requires(!is_same_v<remove_cv_t<remove_reference_t<U>>, optional>)
+      : has_value_(true) {
     new (ptr()) T(std::forward<U>(value));
   }
 
@@ -51,7 +52,7 @@ class optional {
 
   // Assignment
 
-  optional& operator=(nullopt_t) noexcept {
+  optional& operator=(nullopt_t /*unused*/) noexcept {
     reset();
     return *this;
   }
@@ -79,9 +80,10 @@ class optional {
     return *this;
   }
 
-  template <typename U = T,
-            enable_if_t<!is_same_v<remove_cv_t<remove_reference_t<U>>, optional>, int> = 0>
-  optional& operator=(U&& value) {
+  template <typename U = T>
+  optional& operator=(U&& value)
+    requires(!is_same_v<remove_cv_t<remove_reference_t<U>>, optional>)
+  {
     reset();
     new (ptr()) T(std::forward<U>(value));
     has_value_ = true;
@@ -122,7 +124,9 @@ class optional {
     return has_value_ ? std::move(*ptr()) : static_cast<T>(std::forward<U>(default_value));
   }
 
+  // =========================================================================
   // Modifiers
+  // =========================================================================
 
   template <typename... Args>
   T& emplace(Args&&... args) {
@@ -184,8 +188,12 @@ optional<T> make_optional(Args&&... args) {
 
 template <typename T>
 constexpr bool operator==(const optional<T>& lhs, const optional<T>& rhs) {
-  if (lhs.has_value() != rhs.has_value()) return false;
-  if (!lhs.has_value()) return true;
+  if (lhs.has_value() != rhs.has_value()) {
+    return false;
+  }
+  if (!lhs.has_value()) {
+    return true;
+  }
   return *lhs == *rhs;
 }
 
@@ -197,22 +205,22 @@ constexpr bool operator!=(const optional<T>& lhs, const optional<T>& rhs) {
 // Comparison: optional vs nullopt
 
 template <typename T>
-constexpr bool operator==(const optional<T>& opt, nullopt_t) noexcept {
+constexpr bool operator==(const optional<T>& opt, nullopt_t /*unused*/) noexcept {
   return !opt.has_value();
 }
 
 template <typename T>
-constexpr bool operator==(nullopt_t, const optional<T>& opt) noexcept {
+constexpr bool operator==(nullopt_t /*unused*/, const optional<T>& opt) noexcept {
   return !opt.has_value();
 }
 
 template <typename T>
-constexpr bool operator!=(const optional<T>& opt, nullopt_t) noexcept {
+constexpr bool operator!=(const optional<T>& opt, nullopt_t /*unused*/) noexcept {
   return opt.has_value();
 }
 
 template <typename T>
-constexpr bool operator!=(nullopt_t, const optional<T>& opt) noexcept {
+constexpr bool operator!=(nullopt_t /*unused*/, const optional<T>& opt) noexcept {
   return opt.has_value();
 }
 

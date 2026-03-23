@@ -7,7 +7,7 @@ CXX := g++
 CC  := gcc
 
 # All files use myos libc headers
-CXXFLAGS := -std=c++17 -Wall -Wextra -D__is_libc -I./framework -I../libcpp/include -I../libc/include
+CXXFLAGS := -std=gnu++20 -fconcepts -Wall -Wextra -D__is_libc -I./framework -I../libcpp/include -I../libc/include
 LIBC_CFLAGS := -std=c11 -Wall -Wextra -D__is_libc -I../libc/include
 
 # Test files

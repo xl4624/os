@@ -6,19 +6,19 @@
 namespace std {
 
 template <typename T>
-constexpr T&& forward(typename std::remove_reference<T>::type& t) noexcept {
+constexpr T&& forward(std::remove_reference_t<T>& t) noexcept {
   return static_cast<T&&>(t);
 }
 
 template <typename T>
-constexpr T&& forward(typename std::remove_reference<T>::type&& t) noexcept {
+constexpr T&& forward(std::remove_reference_t<T>&& t) noexcept {
   static_assert(!std::is_lvalue_reference<T>::value, "Cannot forward an rvalue as an lvalue");
   return static_cast<T&&>(t);
 }
 
 template <typename T>
-constexpr typename std::remove_reference<T>::type&& move(T&& t) noexcept {
-  return static_cast<typename std::remove_reference<T>::type&&>(t);
+constexpr std::remove_reference_t<T>&& move(T&& t) noexcept {
+  return static_cast<std::remove_reference_t<T>&&>(t);
 }
 
 template <typename T>
@@ -79,8 +79,12 @@ constexpr bool operator!=(const pair<T1, T2>& a, const pair<T1, T2>& b) {
 
 template <typename T1, typename T2>
 constexpr bool operator<(const pair<T1, T2>& a, const pair<T1, T2>& b) {
-  if (a.first < b.first) return true;
-  if (b.first < a.first) return false;
+  if (a.first < b.first) {
+    return true;
+  }
+  if (b.first < a.first) {
+    return false;
+  }
   return a.second < b.second;
 }
 

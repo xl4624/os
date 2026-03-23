@@ -25,7 +25,7 @@ class string {
   static const size_type npos = static_cast<size_type>(-1);
 
   // =========================================================================
-  // Constructors / destructor
+  // Constructor
   // =========================================================================
 
   string() noexcept : data_(nullptr), size_(0), capacity_(0) {}
@@ -208,20 +208,20 @@ class string {
 
   iterator begin() noexcept { return data(); }
   iterator end() noexcept { return data() + size_; }
-  const_iterator begin() const noexcept { return data(); }
-  const_iterator end() const noexcept { return data() + size_; }
-  const_iterator cbegin() const noexcept { return data(); }
-  const_iterator cend() const noexcept { return data() + size_; }
+  [[nodiscard]] const_iterator begin() const noexcept { return data(); }
+  [[nodiscard]] const_iterator end() const noexcept { return data() + size_; }
+  [[nodiscard]] const_iterator cbegin() const noexcept { return data(); }
+  [[nodiscard]] const_iterator cend() const noexcept { return data() + size_; }
 
   reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
   reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
-  const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
-  const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
-  const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
-  const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
+  [[nodiscard]] const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+  [[nodiscard]] const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+  [[nodiscard]] const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
+  [[nodiscard]] const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
 
   // =========================================================================
-  // Append / push_back / pop_back
+  // Modifiers
   // =========================================================================
 
   string& push_back(char c) {
@@ -279,10 +279,6 @@ class string {
   string& operator+=(const string& other) { return append(other); }
   string& operator+=(const char* s) { return append(s); }
   string& operator+=(char c) { return push_back(c); }
-
-  // =========================================================================
-  // Insert / erase
-  // =========================================================================
 
   string& insert(size_type pos, const char* s) {
     if (pos > size_ || s == nullptr) {

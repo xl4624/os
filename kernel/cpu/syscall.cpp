@@ -339,16 +339,20 @@ static int32_t sys_getdents(TrapFrame* regs) {
   return static_cast<int32_t>(Vfs::getdents(path, entries, count));
 }
 
-// SYS_EXEC(path=ebx, argv=ecx)
+// SYS_EXEC(path=ebx, argv=ecx, envp=edx)
 // Replaces the current process image with a VFS path (e.g. "/bin/sh").
 // argv is a NULL-terminated array of string pointers (may be NULL for argc=0).
+// envp is a NULL-terminated array of "NAME=VALUE" strings (may be NULL).
 // Returns 0 on success, -1 on failure.
 static int32_t sys_exec(TrapFrame* regs) {
   static constexpr int kMaxExecArgs = 16;
+  static constexpr int kMaxExecEnv = 64;
   static constexpr uint32_t kMaxArgLen = 256;
+  static constexpr uint32_t kMaxEnvLen = 256;
 
   const uint32_t path_ptr = regs->ebx;
   const uint32_t argv_ptr = regs->ecx;
+  const uint32_t envp_ptr = regs->edx;
 
   if (!validate_user_buffer(path_ptr, 1, /*writeable=*/false)) {
     return -EFAULT;
@@ -356,10 +360,13 @@ static int32_t sys_exec(TrapFrame* regs) {
 
   const char* path = reinterpret_cast<const char*>(path_ptr);
 
-  // Copy argv strings from the current (old) address space into kernel
-  // buffers before we destroy it.
+  // TODO: these buffers are static to avoid blowing the 16 KB kernel stack (arg_bufs alone is 4 KB,
+  // env_bufs is 16 KB).
+  // Ideally this should allocate the new user stack pages first, then copy argv/envp strings
+  // directly from the old address space into the new stack pages via phys_to_virt() - no
+  // intermediate kernel buffers needed at all.
   int argc = 0;
-  char arg_bufs[kMaxExecArgs][kMaxArgLen];
+  static char arg_bufs[kMaxExecArgs][kMaxArgLen];
   const char* argv_ptrs[kMaxExecArgs];
 
   if (argv_ptr != 0) {
@@ -396,6 +403,36 @@ static int32_t sys_exec(TrapFrame* regs) {
     argc = 1;
   }
 
+  // Copy envp strings.
+  int envc = 0;
+  static char env_bufs[kMaxExecEnv][kMaxEnvLen];
+  const char* env_ptrs[kMaxExecEnv];
+
+  if (envp_ptr != 0) {
+    if (!validate_user_buffer(envp_ptr, 4, /*writeable=*/false)) {
+      return -EFAULT;
+    }
+    const auto* uenvp = reinterpret_cast<const uint32_t*>(envp_ptr);
+    while (envc < kMaxExecEnv) {
+      if (!validate_user_buffer(envp_ptr + (static_cast<uint32_t>(envc) * 4), 4,
+                                /*writeable=*/false)) {
+        return -EFAULT;
+      }
+      const uint32_t str_ptr = uenvp[envc];
+      if (str_ptr == 0) {
+        break;
+      }
+      if (!validate_user_buffer(str_ptr, 1, /*writeable=*/false)) {
+        return -EFAULT;
+      }
+      const char* src = reinterpret_cast<const char*>(str_ptr);
+      strncpy(env_bufs[envc], src, kMaxEnvLen - 1);
+      env_bufs[envc][kMaxEnvLen - 1] = '\0';
+      env_ptrs[envc] = env_bufs[envc];
+      ++envc;
+    }
+  }
+
   const VfsNode* node = Vfs::lookup(path);
   if (node == nullptr || node->data == nullptr) {
     return -ENOENT;
@@ -417,7 +454,8 @@ static int32_t sys_exec(TrapFrame* regs) {
   }
 
   const uint32_t user_esp = Scheduler::alloc_user_stack(
-      new_pd_virt, std::span<const char*>{argv_ptrs, static_cast<size_t>(argc)});
+      new_pd_virt, std::span<const char*>{argv_ptrs, static_cast<size_t>(argc)},
+      std::span<const char*>{env_ptrs, static_cast<size_t>(envc)});
   if (user_esp == 0) {
     AddressSpace::destroy(new_pd_virt, new_pd_phys);
     return -ENOMEM;

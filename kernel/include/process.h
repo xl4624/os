@@ -43,8 +43,8 @@ enum class ProcessState : uint8_t {
   Zombie,
 };
 
-// Per-process kernel stack size (2 pages = 8 KiB).
-static constexpr uint32_t kKernelStackSize = 8192;
+// Per-process kernel stack size (4 pages = 16 KiB).
+static constexpr uint32_t kKernelStackSize = 16384;
 
 // Maximum number of processes the system can track.
 static constexpr uint32_t kMaxProcesses = 64;

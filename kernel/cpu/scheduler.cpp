@@ -299,7 +299,7 @@ void block_current() {
   enqueue_blocked(current_process);
 }
 
-uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv) {
+uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv, std::span<const char*> envp) {
   paddr_t stack_pages[kUserStackPages];
   for (uint32_t i = 0; i < kUserStackPages; ++i) {
     const paddr_t phys = kPmm.alloc();
@@ -326,27 +326,48 @@ uint32_t alloc_user_stack(PageTable* pd, std::span<const char*> argv) {
 
   // Push all argv strings and record their user VAs.
   static constexpr size_t kMaxExecArgs = 16;
+  static constexpr size_t kMaxExecEnv = 64;
   assert(argv.size() <= kMaxExecArgs && "alloc_user_stack(): too many arguments");
-  uint32_t str_uvas[kMaxExecArgs];
+  assert(envp.size() <= kMaxExecEnv && "alloc_user_stack(): too many env vars");
+  uint32_t argv_uvas[kMaxExecArgs];
+  uint32_t envp_uvas[kMaxExecEnv];
 
   for (size_t i = argv.size(); i-- > 0;) {
     const size_t len = strlen(argv[i]);
     user_esp -= static_cast<uint32_t>(len + 1);
     memcpy(kptr(user_esp), argv[i], len + 1);
-    str_uvas[i] = user_esp;
+    argv_uvas[i] = user_esp;
+  }
+
+  // Push all envp strings and record their user VAs.
+  for (size_t i = envp.size(); i-- > 0;) {
+    const size_t len = strlen(envp[i]);
+    user_esp -= static_cast<uint32_t>(len + 1);
+    memcpy(kptr(user_esp), envp[i], len + 1);
+    envp_uvas[i] = user_esp;
   }
 
   // Align esp down to a 4-byte boundary.
   user_esp &= ~3U;
 
-  // Push argv[argc] = NULL.
+  // Push envp[envc] = NULL terminator.
+  user_esp -= 4;
+  *reinterpret_cast<uint32_t*>(kptr(user_esp)) = 0;
+
+  // Push envp[envc-1] .. envp[0] pointers.
+  for (size_t i = envp.size(); i-- > 0;) {
+    user_esp -= 4;
+    *reinterpret_cast<uint32_t*>(kptr(user_esp)) = envp_uvas[i];
+  }
+
+  // Push argv[argc] = NULL terminator.
   user_esp -= 4;
   *reinterpret_cast<uint32_t*>(kptr(user_esp)) = 0;
 
   // Push argv[argc-1] .. argv[0] pointers.
   for (size_t i = argv.size(); i-- > 0;) {
     user_esp -= 4;
-    *reinterpret_cast<uint32_t*>(kptr(user_esp)) = str_uvas[i];
+    *reinterpret_cast<uint32_t*>(kptr(user_esp)) = argv_uvas[i];
   }
 
   // Push argc.

@@ -21,6 +21,7 @@ static int g_term_cols = 80;
 
 static char var_names[MAX_VARS][VAR_NAME_MAX];
 static char var_vals[MAX_VARS][VAR_VAL_MAX];
+static int var_exported[MAX_VARS];
 static int num_vars = 0;
 
 static void set_var(const char* name, const char* val) {
@@ -36,6 +37,28 @@ static void set_var(const char* name, const char* val) {
     var_names[num_vars][VAR_NAME_MAX - 1] = '\0';
     strncpy(var_vals[num_vars], val, VAR_VAL_MAX - 1);
     var_vals[num_vars][VAR_VAL_MAX - 1] = '\0';
+    var_exported[num_vars] = 0;
+    ++num_vars;
+  }
+}
+
+static void export_var(const char* name, const char* val) {
+  for (int i = 0; i < num_vars; ++i) {
+    if (strcmp(var_names[i], name) == 0) {
+      if (val) {
+        strncpy(var_vals[i], val, VAR_VAL_MAX - 1);
+        var_vals[i][VAR_VAL_MAX - 1] = '\0';
+      }
+      var_exported[i] = 1;
+      return;
+    }
+  }
+  if (num_vars < MAX_VARS) {
+    strncpy(var_names[num_vars], name, VAR_NAME_MAX - 1);
+    var_names[num_vars][VAR_NAME_MAX - 1] = '\0';
+    strncpy(var_vals[num_vars], val ? val : "", VAR_VAL_MAX - 1);
+    var_vals[num_vars][VAR_VAL_MAX - 1] = '\0';
+    var_exported[num_vars] = 1;
     ++num_vars;
   }
 }
@@ -47,6 +70,24 @@ static const char* get_var(const char* name) {
     }
   }
   return 0;
+}
+
+/* Build a NULL-terminated envp from exported shell variables. */
+#define ENVP_BUF_LEN (VAR_NAME_MAX + VAR_VAL_MAX + 2)
+static char envp_bufs[MAX_VARS][ENVP_BUF_LEN];
+static char* envp_ptrs[MAX_VARS + 1];
+
+static char** build_envp(void) {
+  int envc = 0;
+  for (int i = 0; i < num_vars; ++i) {
+    if (var_exported[i]) {
+      snprintf(envp_bufs[envc], ENVP_BUF_LEN, "%s=%s", var_names[i], var_vals[i]);
+      envp_ptrs[envc] = envp_bufs[envc];
+      ++envc;
+    }
+  }
+  envp_ptrs[envc] = (char*)0;
+  return envp_ptrs;
 }
 
 // ===========================================================================
@@ -422,11 +463,13 @@ static int try_assignment(const char* word) {
 static int run_builtin(Cmd* cmd) {
   if (strcmp(cmd->argv[0], "help") == 0) {
     printf("Built-in commands:\n");
-    printf("  exit          exit the shell\n");
-    printf("  help          show this message\n");
-    printf("  cd [DIR]      change working directory (default: /)\n");
-    printf("  NAME=VALUE    set a shell variable\n");
-    printf("  $NAME         expand a shell variable\n");
+    printf("  exit               exit the shell\n");
+    printf("  help               show this message\n");
+    printf("  cd [DIR]           change working directory (default: /)\n");
+    printf("  NAME=VALUE         set a shell variable\n");
+    printf("  export NAME=VALUE  set and export a variable to child processes\n");
+    printf("  export NAME        mark an existing variable for export\n");
+    printf("  $NAME              expand a shell variable\n");
     printf("Pipeline:  cmd1 | cmd2\n");
     printf("Redirect:  cmd < infile, cmd > outfile\n");
     return 1;
@@ -438,6 +481,27 @@ static int run_builtin(Cmd* cmd) {
     const char* dir = cmd->argc >= 2 ? cmd->argv[1] : "/";
     if (chdir(dir) < 0) {
       printf("sh: cd: %s: no such directory\n", dir);
+    }
+    return 1;
+  }
+  if (strcmp(cmd->argv[0], "export") == 0) {
+    for (int i = 1; i < cmd->argc; ++i) {
+      const char* arg = cmd->argv[i];
+      const char* eq = strchr(arg, '=');
+      if (eq) {
+        /* export NAME=VALUE */
+        char name[VAR_NAME_MAX];
+        int nlen = (int)(eq - arg);
+        if (nlen >= VAR_NAME_MAX) {
+          continue;
+        }
+        strncpy(name, arg, (size_t)nlen);
+        name[nlen] = '\0';
+        export_var(name, eq + 1);
+      } else {
+        /* export NAME -- mark existing variable */
+        export_var(arg, (char*)0);
+      }
     }
     return 1;
   }
@@ -554,7 +618,7 @@ static void run_pipeline(Pipeline* pl) {
         strncpy(path + 5, name, PATH_MAX - 6);
         path[PATH_MAX - 1] = '\0';
       }
-      if (exec(path, cmd->argv) < 0) {
+      if (exec(path, cmd->argv, build_envp()) < 0) {
         printf("sh: not found: %s\n", name);
         _exit(1);
       }
@@ -582,7 +646,26 @@ static void run_pipeline(Pipeline* pl) {
 // Main
 // ===========================================================================
 
-int main(void) {
+int main(int argc, char* argv[], char* envp[]) {
+  (void)argc;
+  (void)argv;
+
+  /* Import exported variables from the parent environment. */
+  if (envp) {
+    for (int i = 0; envp[i]; ++i) {
+      const char* eq = strchr(envp[i], '=');
+      if (eq) {
+        char name[VAR_NAME_MAX];
+        int nlen = (int)(eq - envp[i]);
+        if (nlen < VAR_NAME_MAX) {
+          strncpy(name, envp[i], (size_t)nlen);
+          name[nlen] = '\0';
+          export_var(name, eq + 1);
+        }
+      }
+    }
+  }
+
   char raw[LINE_MAX];
   char expanded[LINE_MAX];
   char cwd[PATH_MAX];

@@ -29,7 +29,10 @@ int __libc_atoi(const char* nptr);
 #define strtoul __libc_strtoul
 #define atoi __libc_atoi
 
+extern char** environ;
 char* getenv(const char* name);
+int setenv(const char* name, const char* value, int overwrite);
+int unsetenv(const char* name);
 int system(const char* command);
 
 void qsort(void* base, size_t nmemb, size_t size, int (*compar)(const void*, const void*));

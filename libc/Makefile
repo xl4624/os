@@ -1,6 +1,6 @@
 include ../config.mk
 
-CFLAGS   := ${BASE_CFLAGS} -Iinclude
+CFLAGS := $(KERNEL_CFLAGS) -Iinclude
 CFLAGS_K := $(CFLAGS) -D__is_libk
 CFLAGS_C := $(CFLAGS) -D__is_libc
 

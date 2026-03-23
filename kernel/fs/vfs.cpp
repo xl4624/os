@@ -12,6 +12,7 @@
 
 #include "framebuffer.h"
 #include "keyboard.h"
+#include "terminal.h"
 #include "modules.h"
 #include "scheduler.h"
 #include "tty.h"
@@ -296,10 +297,10 @@ int32_t tty_ioctl([[maybe_unused]] VfsNode* node, uint32_t request, void* arg) {
   switch (request) {
     case TIOCGWINSZ: {
       auto* ws = static_cast<struct winsize*>(arg);
-      ws->ws_row = 25;
-      ws->ws_col = 80;
-      ws->ws_xpixel = 0;
-      ws->ws_ypixel = 0;
+      ws->ws_row = static_cast<uint16_t>(kTerminal.rows());
+      ws->ws_col = static_cast<uint16_t>(kTerminal.cols());
+      ws->ws_xpixel = static_cast<uint16_t>(Framebuffer::info().width);
+      ws->ws_ypixel = static_cast<uint16_t>(Framebuffer::info().height);
       return 0;
     }
     case TCGETS: {
@@ -896,6 +897,10 @@ int32_t ioctl(FileDescription* fd, uint32_t request, void* arg) {
     return -ENOTTY;
   }
   return vfs_fd->node->ops->ioctl(vfs_fd->node, request, arg);
+}
+
+int32_t tty_ioctl(uint32_t request, void* arg) {
+  return ::tty_ioctl(nullptr, request, arg);
 }
 
 void init_ramfs() {

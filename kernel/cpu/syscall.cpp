@@ -779,10 +779,7 @@ static int32_t sys_ioctl(TrapFrame* regs) {
     return -EBADF;
   }
 
-  const FileDescription* fd = proc->fds[fd_num];
-  if (fd->type != FileType::VfsNode || fd->vfs == nullptr) {
-    return -ENOTTY;
-  }
+  FileDescription* fd = proc->fds[fd_num];
 
   void* arg = reinterpret_cast<void*>(arg_ptr);
 
@@ -800,7 +797,17 @@ static int32_t sys_ioctl(TrapFrame* regs) {
     return -EFAULT;
   }
 
-  return Vfs::ioctl(const_cast<FileDescription*>(fd), request, arg);
+  // Terminal fds (stdin/stdout/stderr) are not backed by VFS nodes, but
+  // they still support tty ioctls (TIOCGWINSZ, TCGETS, TCSETS).
+  if (fd->type == FileType::TerminalRead || fd->type == FileType::TerminalWrite) {
+    return Vfs::tty_ioctl(request, arg);
+  }
+
+  if (fd->type != FileType::VfsNode || fd->vfs == nullptr) {
+    return -ENOTTY;
+  }
+
+  return Vfs::ioctl(fd, request, arg);
 }
 
 // SYS_STAT(path=ebx, buf=ecx)

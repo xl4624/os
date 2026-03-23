@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -11,6 +12,8 @@
 #define MAX_VARS 16
 #define VAR_NAME_MAX 32
 #define VAR_VAL_MAX 64
+
+static int g_term_cols = 80;
 
 // ===========================================================================
 // Shell variable store
@@ -107,25 +110,50 @@ static char readbyte(void) {
 }
 
 /*
- * Redraw the current line in place.
- * Moves to column 1, prints prompt + buf, erases to EOL, then positions
- * the cursor at 'cursor' within the line (1-based column for CSI G).
+ * Redraw the current line in place, handling wrapping across multiple
+ * physical rows.  Uses g_prev_cursor_row to remember which physical row
+ * the cursor was on after the last redraw so we can move back up to the
+ * prompt row before reprinting.
  */
+static int g_prev_cursor_row = 0;
+
 static void redraw_line(const char* prompt, const char* buf, int len, int cursor) {
-  /* CR to move to column 1. */
-  putchar('\r');
-  /* Print prompt. */
+  int prompt_len = (int)strlen(prompt);
+  int total = prompt_len + len;
+  int cols = g_term_cols;
+
+  /* Move up to the row where the prompt starts. */
+  if (g_prev_cursor_row > 0) {
+    printf("\x1b[%dA", g_prev_cursor_row);
+  }
+
+  /* Go to column 1 and clear from here to end of screen. */
+  printf("\r\x1b[J");
+
+  /* Print prompt + buffer (terminal wraps automatically). */
   printf("%s", prompt);
-  /* Print buffer. */
   for (int i = 0; i < len; ++i) {
     putchar(buf[i]);
   }
-  /* Erase to end of line. */
-  printf("\x1b[K");
-  /* Position cursor: prompt length + cursor offset, 1-based. */
-  int prompt_len = (int)strlen(prompt);
-  int col = prompt_len + cursor + 1; /* 1-based */
-  printf("\x1b[%dG", col);
+
+  /* Figure out where the cursor should be. */
+  int cursor_pos = prompt_len + cursor; /* 0-based offset in the logical line */
+  int cursor_row = cursor_pos / cols;
+  int cursor_col = cursor_pos % cols;
+
+  /* Move from end-of-content back to the cursor position. */
+  int end_row = (total > 0) ? (total - 1) / cols : 0;
+  /* Edge case: if total is an exact multiple of cols the terminal has
+     already wrapped to the next row. */
+  if (total > 0 && total % cols == 0) {
+    ++end_row;
+  }
+  if (end_row > cursor_row) {
+    printf("\x1b[%dA", end_row - cursor_row);
+  }
+  printf("\x1b[%dG", cursor_col + 1); /* 1-based */
+
+  g_prev_cursor_row = cursor_row;
 }
 
 /*
@@ -145,7 +173,17 @@ static int readline(char* buf, int max, const char* prompt) {
     char c = readbyte();
 
     if (c == '\r' || c == '\n') {
-      /* Commit line. */
+      /* Commit line. Move to end of content before newline. */
+      int prompt_len = (int)strlen(prompt);
+      int total = prompt_len + len;
+      int end_row = (total > 0) ? (total - 1) / g_term_cols : 0;
+      if (total > 0 && total % g_term_cols == 0) {
+        ++end_row;
+      }
+      if (end_row > g_prev_cursor_row) {
+        printf("\x1b[%dB", end_row - g_prev_cursor_row);
+      }
+      g_prev_cursor_row = 0;
       buf[len] = '\0';
       putchar('\n');
       hist_push(buf);
@@ -194,13 +232,13 @@ static int readline(char* buf, int max, const char* prompt) {
         case 'C': /* Right: advance cursor. */
           if (cursor < len) {
             ++cursor;
-            printf("\x1b[C");
+            redraw_line(prompt, buf, len, cursor);
           }
           break;
         case 'D': /* Left: retreat cursor. */
           if (cursor > 0) {
             --cursor;
-            printf("\x1b[D");
+            redraw_line(prompt, buf, len, cursor);
           }
           break;
         default:
@@ -549,6 +587,11 @@ int main(void) {
   char expanded[LINE_MAX];
   char cwd[PATH_MAX];
   char prompt[PATH_MAX + 4];
+
+  struct winsize ws;
+  if (ioctl(0, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
+    g_term_cols = ws.ws_col;
+  }
 
   enter_raw_mode();
   atexit(restore_termios);

@@ -432,7 +432,16 @@ void Terminal::dispatch_csi(char final_byte) {
       cursor_.col -= MIN(n, cursor_.col);
       break;
     case 'J':
-      if (p0 == 2) {
+      if (p0 == 0) {
+        // Erase from cursor to end of screen.
+        for (size_t c = cursor_.col; c < cols_; ++c) {
+          cells_[cursor_.row][c] = {.ch = 0, .color = color_};
+          draw_glyph(' ', color_, cursor_.row, c);
+        }
+        for (size_t r = cursor_.row + 1; r < rows_; ++r) {
+          clear_line(r);
+        }
+      } else if (p0 == 2) {
         clear();
       }
       break;

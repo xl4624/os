@@ -9,8 +9,8 @@
 
 // Framebuffer-based text console.
 //
-// Renders an 80x25 character grid using an 8x16 bitmap font onto the
-// linear framebuffer.
+// Renders a dynamically-sized character grid (computed from the framebuffer
+// resolution and 8x16 bitmap font) onto the linear framebuffer.
 class Terminal {
  public:
   static constexpr size_t kFontWidth = 8;

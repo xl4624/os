@@ -110,6 +110,10 @@ void unregister_node(const char* path);
 // Perform a device-specific control operation on a VFS-backed file description.
 [[nodiscard]] int32_t ioctl(FileDescription* fd, uint32_t request, void* arg);
 
+// Perform a tty ioctl (TIOCGWINSZ, TCGETS, TCSETS) on the console terminal.
+// Used for terminal fds that are not backed by VFS nodes.
+[[nodiscard]] int32_t tty_ioctl(uint32_t request, void* arg);
+
 // Close a VFS-backed file description. Frees the VfsFileDescription.
 void close(FileDescription* fd);
 

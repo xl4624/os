@@ -3,10 +3,6 @@
 
 #include <sys/cdefs.h>
 
-/* Terminal dimensions */
-#define TERM_WIDTH 80
-#define TERM_HEIGHT 25
-
 /* Color constants */
 #define TERM_BLACK 0
 #define TERM_RED 1

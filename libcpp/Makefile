@@ -1,6 +1,6 @@
 include ../config.mk
 
-CFLAGS := $(KERNEL_CFLAGS) $(KERNEL_CXXFLAGS) -Iinclude
+CFLAGS := $(KERNEL_CXXFLAGS) -Iinclude
 CPPFLAGS := -fno-exceptions -fno-rtti -fno-threadsafe-statics
 
 SRCS := $(shell find . -type f -name "*.cpp")

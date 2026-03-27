@@ -1,7 +1,7 @@
 include ../config.mk
 
-CFLAGS  := $(LIBC_CFLAGS) -nostdlib -mgeneral-regs-only
-CXXFLAGS := $(LIBC_CXXFLAGS) -fno-rtti -fno-exceptions
+CFLAGS  := $(USER_CFLAGS) -mgeneral-regs-only
+CXXFLAGS := $(USER_CXXFLAGS) -fno-rtti -fno-exceptions
 LDFLAGS := -T link.ld -nostdlib --sysroot=$(SYSROOT)
 LIBS    := -L$(SYSROOT)/usr/lib -lc -lgcc
 
@@ -32,7 +32,7 @@ $(BUILDDIR)/user/%.o: %.c
 
 $(BUILDDIR)/user/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXXFLAGS) -c $< -o $@
+	@$(CPP) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	@rm -f $(BUILDDIR)/user/*.o $(BUILDDIR)/user/*.elf

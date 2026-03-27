@@ -19,8 +19,8 @@ KERNEL_CFLAGS := --sysroot=$(SYSROOT) -isystem $(SYSROOT)/usr/include/c -O2 -g \
 KERNEL_CXXFLAGS := $(KERNEL_CFLAGS) -std=gnu++20 -isystem $(SYSROOT)/usr/include/cpp
 
 # ==== Userspace Build Flags ====
-LIBC_CFLAGS := $(KERNEL_CFLAGS) -D__is_libc
-LIBC_CXXFLAGS := $(KERNEL_CXXFLAGS) -D__is_libc
+USER_CFLAGS := $(KERNEL_CFLAGS) -D__is_libc
+USER_CXXFLAGS := $(KERNEL_CXXFLAGS) -D__is_libc
 
 # ==== Unit Test Flags (host compiler) ====
 TEST_CFLAGS := -std=c11 -Wall -Wextra -D__is_libc
